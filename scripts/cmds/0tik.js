@@ -49,7 +49,7 @@ module.exports.onChat = async ({ bot, msg }) => {
       const videoPath = path.join(__dirname, "caches", "diptoo.mp4");
 
       const { data } = await axios.get(
-        `${await baseApiUrl()}/tiktok/downloadvideo?url=${encodeURIComponent(messageText)}`
+        `${await baseApiUrl()}/Shaon/tikdl?url=${encodeURIComponent(messageText)}`
       );
       const videoBuffer = (
         await axios.get(data.data.play, { responseType: "arraybuffer" })
