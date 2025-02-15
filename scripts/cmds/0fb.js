@@ -44,11 +44,11 @@ module.exports.onChat = async ({ bot, msg }) => {
       const videoPath = path.join(__dirname, "caches", "diptoo.mp4");
 
       const res = await axios.get(
-        `${Shaon}/api/downloads/facebook?url=${encodeURIComponent(messageText)}`
+        `${Shaon}/fbdl?url=${encodeURIComponent(messageText)}`
       );
         
       const videoBuffer = (
-        await axios.get(res.data.result.hd, { responseType: "arraybuffer" })
+        await axios.get(res.data.hd, { responseType: "arraybuffer" })
       ).data;
 
       fs.writeFileSync(videoPath, Buffer.from(videoBuffer, "utf-8"));
