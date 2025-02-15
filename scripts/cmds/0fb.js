@@ -34,7 +34,7 @@ module.exports.onChat = async ({ bot, msg }) => {
       const messageId = msg.message_id;
       
       const apis = await axios.get('https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json')
-  const Shaon = apis.data.sim
+  const Shaon = apis.data.api
 
       const wait = await bot.sendMessage(chatId, "⏳ Processing your request...", {
         reply_to_message_id: messageId,
