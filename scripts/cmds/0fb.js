@@ -48,7 +48,7 @@ module.exports.onChat = async ({ bot, msg }) => {
       );
         
       const videoBuffer = (
-        await axios.get(res.data.hd, { responseType: "arraybuffer" })
+        await axios.get(res.data.result.hd, { responseType: "arraybuffer" })
       ).data;
 
       fs.writeFileSync(videoPath, Buffer.from(videoBuffer, "utf-8"));
