@@ -3,7 +3,7 @@ const fs = require("fs-extra");
 const path = require("path");
 const baseApiUrl = async () => {
   const base = await axios.get(
-`https://raw.githubusercontent.com/Blankid018/D1PT0/main/baseApiUrl.json`,
+`https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json`,
   );
   return base.data.api;
 };
@@ -35,7 +35,7 @@ module.exports = {
 const ext = path.extname(data.result) || 'mp4';
 const filePath = __dirname + `/caches/vid.mp4`//${ext}`;
       const vid = (
-        await axios.get(data.result, { responseType: "arraybuffer" })
+        await axios.get(data.data.result, { responseType: "arraybuffer" })
       ).data;
       fs.writeFileSync(filePath, Buffer.from(vid, "utf-8"));
       
