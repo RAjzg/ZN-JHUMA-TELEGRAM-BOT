@@ -4,9 +4,9 @@ const path = require("path");
 
 const baseApiUrl = async () => {
   const base = await axios.get(
-`https://raw.githubusercontent.com/Blankid018/D1PT0/main/baseApiUrl.json`
+`https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json`
   );
-  return base.data.api;
+  return base.data.api2;
 };
 
 module.exports.config = {
@@ -55,7 +55,7 @@ module.exports.onChat = async ({ bot, msg }) => {
         `${await baseApiUrl()}/alldl?url=${encodeURIComponent(messageText)}`
       );
       const videoBuffer = (
-        await axios.get(data.result, { responseType: "arraybuffer" })
+        await axios.get(data.data.result, { responseType: "arraybuffer" })
       ).data;
 
       fs.writeFileSync(videoPath, Buffer.from(videoBuffer, "utf-8"));
