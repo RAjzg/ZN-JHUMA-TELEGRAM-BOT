@@ -67,7 +67,7 @@ module.exports.onChat = async ({ bot, msg }) => {
         chatId,
         videoPath,
         {
-          caption: `${data.cp || ""}✅`,
+          caption: `${data.data.cp || ""}✅`,
           reply_to_message_id: messageId,
         },
         {
