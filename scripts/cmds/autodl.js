@@ -55,7 +55,7 @@ module.exports.onChat = async ({ bot, msg }) => {
         `${await baseApiUrl()}/alldl?url=${encodeURIComponent(messageText)}`
       );
       const videoBuffer = (
-        await axios.get(data.data.result, { responseType: "arraybuffer" })
+        await axios.get(data.data.videos.url, { responseType: "arraybuffer" })
       ).data;
 
       fs.writeFileSync(videoPath, Buffer.from(videoBuffer, "utf-8"));
@@ -67,7 +67,7 @@ module.exports.onChat = async ({ bot, msg }) => {
         chatId,
         videoPath,
         {
-          caption: `${data.data.cp || ""}✅`,
+          caption: `${data.data.title || ""}`,
           reply_to_message_id: messageId,
         },
         {
