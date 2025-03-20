@@ -34,7 +34,7 @@ module.exports.onChat = async ({ bot, msg }) => {
       const messageId = msg.message_id;
       
       const apis = await axios.get('https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json')
-  const Shaon = apis.data.api
+  const Shaon = apis.data.api2
 
       const wait = await bot.sendMessage(chatId, "⏳ Processing your request...", {
         reply_to_message_id: messageId,
@@ -44,11 +44,11 @@ module.exports.onChat = async ({ bot, msg }) => {
       const videoPath = path.join(__dirname, "caches", "diptoo.mp4");
 
       const res = await axios.get(
-        `${Shaon}/fbdl?url=${encodeURIComponent(messageText)}`
+        `${Shaon}/alldl?url=${encodeURIComponent(messageText)}`
       );
         
       const videoBuffer = (
-        await axios.get(res.data.hd, { responseType: "arraybuffer" })
+        await axios.get(res.data.result, { responseType: "arraybuffer" })
       ).data;
 
       fs.writeFileSync(videoPath, Buffer.from(videoBuffer, "utf-8"));
