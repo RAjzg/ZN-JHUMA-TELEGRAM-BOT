@@ -55,13 +55,13 @@ module.exports.onChat = async ({ bot, msg }) => {
         `${await baseApiUrl()}/alldl?url=${encodeURIComponent(messageText)}`
       );
       const videoBuffer = (
-        await axios.get(data.data.videos.url, { responseType: "arraybuffer" })
+        await axios.get(data.videos.url, { responseType: "arraybuffer" })
       ).data;
 
       fs.writeFileSync(videoPath, Buffer.from(videoBuffer, "utf-8"));
 
       // Delete the "processing" message///
- await bot.deleteMessage(chatId, waitMId);
+ await bot.deleteMessage(chatId, waitMId)
 
       await bot.sendVideo(
         chatId,
