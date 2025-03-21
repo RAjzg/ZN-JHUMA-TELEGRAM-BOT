@@ -46,58 +46,67 @@ module.exports.onChat = async ({ bot, msg }) => {
       });
 
       const waitMId = wait.message_id;
-      const videoPath = path.join(__dirname, "caches", "tik_video.mp4");
 
       const { data } = await axios.get(
         `${await baseApiUrl()}/alldl?url=${encodeURIComponent(messageText)}`
       );
 
+      console.log("API Response:", data); 
+
       if (data.videos && data.videos.length > 0) {
-        const videoBuffer = (
-          await axios.get(data.videos[0].url, { responseType: "arraybuffer" })
-        ).data;
+        for (const media of data.videos) {
+          if (media.type === "video") {
 
-        fs.writeFileSync(videoPath, Buffer.from(videoBuffer, "utf-8"));
+            const videoPath = path.join(__dirname, "caches", "tik_video.mp4");
+            const videoBuffer = (
+              await axios.get(media.url, { responseType: "arraybuffer" })
+            ).data;
 
-        await bot.deleteMessage(chatId, waitMId);
+            fs.writeFileSync(videoPath, Buffer.from(videoBuffer, "binary"));
 
-        await bot.sendVideo(
-          chatId,
-          videoPath,
-          {
-            caption: `🔰 Downloaded TikTok Video ✅`,
-            reply_to_message_id: messageId,
-          },
-          {
-            filename: "video.mp4",
-            contentType: "video/mp4",
+            await bot.deleteMessage(chatId, waitMId);
+
+            await bot.sendVideo(
+              chatId,
+              videoPath,
+              {
+                caption: `🔰 Downloaded TikTok Video ✅`,
+                reply_to_message_id: messageId,
+              },
+              {
+                filename: "video.mp4",
+                contentType: "video/mp4",
+              }
+            );
+
+            fs.unlinkSync(videoPath);
+          } else if (media.type === "image") {
+
+            const imagePath = path.join(__dirname, "caches", `tik_image_${Date.now()}.jpg`);
+            const imageBuffer = (
+              await axios.get(media.url, { responseType: "arraybuffer" })
+            ).data;
+
+            fs.writeFileSync(imagePath, Buffer.from(imageBuffer, "binary"));
+
+            await bot.sendPhoto(chatId, { source: imagePath }, {
+              caption: "📷 Downloaded Image ✅",
+              reply_to_message_id: messageId,
+            });
+
+            setTimeout(() => {
+              fs.unlinkSync(imagePath);
+            }, 5000);
           }
-        );
-
-        fs.unlinkSync(videoPath);
-      }
-
-      if (data.full_data?.data?.images?.length > 0) {
-        for (const img of data.full_data.data.images) {
-          const imageUrl = img.url; 
-          const imagePath = path.join(__dirname, "caches", `tik_image_${Date.now()}.jpg`);
-
-          const imageBuffer = (
-            await axios.get(imageUrl, { responseType: "arraybuffer" })
-          ).data;
-
-          fs.writeFileSync(imagePath, Buffer.from(imageBuffer, "utf-8"));
-
-          await bot.sendPhoto(chatId, imagePath, {
-            caption: "📷 Downloaded Image ✅",
-            reply_to_message_id: messageId,
-          });
-
-          fs.unlinkSync(imagePath);
         }
+      } else {
+        await bot.sendMessage(chatId, "❎ No media found in the given link.", {
+          reply_to_message_id: messageId,
+        });
       }
     }
   } catch (error) {
+    console.error("Download Error:", error);
     await bot.sendMessage(msg.chat.id, `❎ Error: ${error.message}`);
   }
 };
