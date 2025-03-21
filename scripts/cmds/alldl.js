@@ -35,11 +35,11 @@ module.exports = {
 const ext = path.extname(data.result) || 'mp4';
 const filePath = __dirname + `/caches/vid.mp4`//${ext}`;
       const vid = (
-        await axios.get(data.data.result, { responseType: "arraybuffer" })
+        await axios.get(data.data.videos[1].url, { responseType: "arraybuffer" })
       ).data;
       fs.writeFileSync(filePath, Buffer.from(vid, "utf-8"));
       
-await message.stream({url: fs.createReadStream(filePath),caption: `${data.cp || null}`})
+await message.stream({url: fs.createReadStream(filePath),caption: `${data.title || null}`})
       
         fs.unlinkSync(filePath)
     } catch (error) {
