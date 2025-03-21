@@ -34,17 +34,20 @@ module.exports.onChat = async ({ bot, msg }) => {
 
   try {
     if (
+      messageText.startsWith("https://vt.tiktok.com") ||
+      messageText.startsWith("https://www.tiktok.com/") ||
+      messageText.startsWith("https://www.facebook.com") ||
       messageText.startsWith("https://www.instagram.com/") ||
       messageText.startsWith("https://youtu.be/") ||
       messageText.startsWith("https://youtube.com/") ||
       messageText.startsWith("https://x.com/") ||
+      messageText.startsWith("https://youtube.com/")
+|| messageText.startsWith("https://www.instagram.com/p/") ||
+      messageText.startsWith("https://pin.it/") ||
       messageText.startsWith("https://twitter.com/") ||
-      messageText.startsWith("https://vt.tiktok.com") ||
-      messageText.startsWith("https://www.tiktok.com/") ||
       messageText.startsWith("https://vm.tiktok.com") ||
-      messageText.startsWith("https://www.facebook.com") ||
       messageText.startsWith("https://fb.watch")
-      )
+    )
     {
       const chatId = msg.chat.id;
       const messageId = msg.message_id;
