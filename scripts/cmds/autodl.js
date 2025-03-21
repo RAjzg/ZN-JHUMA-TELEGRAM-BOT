@@ -55,7 +55,7 @@ module.exports.onChat = async ({ bot, msg }) => {
         `${await baseApiUrl()}/alldl?url=${encodeURIComponent(messageText)}`
       );
       const videoBuffer = (
-        await axios.get(data.videos.url, { responseType: "arraybuffer" })
+        await axios.get(data.videos[1].url, { responseType: "arraybuffer" })
       ).data;
 
       fs.writeFileSync(videoPath, Buffer.from(videoBuffer, "utf-8"));
