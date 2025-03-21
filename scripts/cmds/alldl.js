@@ -35,7 +35,7 @@ module.exports = {
 const ext = path.extname(data.result) || 'mp4';
 const filePath = __dirname + `/caches/vid.mp4`//${ext}`;
       const vid = (
-        await axios.get(data.data.videos[1].url, { responseType: "arraybuffer" })
+        await axios.get(data.videos[0].url, { responseType: "arraybuffer" })
       ).data;
       fs.writeFileSync(filePath, Buffer.from(vid, "utf-8"));
       
