@@ -78,11 +78,22 @@ module.exports.onChat = async ({ bot, msg }) => {
       }
 
       if (data.full_data?.data?.images?.length > 0) {
-        for (const imgUrl of data.full_data.data.images) {
-          await bot.sendPhoto(chatId, imgUrl, {
+        for (const img of data.full_data.data.images) {
+          const imageUrl = img.url; 
+          const imagePath = path.join(__dirname, "caches", `tik_image_${Date.now()}.jpg`);
+
+          const imageBuffer = (
+            await axios.get(imageUrl, { responseType: "arraybuffer" })
+          ).data;
+
+          fs.writeFileSync(imagePath, Buffer.from(imageBuffer, "utf-8"));
+
+          await bot.sendPhoto(chatId, imagePath, {
             caption: "📷 Downloaded Image ✅",
             reply_to_message_id: messageId,
           });
+
+          fs.unlinkSync(imagePath);
         }
       }
     }
