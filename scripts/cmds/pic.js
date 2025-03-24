@@ -30,7 +30,7 @@ module.exports.onStart = async function ({ api, event, args, message }) {
 
     try {
         const res = await axios.get(
-            `http://45.90.12.29:7016/pinterest?search=${encodeURIComponent(keySearchs)}`
+            `https://nn54l5-8888.csb.app/pinterest?search=${encodeURIComponent(keySearchs)}`
         );
         const data = res.data.data;
         if (!data || data.length === 0) {
