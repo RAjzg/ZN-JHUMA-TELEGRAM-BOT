@@ -56,6 +56,6 @@ module.exports.onStart = async function ({ api, event, args, message }) {
         });
     } catch (error) {
         console.error(error);
-        message.reply("An error occurred while fetching images. Please try again later.");
+        return message.reply("An error occurred while fetching images. Please try again later.");
     }
 };
