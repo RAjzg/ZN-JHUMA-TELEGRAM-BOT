@@ -45,9 +45,9 @@ module.exports.onStart = async function ({ api, event, args, message }) {
    fs.writeFileSync(filePath, imageBuffer);
             imgData.push(fs.createReadStream(filePath));
         }
-        await message.reply({
+        await  message.stream({
             attachment: imgData,
-            body: `${numberSearch} search results for keyword: ${keySearchs}`,
+            caption: `${numberSearch} search results for keyword: ${keySearchs}`,
         });
 
    imgData.forEach((_, index) => {
