@@ -45,7 +45,7 @@ module.exports.onStart = async function ({ api, event, args, message }) {
         );
 
         await message.stream({
-            attachment: imgData,
+            attachment: data[0],
             caption: `${imgData.length} search results for keyword: ${keySearchs}`,
         });
 
