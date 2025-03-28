@@ -37,15 +37,8 @@ module.exports.onStart = async function ({ api, event, args, message }) {
             return message.reply("No images found for the given keyword.");
         }
 
-        const imgData = await Promise.all(
-            data.slice(0, numberSearch).map(async (url) => {
-                const imageBuffer = (await axios.get(url, { responseType: "arraybuffer" })).data;
-                return { attachment: Buffer.from(imageBuffer), name: "image.jpg" };
-            })
-        );
-
         await message.stream({
-            attachment: data[0],
+            url: data[0],
             caption: `${imgData.length} search results for keyword: ${keySearchs}`,
         });
 
