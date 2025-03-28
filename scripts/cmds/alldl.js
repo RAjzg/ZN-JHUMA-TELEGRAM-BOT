@@ -32,7 +32,7 @@ module.exports = {
       message.reply('🔍 | Downloading video...')
       const { data } = await axios.get(`${await baseApiUrl()}/alldl?url=${encodeURIComponent(dipto)}`);
       
-const ext = path.extname(data.result) || 'mp4';
+const ext = path.extname(data.videos[0].url) || 'mp4';
 const filePath = __dirname + `/caches/vid.mp4`//${ext}`;
       const vid = (
         await axios.get(data.videos[0].url, { responseType: "arraybuffer" })
