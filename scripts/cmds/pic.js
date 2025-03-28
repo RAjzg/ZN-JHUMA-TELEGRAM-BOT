@@ -39,7 +39,7 @@ module.exports.onStart = async function ({ api, event, args, message }) {
 
         await message.stream({
             url: data[0],
-            caption: `${imgData.length} search results for keyword: ${keySearchs}`,
+            caption: `${url.length} search results for keyword: ${keySearchs}`,
         });
 
     } catch (error) {
