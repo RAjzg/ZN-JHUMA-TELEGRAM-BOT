@@ -38,7 +38,7 @@ module.exports.onStart = async function ({ api, event, args, message }) {
         }
 
         await message.stream({
-            url: data[0],
+            attachment: data[0] || "https://i.pinimg.com/originals/a5/05/a9/a505a99a9802e0e65f864aa7572ce995.jpg",
             caption: `${url.length} search results for keyword: ${keySearchs}`,
         });
 
