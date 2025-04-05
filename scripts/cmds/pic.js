@@ -12,7 +12,10 @@ module.exports.config = {
 
 module.exports.onStart = async function ({ api, event, args, message }) {
     const axios = require("axios");
-
+    
+const apis = await axios.get('https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json')
+  const Shaon = apis.data.api
+    
     const keySearch = args.join(" ");
     if (!keySearch.includes("-")) {
         return message.reply(
@@ -29,7 +32,7 @@ module.exports.onStart = async function ({ api, event, args, message }) {
 
     try {
         const res = await axios.get(
-            `https://nn54l5-8888.csb.app/pinterest?search=${encodeURIComponent(keySearchs)}`
+            `${Shaon}/pinterest?search=${encodeURIComponent(keySearchs)}`
         );
         const data = res.data.data;
 
@@ -38,7 +41,7 @@ module.exports.onStart = async function ({ api, event, args, message }) {
         }
 
         await api.sendPhoto(event.chat.id,data[0],
-            { caption: ` search results for keyword: ${keySearchs}`,
+            { caption: `${numberSearch} search results for keyword: ${keySearchs}`,
         });
 
     } catch (error) {
