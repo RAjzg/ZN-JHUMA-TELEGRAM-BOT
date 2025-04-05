@@ -37,9 +37,8 @@ module.exports.onStart = async function ({ api, event, args, message }) {
             return message.reply("No images found for the given keyword.");
         }
 
-        await message.stream({
-            attachment: "https://i.pinimg.com/originals/a5/05/a9/a505a99a9802e0e65f864aa7572ce995.jpg",
-            caption: `search results for keyword: ${keySearchs}`,
+        await api.sendPhoto(event.chat.id,data[0],
+            { caption: ` search results for keyword: ${keySearchs}`,
         });
 
     } catch (error) {
