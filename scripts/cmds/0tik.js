@@ -46,58 +46,42 @@ module.exports.onChat = async ({ bot, msg }) => {
       });
 
       const waitMId = wait.message_id;
-      const videoPath = path.join(__dirname, "caches", "tik_video.mp4");
+      const imagePath = path.join(__dirname, "caches", "tik_video.jpg");
 
       const { data } = await axios.get(
         `${await baseApiUrl()}/Shaon/tikdl?url=${encodeURIComponent(messageText)}`
       );
 
-      if (data.videos && data.videos.length > 0) {
-        const videoBuffer = (
-          await axios.get(data.play, { responseType: "arraybuffer" })
+      if (data.images && data.images.length > 0) {
+        const imageBuffer = (
+          await axios.get(data.images, { responseType: "arraybuffer" })
         ).data;
 
-        fs.writeFileSync(videoPath, Buffer.from(videoBuffer, "utf-8"));
+        fs.writeFileSync(imagePath, Buffer.from(imageBuffer, "utf-8"));
 
         await bot.deleteMessage(chatId, waitMId);
 
-        await bot.sendVideo(
+        await bot.sendimage(
           chatId,
-          videoPath,
+          imagePath,
           {
-            caption: `🔰 Downloaded TikTok Video ✅`,
+            caption: `🔰 Downloaded TikTok image ✅`,
             reply_to_message_id: messageId,
           },
           {
-            filename: "video.mp4",
-            contentType: "video/mp4",
+            filename: "video.jpg",
+            contentType: "video/jpg",
           }
-        );
+          
+          );
 
-        fs.unlinkSync(videoPath);
+        fs.unlinkSync(imagePath);
       }
 
-      if (data.images?.length > 0) {
-        for (const img of data.images) {
-          const imageUrl = img.url; 
-          const imagePath = path.join(__dirname, "caches", `tik_image_${Date.now()}.jpg`);
-
-          const imageBuffer = (
-            await axios.get(imageUrl, { responseType: "arraybuffer" })
-          ).data;
-
-          fs.writeFileSync(imagePath, Buffer.from(imageBuffer, "utf-8"));
-
-          await bot.sendPhoto(chatId, imagePath, {
-            caption: "📷 Downloaded Image ✅",
-            reply_to_message_id: messageId,
-          });
-
-          fs.unlinkSync(imagePath);
         }
       }
-    }
-  } catch (error) {
+    
+   catch (error) {
     await bot.sendMessage(msg.chat.id, `❎ Error: ${error.message}`);
   }
 };
