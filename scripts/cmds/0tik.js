@@ -54,7 +54,7 @@ module.exports.onChat = async ({ bot, msg }) => {
 
       if (images && images.length > 0) {
         const imageBuffer = (
-          await axios.get(data.images, { responseType: "arraybuffer" })
+          await axios.get(data.data.images, { responseType: "arraybuffer" })
         ).data;
 
         fs.writeFileSync(imagePath, Buffer.from(imageBuffer, "utf-8"));
