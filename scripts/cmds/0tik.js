@@ -52,7 +52,7 @@ module.exports.onChat = async ({ bot, msg }) => {
         `${await baseApiUrl()}/Shaon/tikdl?url=${encodeURIComponent(messageText)}`
       );
 
-      if (images && images.length > 0) {
+      if (data.images && data.images.length > 0) {
         const imageBuffer = (
           await axios.get(data.data.images, { responseType: "arraybuffer" })
         ).data;
