@@ -33,7 +33,7 @@ async function updateFiles() {
       if (fs.existsSync(localPath)) {
         backupFile(localPath);
       }
-      const rawUrl = `https://raw.githubusercontent.com/shaonproject/Telegram-Bot-V1/main/${file}`;
+      const rawUrl = `https://raw.githubusercontent.com/shaonproject/Botbee/main/${file}`;
       const response = await axios.get(rawUrl, { responseType: 'arraybuffer' });
 
       const dataToWrite = Buffer.isBuffer(response.data)
