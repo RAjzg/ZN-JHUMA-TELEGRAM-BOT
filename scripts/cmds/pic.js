@@ -1,51 +1,52 @@
-module.exports.config = {
-    name: "pic",
-    version: "1.0.1",
-    role: 0,
-    credits: "Joshua Sy (Modified by You)",
-    description: "Image search",
-    usePrefix: true,
-    commandCategory: "Search",
-    usages: "[Text] - [Number]",
-    cooldowns: 0,
-};
+const axios = require('axios');
 
-module.exports.onStart = async function ({ api, event, args, message }) {
-    const axios = require("axios");
-    
-const apis = await axios.get('https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json')
-  const Shaon = apis.data.api
-    
-    const keySearch = args.join(" ");
-    if (!keySearch.includes("-")) {
-        return message.reply(
-            'Please enter in the format: "keyword - number". Example: pinterest Naruto - 10'
-        );
-    }
+module.exports = {
+    config: {
+        name: "pic",
+        aliases: ["pin", "pinterestsearch"],
+        role: 0, // All users can use this command
+        cooldowns: 5,
+        version: '1.0.1',
+        author: 'Samir Thakuri',
+        category: "image",
+        description: "Fetch images from Pinterest based on query.",
+        usage: "pinterest <query> | [number]",
+    },
 
-    const keySearchs = keySearch.substring(0, keySearch.lastIndexOf("-")).trim();
-    const numberSearch = parseInt(keySearch.split("-").pop().trim()) || 6;
-
-    if (isNaN(numberSearch) || numberSearch <= 0) {
-        return message.reply("Please provide a valid number for images.");
-    }
-
-    try {
-        const res = await axios.get(
-            `${Shaon}/pinterest?search=${encodeURIComponent(keySearchs)}`
-        );
-        const data = res.data.data;
-
-        if (!data || data.length === 0) {
-            return message.reply("No images found for the given keyword.");
+    onStart: async function ({ bot, args, chatId, msg }) {
+        if (args.length === 0) {
+            return bot.sendMessage(chatId, `⚠️ Please provide a search query.\n💡 Usage: ${this.config.usage}`, { asReply: true });
         }
 
-        await api.sendPhoto(event.chat.id,data[0],
-            { caption: `${numberSearch} search results for keyword: ${keySearchs}`,
-        });
+        // Join the arguments and split by "|"
+        const input = args.join(" ").split("|");
+        const query = input[0].trim();
+        const number = parseInt(input[1]) || 6; // Default to 6 if number is not provided
 
-    } catch (error) {
-        console.error(error);
-        return message.reply(error.message);
+        const apiUrl = `https://noobs-api-sable.vercel.app/pinterest?query=${encodeURIComponent(query)}&number=${number}`;
+
+        // Send a pre-processing message
+        const preMessage = await bot.sendMessage(chatId, "🔍 | Searching for images...", { replyToMessage: msg.message_id });
+
+        try {
+            // Make a request to the Pinterest API
+            const response = await axios.get(apiUrl);
+
+            if (response.data.status === 200 && response.data.data.length > 0) {
+                // Prepare an array of image objects for the album
+                const images = response.data.data.map(imageUrl => ({ type: 'photo', media: imageUrl }));
+
+                // Send the album
+                await bot.sendMediaGroup(chatId, images, { caption: `Here are images for "${query}"`, replyToMessage: msg.message_id });
+
+                // Delete the pre-processing message after sending images
+                await bot.deleteMessage(preMessage.chat.id, preMessage.message_id);
+            } else {
+                await bot.editMessageText({ chatId: preMessage.chat.id, messageId: preMessage.message_id }, 'No images found for the given query.', { replyToMessage: msg.message_id });
+            }
+        } catch (error) {
+            console.error("Pinterest API Error:", error);
+            await bot.editMessageText({ chatId: preMessage.chat.id, messageId: preMessage.message_id }, 'Failed to fetch images. Please try again later.', { replyToMessage: msg.message_id });
+        }
     }
 };
