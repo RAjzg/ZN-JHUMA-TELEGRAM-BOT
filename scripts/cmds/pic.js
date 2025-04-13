@@ -34,7 +34,7 @@ module.exports = {
 
             if (response.data.data.length > 0) {
                 // Prepare an array of image objects for the album
-                const images = response.data.data(imageUrl => ({ type: 'photo', media: imageUrl }));
+                const images = response.data.data(imageUrl => ({ type: 'photo', images: imageUrl }));
 
                 // Send the album
                 await bot.sendMediaGroup(chatId, images, { caption: `Here are images for "${query}"`, replyToMessage: msg.message_id });
