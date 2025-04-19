@@ -18,6 +18,7 @@ module.exports.run = async function({ api, message }) {
   const video = data.api;
   var shaon = [
     `${video}/video/random`,
+    `${video}/video/random`
 ]
   var shaon1 = shaon[Math.floor(Math.random() * shaon.length)]
   axios.get(shaon1).then(res => {
