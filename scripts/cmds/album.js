@@ -11,7 +11,7 @@ module.exports.config = {
   usages: "random",
   cooldowns: 30,
 };
-module.exports.onStart = async ({ event, bot, adminBatton}) => {
+module.exports.onStart = async ({ event, bot, message, adminBatton}) => {
   const { message } = event;
   const chatId = message.chat.id;
 
@@ -49,13 +49,13 @@ module.exports.onStart = async ({ event, bot, adminBatton}) => {
     }
   };
 
-  const waitMsg = await bot.sendMessage(chatId, "Select Video Type", videoSelectionMarkup);
+  const waitMsg = await message.reply(chatId, "Select Video Type", videoSelectionMarkup);
 
   api.once('callback_query', async (callbackQuery) => {
     const name = callbackQuery.data;
-    await bot.deleteMessage(chatId, waitMsg.message_id);
+    await message.reply(chatId, waitMsg.message_id);
 
-    const waitVoiceMsg = await bot.sendMessage(chatId, "Please wait...", { reply_to_message_id: message.message_id });
+    const waitVoiceMsg = await message.reply(chatId, "Please wait...", { reply_to_message_id: message.message_id });
 
     try {
       const apis = await axios.get('https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json');
@@ -69,12 +69,12 @@ module.exports.onStart = async ({ event, bot, adminBatton}) => {
 
       
 
-      await bot.sendVideo(chatId, url, { caption: caption, reply_to_message_id: message.message_id, ...adminBatton });
+      await message.reply(chatId, url, { caption: caption, reply_to_message_id: message.message_id, ...adminBatton });
       await bot.deleteMessage(chatId, waitVoiceMsg.message_id);
     } catch (error) {
       await bot.deleteMessage(chatId, waitVoiceMsg.message_id);
       console.error('Error getting file info:', error);
-      bot.sendMessage(chatId, "❌ Failed to fetch video. Try again later.", { reply_to_message_id: message.message_id });
+      message.reply(chatId, "❌ Failed to fetch video. Try again later.", { reply_to_message_id: message.message_id });
     }
   });
 };
