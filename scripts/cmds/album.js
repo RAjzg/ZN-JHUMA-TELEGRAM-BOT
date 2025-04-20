@@ -11,7 +11,7 @@ module.exports.config = {
   usages: "random",
   cooldowns: 30,
 };
-module.exports.start = async ({ event, bot, adminBatton}) => {
+module.exports.onStart = async ({ event, bot, adminBatton}) => {
   const { message } = event;
   const chatId = message.chat.id;
 
