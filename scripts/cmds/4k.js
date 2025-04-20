@@ -1,4 +1,4 @@
-const a = require('axios');
+const axios = require('axios');
 const tinyurl = require('tinyurl');
 const baseApiUrl = async () => {
   const base = await a.get(
