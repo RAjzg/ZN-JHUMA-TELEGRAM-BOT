@@ -19,7 +19,7 @@ module.exports.onStart = async ({ api, event, args, message }) => {
       event?.reply_to_message?.video?.file_id;
     const imageUrl = await api.getFileLink(fileId);
     const apis = await axios.get('https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json');
-  const Shaon = apis.data.imgur;
+  const Shaon = apis.data.noobs;
   
 
     const imgurResponse = await axios.get(`${Shaon}/imgur?link=${encodeURIComponent(imageUrl)}`);
