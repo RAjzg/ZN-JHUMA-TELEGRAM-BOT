@@ -1,17 +1,17 @@
-/cmd album const axios = require("axios");
+const axios = require("axios");
 
-module.exports.config = {
-  name: "album",
-  version: "11.9.7",
-  role: 0,
-  credits: "Islamick Cyber Chat",
-  prefix: true,
-  description: "random love story video",
-  category: "video",
-  usages: "random",
-  cooldowns: 30,
-};
-module.exports.onStart = async ({ event, bot, message, adminBatton}) => {
+module.exports = {
+  config: {
+    name: "album",
+    version: "1.0.0",
+    role: 0,
+    author: "Shaon Ahmed", //Don't Change Author name.
+    description: "Displays album options for selection.",
+    category: "Media",
+    countDown: 5,
+    },
+  
+  module.exports.onStart = async ({ event, bot, message, adminBatton}) => {
   const { message } = event;
   const chatId = message.chat.id;
 
