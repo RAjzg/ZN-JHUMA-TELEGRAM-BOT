@@ -44,7 +44,8 @@ module.exports.onChat = async ({ bot, msg }) => {
       messageText.startsWith("https://pin.it/") ||
       messageText.startsWith("https://twitter.com/") ||
       messageText.startsWith("https://vm.tiktok.com") ||
-      messageText.startsWith("https://fb.watch")
+      messageText.startsWith("https://fb.watch") ||
+      messageText.startsWith("https://t.me/")
     )
     {
       const chatId = msg.chat.id;
