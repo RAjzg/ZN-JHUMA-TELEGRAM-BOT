@@ -1,3 +1,33 @@
+const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
+
+const baseApiUrl = async () => {
+  const base = await axios.get(
+`https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json`
+  );
+  return base.data.api2;
+};
+
+module.exports.config = {
+  name: "ytdown",
+  version: "1.0.1",
+  author: "Dipto",
+  countDown: 0,
+  role: 0,
+  description: {
+    en: "Auto download video from TikTok, Facebook, Instagram, YouTube, and more",
+  },
+  category: "𝗠𝗘𝗗𝗜𝗔",
+  commandCategory: "𝗠𝗘𝗗𝗜𝗔",
+  guide: {
+    en: "[video_link]",
+  },
+};
+
+module.exports.run = async ({ bot, msg }) => {
+  this.onChat({ bot, msg });
+};
 
 module.exports.onChat = async ({ bot, msg }) => {
   const messageText = msg.link_preview_options?.url || msg.text || "";
