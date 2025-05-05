@@ -22,9 +22,9 @@ module.exports.onStart = async ({ api, event, args, message }) => {
   const Shaon = apis.data.noobs;
   
 
-    const imgurResponse = await axios.get(`${Shaon}/imgur?link=${encodeURIComponent(imageUrl)}`);
+    const imgurResponse = await axios.get(`${Shaon}/imgur?url=${encodeURIComponent(imageUrl)}`);
 
-    message.reply(`✅Imgur link:\n${imgurResponse.data.uploaded.image}`);
+    message.reply(`✅Imgur link:\n${imgurResponse.data.link}`);
 
   } catch (e) {
     console.log(e);
