@@ -25,11 +25,11 @@ module.exports.config = {
   },
 };
 
-module.exports.run = async ({ bot, msg }) => {
-  this.onChat({ bot, msg });
+module.exports.run = async ({ event,bot, msg }) => {
+  this.onChat({ event,bot, msg });
 };
 
-module.exports.onChat = async ({ bot, msg }) => {
+module.exports.onChat = async ({ event,bot, msg }) => {
   const messageText = msg.link_preview_options?.url || msg.text || "";
 
   try {
@@ -80,7 +80,7 @@ module.exports.onChat = async ({ bot, msg }) => {
 ┃ 🎬 Type: Video
 ┃ ⚡ Speed: ${speed}s
 ┃ 🔗 Link: ${shortUrl}
-┃ 👤 Requested by: ${chatId}
+┃ 👤 Requested by: ${event.from.id}
 ╰━━━━━━━━━━━━━━━━━━━━━━╯
 𝐄𝐧𝐣𝐨𝐲 𝐲𝐨𝐮𝐫 𝐯𝐢𝐝𝐞𝐨!.`;
 
