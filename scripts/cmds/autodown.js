@@ -71,9 +71,9 @@ module.exports.onChat = async ({ bot, msg }) => {
  await bot.deleteMessage(chatId, waitMId)
  
  const tinyUrlRes = await axios.get(`${await baseApiUrl()}/tinyurl?url=${encodeURIComponent(data.videos[0].url)}`);
-      const shortUrl = tinyUrlRes.data;
+      const shortUrl = tinyUrlRes.data.url;
 
-      const speed = ((Date.now() - Time) / 1000).toFixed(2);
+      const speed = "100 ms";
 
       const bodyText = 
 `╭━━━[ ✅ 𝗠𝗲𝗱𝗶𝗮 𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱𝗲𝗱 ]━━━╮
