@@ -6,7 +6,7 @@ const baseApiUrl = async () => {
   const base = await axios.get(
 `https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json`
   );
-  return base.data.ytdown;
+  return base.data.alldl;
 };
 
 module.exports.config = {
@@ -50,10 +50,11 @@ module.exports.onChat = async ({ bot, msg }) => {
       const videoPath = path.join(__dirname, "caches", "diptoo.mp4");
 
       const { data } = await axios.get(
-        `${await baseApiUrl()}/ytdown?link=${encodeURIComponent(messageText)}`
+        `${await baseApiUrl()}/ytdown?url=${encodeURIComponent(messageText)}`
       );
       const videoBuffer = (
-        await axios.get(data.down[0].url, { responseType: "arraybuffer" })
+        await axios.get(data.data.url,
+        { responseType: "arraybuffer" })
       ).data;
 
       fs.writeFileSync(videoPath, Buffer.from(videoBuffer, "utf-8"));
