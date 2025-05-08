@@ -53,7 +53,7 @@ module.exports.onChat = async ({ bot, msg }) => {
         `${await baseApiUrl()}/ytdown?url=${encodeURIComponent(messageText)}`
       );
       const videoBuffer = (
-        await axios.get(data.down[1].url, { responseType: "arraybuffer" })
+        await axios.get(data.data.down[1].url, { responseType: "arraybuffer" })
       ).data;
 
       fs.writeFileSync(videoPath, Buffer.from(videoBuffer, "utf-8"));
