@@ -50,10 +50,10 @@ module.exports.onChat = async ({ bot, msg }) => {
       const videoPath = path.join(__dirname, "caches", "diptoo.mp4");
 
       const { data } = await axios.get(
-        `${await baseApiUrl()}/ytdown?url=${encodeURIComponent(messageText)}`
+        `${await baseApiUrl()}/ytdown?link=${encodeURIComponent(messageText)}`
       );
       const videoBuffer = (
-        await axios.get(data.down.url, { responseType: "arraybuffer" })
+        await axios.get(data.down[0].url, { responseType: "arraybuffer" })
       ).data;
 
       fs.writeFileSync(videoPath, Buffer.from(videoBuffer, "utf-8"));
