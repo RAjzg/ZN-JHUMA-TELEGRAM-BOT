@@ -53,7 +53,7 @@ module.exports.onChat = async ({ bot, msg }) => {
         `${await baseApiUrl()}/yt?url=${encodeURIComponent(messageText)}`
       );
       const videoBuffer = (
-        await axios.get(data.data.url,
+        await axios.get(data.url,
         { responseType: "arraybuffer" })
       ).data;
 
