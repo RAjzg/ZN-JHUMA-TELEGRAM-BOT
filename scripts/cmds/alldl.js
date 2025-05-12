@@ -30,7 +30,7 @@ module.exports = {
     }
     try {
       message.reply('🔍 | Downloading video...')
-      const { data } = await axios.get(`${await baseApiUrl()}/yt?url=${encodeURIComponent(dipto)}`);
+      const { data } = await axios.get(`${await baseApiUrl()}/alldown?url=${encodeURIComponent(dipto)}`);
       
 const ext = path.extname(data.url) || 'mp4';
 const filePath = __dirname + `/caches/vid.mp4`//${ext}`;
