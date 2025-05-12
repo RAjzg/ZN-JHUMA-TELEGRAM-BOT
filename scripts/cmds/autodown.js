@@ -52,7 +52,8 @@ module.exports.onChat = async ({ event,bot, msg }) => {
       
       const apis = await axios.get('https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json')
   const Shaon = apis.data.api
-
+  
+      
       const wait = await bot.sendMessage(chatId, "⏳ Processing your request...", {
         reply_to_message_id: messageId,
       });
@@ -73,7 +74,7 @@ module.exports.onChat = async ({ event,bot, msg }) => {
      
  await bot.deleteMessage(chatId, waitMId)
  
- const tinyUrlRes = await axios.get(`${Shaon}/tinyurl?url=${encodeURIComponent(data.url)`);
+ const tinyUrlRes = await axios.get(`${Shaon}/tinyurl?url=${encodeURIComponent(data.url)}`);
       const shortUrl = tinyUrlRes.data.url;
 
       const speed = "100 ms";
