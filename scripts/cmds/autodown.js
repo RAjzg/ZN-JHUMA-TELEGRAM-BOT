@@ -70,7 +70,7 @@ module.exports.onChat = async ({ event,bot, msg }) => {
      
  await bot.deleteMessage(chatId, waitMId)
  
- const tinyUrlRes = await axios.get(`${await baseApiUrl()}/tinyurl?url=${encodeURIComponent(data.videos[0].url)}`);
+ const tinyUrlRes = await axios.get(`${await baseApiUrl()}/tinyurl?url=${encodeURIComponent(data.url)}`);
       const shortUrl = tinyUrlRes.data.url;
 
       const speed = "100 ms";
