@@ -30,12 +30,12 @@ module.exports = {
     }
     try {
       message.reply('🔍 | Downloading video...')
-      const { data } = await axios.get(`${await baseApiUrl()}/alldl?url=${encodeURIComponent(dipto)}`);
+      const { data } = await axios.get(`${await baseApiUrl()}/yt?url=${encodeURIComponent(dipto)}`);
       
-const ext = path.extname(data.videos[0].url) || 'mp4';
+const ext = path.extname(data.url) || 'mp4';
 const filePath = __dirname + `/caches/vid.mp4`//${ext}`;
       const vid = (
-        await axios.get(data.videos[0].url, { responseType: "arraybuffer" })
+        await axios.get(data.url, { responseType: "arraybuffer" })
       ).data;
       fs.writeFileSync(filePath, Buffer.from(vid, "utf-8"));
       
