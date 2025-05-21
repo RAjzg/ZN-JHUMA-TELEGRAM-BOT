@@ -21,9 +21,9 @@ module.exports = {
         // Join the arguments and split by "-"
         const input = args.join(" ").split("-");
         const query = input[0].trim();
-        const number = parseInt(input[1]) || 50; // Default to 6 if number is not provided
+        const number = parseInt(input[0]) || 50; // Default to 6 if number is not provided
 
-        const apiUrl = `https://noobs-api-sable.vercel.app/pinterest?search=${encodeURIComponent(query)}&number=${number}`;
+        const apiUrl = `https://noobs-api-sable.vercel.app/pinterest?search=${encodeURIComponent(query)}`;
 
         // Send a pre-processing message
         const preMessage = await bot.sendMessage(chatId, "🔍 | Searching for images...", { replyToMessage: msg.message_id });
