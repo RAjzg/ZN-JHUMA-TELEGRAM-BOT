@@ -6,7 +6,7 @@ const baseApiUrl = async () => {
   const base = await axios.get(
 `https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json`
   );
-  return base.data.api;
+  return base.data.api2;
 };
 
 module.exports.config = {
