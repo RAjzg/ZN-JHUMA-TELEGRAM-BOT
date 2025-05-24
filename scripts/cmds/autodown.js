@@ -39,13 +39,15 @@ module.exports.onChat = async ({ event,bot, msg }) => {
       messageText.startsWith("https://www.facebook.com") ||
       messageText.startsWith("https://www.instagram.com/") ||
       messageText.startsWith("https://x.com/") ||
-      messageText.startsWith("https://www.twitch.tv/") || 
-      messageText.startsWith("https://www.instagram.com/p/") ||
+      messageText.startsWith("https://www.twitch.tv/") || messageText.startsWith("https://www.instagram.com/p/") ||
       messageText.startsWith("https://pin.it/") ||
       messageText.startsWith("https://twitter.com/") ||
       messageText.startsWith("https://vm.tiktok.com") ||
-      messageText.startsWith("https://fb.watch")
-       )
+      messageText.startsWith("https://fb.watch") ||
+      messageText.startsWith("https://youtube.com/") ||
+      messageText.startsWith("https://youtu.be/") ||
+      messageText.startsWith("https://i.imgur.com/")
+    )
     {
       const chatId = msg.chat.id;
       const messageId = msg.message_id;
@@ -59,10 +61,10 @@ module.exports.onChat = async ({ event,bot, msg }) => {
       const videoPath = path.join(__dirname, "caches", "diptoo.mp4");
 
       const { data } = await axios.get(
-        `${await baseApiUrl()}/alldl?url=${encodeURIComponent(messageText)}`
+        `${await baseApiUrl()}/alldown?url=${encodeURIComponent(messageText)}`
       );
       const videoBuffer = (
-        await axios.get(data.videos[0].url, { responseType: "arraybuffer" })
+        await axios.get(data.url, { responseType: "arraybuffer" })
       ).data;
 
       fs.writeFileSync(videoPath, Buffer.from(videoBuffer, "utf-8"));
@@ -71,7 +73,7 @@ module.exports.onChat = async ({ event,bot, msg }) => {
      
  await bot.deleteMessage(chatId, waitMId)
  
- const tinyUrlRes = await axios.get(`${await baseApiUrl()}/tinyurl?url=${encodeURIComponent(data.videos[0].url)}`);
+ const tinyUrlRes = await axios.get(`${await baseApiUrl()}/tinyurl?url=${encodeURIComponent(data.url)}`);
       const shortUrl = tinyUrlRes.data.url;
 
       const speed = "100 ms";
