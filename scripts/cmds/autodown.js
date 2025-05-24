@@ -61,10 +61,10 @@ module.exports.onChat = async ({ event,bot, msg }) => {
       const videoPath = path.join(__dirname, "caches", "diptoo.mp4");
 
       const { data } = await axios.get(
-        `${await baseApiUrl()}/ytdown?url=${encodeURIComponent(messageText)}`
+        `${await baseApiUrl()}/alldown?url=${encodeURIComponent(messageText)}`
       );
       const videoBuffer = (
-        await axios.get(data.medias[0].url, { responseType: "arraybuffer" })
+        await axios.get(data.url, { responseType: "arraybuffer" })
       ).data;
 
       fs.writeFileSync(videoPath, Buffer.from(videoBuffer, "utf-8"));
@@ -73,7 +73,7 @@ module.exports.onChat = async ({ event,bot, msg }) => {
      
  await bot.deleteMessage(chatId, waitMId)
  
- const tinyUrlRes = await axios.get(`${await baseApiUrl()}/tinyurl?url=${encodeURIComponent(data.medias[0].url)}`);
+ const tinyUrlRes = await axios.get(`${await baseApiUrl()}/tinyurl?url=${encodeURIComponent(data.url)}`);
       const shortUrl = tinyUrlRes.data.url;
 
       const speed = "100 ms";
