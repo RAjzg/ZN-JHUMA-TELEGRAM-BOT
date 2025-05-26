@@ -1,3 +1,6 @@
+const request = require("request");
+const fs = require("fs");
+  
 module.exports.config = {
   name: "rndm",
   version: "11.9.7",
@@ -13,7 +16,6 @@ module.exports.config = {
 module.exports.run = async function ({ event, args, api, message }) {
 try{
   const axios = require("axios");
-  const fs = require("fs");
   const nameParam = args.join("");
   if (!args[0]) message.reply('[ ! ] Input Name.\nEx: /rndm Shaon')
   
