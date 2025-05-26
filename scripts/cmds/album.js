@@ -12,7 +12,8 @@ module.exports = {
     },
   
   onStart = async ({ event, bot, message, adminBatton}) => {
-  const { message } = event;
+  const message = event;
+    
   const chatId = message.chat.id;
 
   const videoSelectionMarkup = {
@@ -64,7 +65,7 @@ module.exports = {
 
       const data = await axios.get(${Shaon}${name});
       console.log(data.data);
-      const url = data.data || data.url.url;
+      const url = data.data || data.url;
       const caption = data.shaon || ${data.cp};
 
       
