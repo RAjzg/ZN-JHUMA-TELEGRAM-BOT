@@ -26,7 +26,7 @@ try{
     responseType: "arraybuffer",
     headers: { "User-Agent": "Mozila/5.0" },
   });
-  const filep = __dirname + "/cache/video.mp4";
+  const filep = __dirname + "/caches/video.mp4";
   fs.writeFileSync(filep, vid.data);
   message.stream({
     url: fs.createReadStream(filep),
