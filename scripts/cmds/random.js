@@ -30,7 +30,7 @@ try{
   fs.writeFileSync(filep, Buffer.from(vid.data,"utf-8"));
   message.stream({
     url: fs.createReadStream(filep),
-    caption: `${res.data.cp}\n\n𝐓𝐨𝐭𝐚𝐥 𝐕𝐢𝐝𝐞𝐨𝐬: [${res.data.count}]\n𝐀𝐝𝐝𝐞𝐝 𝐓𝐡𝐢𝐬 𝐕𝐢𝐝𝐞𝐨 𝐓𝐨 𝐓𝐡𝐞 𝐀𝐩𝐢 𝐁𝐲 [${res.data.name}]`,
+    caption: `${res.data.cp}\n\n𝐓𝐨𝐭𝐚𝐥 𝐕𝐢𝐝𝐞𝐨𝐬: [${res.data.count}]\n𝐀𝐝𝐝𝐞𝐝 𝐓𝐡𝐢𝐬 𝐕𝐢𝐝𝐞𝐨 𝐀𝐩𝐢 𝐁𝐲 [${res.data.name}]`,
   });
   //fs.unlinkSync(filep);
 } catch(e){
