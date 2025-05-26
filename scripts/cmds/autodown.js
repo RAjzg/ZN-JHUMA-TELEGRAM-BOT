@@ -45,8 +45,7 @@ module.exports.onChat = async ({ event,bot, msg }) => {
       messageText.startsWith("https://vm.tiktok.com") ||
       messageText.startsWith("https://fb.watch") ||
       messageText.startsWith("https://youtube.com/") ||
-      messageText.startsWith("https://youtu.be/") ||
-      messageText.startsWith("https://i.imgur.com/")
+      messageText.startsWith("https://youtu.be/") 
     )
     {
       const chatId = msg.chat.id;
