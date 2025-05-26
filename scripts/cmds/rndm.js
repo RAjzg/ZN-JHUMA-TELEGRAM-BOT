@@ -15,7 +15,8 @@ try{
   const axios = require("axios");
   const fs = require("fs");
   const nameParam = args.join("");
-  if (!args[0]) return api.sendMessage("[ ! ] Input Name.\nEx: /rndm Shaon", event.from.ID, event.messageID);
+  if (!args[0]) message.reply('[ ! ] Input Name.\nEx: /rndm Shaon')
+  
   const { data } = await axios.get(
     "https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json",
   );
