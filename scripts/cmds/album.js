@@ -12,7 +12,7 @@ module.exports = {
     },
   
   onStart = async ({ event, bot, message, adminBatton}) => {
-  const message = event;
+  const { message } = event;
     
   const chatId = message.chat.id;
 
