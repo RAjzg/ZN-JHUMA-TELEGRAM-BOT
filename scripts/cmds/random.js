@@ -27,7 +27,7 @@ try{
     headers: { "User-Agent": "Mozila/5.0" },
   });
   const filep = __dirname + "/caches/video.mp4";
-  fs.writeFileSync(filep, Buffer.from(vid.data,"binary"));
+  fs.writeFileSync(filep, Buffer.from(vid, "utf-8"));
   message.stream({
     url: fs.createReadStream(filep),
     caption: `${res.data.cp}\n\n𝐓𝐨𝐭𝐚𝐥 𝐕𝐢𝐝𝐞𝐨𝐬: [${res.data.count}]\n𝐀𝐝𝐝𝐞𝐝 𝐓𝐡𝐢𝐬 𝐕𝐢𝐝𝐞𝐨 𝐓𝐨 𝐓𝐡𝐞 𝐀𝐩𝐢 𝐁𝐲 [${res.data.name}]`,
