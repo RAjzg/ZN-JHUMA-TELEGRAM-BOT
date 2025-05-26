@@ -47,7 +47,7 @@ try{
                ];
   var shaon1 = shaon[Math.floor(Math.random() * shaon.length)];
   const res = await axios.get(shaon1);
-  const vidUrl = res.data.url;
+  const vidUrl = res.data.data;
   const vid = await axios.get(vidUrl, {
     responseType: "arraybuffer",
     headers: { "User-Agent": "Mozila/5.0" },
