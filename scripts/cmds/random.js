@@ -16,7 +16,8 @@ module.exports.run = async function ({ api, message }) {
   const { data } = await axios.get(
     "https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json",
   );
-  const video = data.api;
+  const data = data.api;
+  
   var shaon = [`${video}/video/random`, `${video}/video/random`];
   var shaon1 = shaon[Math.floor(Math.random() * shaon.length)];
   const res = await axios.get(shaon1);
