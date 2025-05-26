@@ -23,7 +23,7 @@ try{
     "https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json",
   );
   const video = data.api;
-  const res = await axios.get(`${n}/video/random?name=${encodeURIComponent(nameParam)}`);
+  const res = await axios.get(`${video}/video/random?name=${encodeURIComponent(nameParam)}`);
   
    const vidUrl = res.data.url;
   const vid = await axios.get(vidUrl, {
