@@ -2,9 +2,9 @@ const axios = require("axios");
 const fs = require('fs')
 const baseApiUrl = async () => {
   const base = await axios.get(
-`https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json`,
+`https://raw.githubusercontent.com/Blankid018/D1PT0/main/baseApiUrl.json`,
   );
-  return base.data.noobs;
+  return base.data.api;
 };
 module.exports.config = {
     name: "sing",
@@ -25,11 +25,11 @@ module.exports.config = {
 if (urlYtb) {
   const match = args[0].match(checkurl);
   videoID = match ? match[1] : null;
-        const { data: { title, url } } = await axios.get(
-          `${await baseApiUrl()}/ytsearch?query=${videoID}&format=mp3`
+        const { data: { title, downloadLink } } = await axios.get(
+          `${await baseApiUrl()}/ytDl3?link=${videoID}&format=mp3`
         );
     return  message.stream({
-      url: url,caption: title,
+      url: downloadLink,caption: title,
     })
 }
     let keyWord = args.join(" ");
@@ -37,7 +37,7 @@ if (urlYtb) {
     const maxResults = 6;
     let result;
     try {
-      result = ((await axios.get(`${await baseApiUrl()}/ytsearch?query=${keyWord}`)).data).slice(0, maxResults);
+      result = ((await axios.get(`${await baseApiUrl()}/ytFullSearch?songName=${keyWord}`)).data).slice(0, maxResults);
     } catch (err) {
       return message.reply("❌ An error occurred:"+err.message);
     }
@@ -45,13 +45,13 @@ if (urlYtb) {
       return message.reply("⭕ No search results match the keyword:"+ keyWord);
     let msg = "";
     let i = 1;
-    const imgSrc = [];
+    const thumbnails = [];
     for (const info of result) {
-imgSrc.push(info.imgSrc);
-      msg += `${i++}. ${info.title}\nTime: ${info.duration}\n\n`;
+thumbnails.push(info.thumbnail);
+      msg += `${i++}. ${info.title}\nTime: ${info.time}\nChannel: ${info.channel.name}\n\n`;
     }
 
-    //url: await Promise.all(imgSrc),
+    //url: await Promise.all(thumbnails),
   const info = await message.reply(msg+ "Reply to this message with a number want to listen")
     const ii = info.message_id
     
@@ -68,11 +68,11 @@ global.functions.reply.set(ii, {
     if (!isNaN(choice) && choice <= result.length && choice > 0) {
       const infoChoice = result[choice - 1];
       const idvideo = infoChoice.id;
-  const { data: { title, url} } = await axios.get(`${await baseApiUrl()}//ytsearch?query=${idvideo}&format=mp3`);
+  const { data: { title, downloadLink ,quality} } = await axios.get(`${await baseApiUrl()}/ytDl3?link=${idvideo}&format=mp3`);
     await message.unsend(Reply.messageID)
         await  message.stream({
-         url: await dipto(url,'audio.mp3'),
-        caption: `• Title: ${title}`
+         url: await dipto(downloadLink,'audio.mp3'),
+        caption: `• Title: ${title}\n• Quality: ${quality}`
         })
       fs.unlinkSync('audio.mp3')
     } else {
