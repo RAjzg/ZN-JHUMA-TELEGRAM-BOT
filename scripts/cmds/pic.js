@@ -48,7 +48,7 @@ async function onStart({ bot, message, msg, args, chatId, usages }) {
     }
 
     const imgData = [];
-    const cacheDir = path.join(__dirname, "cache", msg.message_id.toString());
+    const cacheDir = path.join(__dirname, "caches", msg.message_id.toString());
     
     if (!fs.existsSync(cacheDir)) {
       fs.mkdirSync(cacheDir, { recursive: true });
@@ -90,7 +90,7 @@ async function onStart({ bot, message, msg, args, chatId, usages }) {
     console.error(`Error in Pinterest command:`, error);
     return message.reply(`An error occurred while fetching images: ${error.message}`);
   } finally {
-    const currentCacheDir = path.join(__dirname, "cache", msg.message_id.toString());
+    const currentCacheDir = path.join(__dirname, "caches", msg.message_id.toString());
     if (fs.existsSync(currentCacheDir)) {
       await fs.promises.rm(currentCacheDir, { recursive: true, force: true }).catch(console.error);
     }
