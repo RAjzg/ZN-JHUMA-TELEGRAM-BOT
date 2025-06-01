@@ -41,7 +41,7 @@ module.exports.run = async ({ bot, message, msg, args, chatId }) => {
       await message.reply("Limiting the number of images to 20 to prevent overload.");
     }
 
-    const apiUrl = `https://xyz-naruto-api.onrender.com/pinterest?search=${encodeURIComponent(searchQuery)}&count=${numberSearch}`;
+    const apiUrl = `https://noobs-api.up.railway.app/pinterest?search=${encodeURIComponent(searchQuery)}&count=${numberSearch}`;
 
     const res = await axios.get(apiUrl);
     const data = res.data.data;
