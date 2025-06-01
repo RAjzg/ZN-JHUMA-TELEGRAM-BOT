@@ -2,8 +2,8 @@ const axios = require("axios");
 const path = require("path");
 const fs = require("fs");
 
-const meta = {
-  name: "pic",
+module.exports.config = {  
+    name: "pinterest",
   version: "0.0.1",
   aliases: ["pin"],
   description: "This command allows you to search for images on Pinterest based on a given query and fetch a specified number of images (1-20).",
@@ -15,7 +15,7 @@ const meta = {
   guide: "{pn} <search query> - <number of images>\nExample: {pn} cat - 10"
 };
 
-async function onStart({ bot, message, msg, args, chatId, usages }) {
+module.exports.run = async ({ bot, message, msg, args, chatId, usages }) => {
   try {
     const keySearch = args.join(" ");
 
@@ -48,7 +48,7 @@ async function onStart({ bot, message, msg, args, chatId, usages }) {
     }
 
     const imgData = [];
-    const cacheDir = path.join(__dirname, "caches", msg.message_id.toString());
+    const cacheDir = path.join(__dirname, "cache", msg.message_id.toString());
     
     if (!fs.existsSync(cacheDir)) {
       fs.mkdirSync(cacheDir, { recursive: true });
@@ -90,11 +90,9 @@ async function onStart({ bot, message, msg, args, chatId, usages }) {
     console.error(`Error in Pinterest command:`, error);
     return message.reply(`An error occurred while fetching images: ${error.message}`);
   } finally {
-    const currentCacheDir = path.join(__dirname, "caches", msg.message_id.toString());
+    const currentCacheDir = path.join(__dirname, "cache", msg.message_id.toString());
     if (fs.existsSync(currentCacheDir)) {
       await fs.promises.rm(currentCacheDir, { recursive: true, force: true }).catch(console.error);
     }
   }
 }
-
-module.exports = { meta, onStart };
