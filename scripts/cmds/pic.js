@@ -3,7 +3,7 @@ const path = require("path");
 const fs = require("fs");
 
 module.exports.config = {  
-    name: "pinterest",
+    name: "pic",
   version: "0.0.1",
   aliases: ["pin"],
   description: "This command allows you to search for images on Pinterest based on a given query and fetch a specified number of images (1-20).",
