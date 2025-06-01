@@ -25,7 +25,9 @@ module.exports.run = async ({ bot, message, msg, args, chatId }) => {
             'Please enter in the format: "keyword - number". Example: pinterest Naruto - 10'
         );
     }
-
+   const apis = await axios.get('https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json')
+  const Shaon = apis.data.noobs
+      
     const [searchQuery, numImagesStr] = keySearch.split("-").map(s => s.trim());
     let numberSearch = parseInt(numImagesStr);
 
@@ -41,7 +43,7 @@ module.exports.run = async ({ bot, message, msg, args, chatId }) => {
       await message.reply("Limiting the number of images to 20 to prevent overload.");
     }
 
-    const apiUrl = `https://noobs-api.up.railway.app/pinterest?search=${encodeURIComponent(searchQuery)}&count=${numberSearch}`;
+    const apiUrl = `${Shaon}/pinterest?search=${encodeURIComponent(searchQuery)}&count=${numberSearch}`;
 
     const res = await axios.get(apiUrl);
     const data = res.data.data;
