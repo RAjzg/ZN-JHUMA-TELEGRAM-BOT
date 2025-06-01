@@ -11,7 +11,7 @@ module.exports = {
     countDown: 5,
     },
   
-  onStart : async ({ event, bot, message, adminBatton}) => {
+  run: async ({ event, bot, message, adminBatton}) => {
     
   const chatId = message.chat.id;
 
