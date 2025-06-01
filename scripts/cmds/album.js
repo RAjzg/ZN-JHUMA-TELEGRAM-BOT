@@ -11,7 +11,7 @@ module.exports = {
     countDown: 5,
     },
   
-  onStart = async ({ event, bot, message, adminBatton}) => {
+  onStart : async ({ event, bot, message, adminBatton}) => {
     
   const chatId = message.chat.id;
 
@@ -62,10 +62,11 @@ module.exports = {
       
   const Shaon = apis.data.api;
 
-      const data = await axios.get(${Shaon}${name});
+      const data = await axios.get`(${Shaon}${name})`;
+      
       console.log(data.data);
       const url = data.data || data.url;
-      const caption = data.shaon || ${data.cp};
+      const caption = data.shaon || data.cp;
 
       
 
@@ -77,4 +78,5 @@ module.exports = {
       message.reply(chatId, "❌ Failed to fetch video. Try again later.", { reply_to_message_id: message.message_id });
     }
   });
+  }
 };
