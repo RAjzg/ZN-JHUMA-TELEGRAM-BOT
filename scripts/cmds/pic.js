@@ -16,12 +16,14 @@ module.exports.config = {
   guide: "{pn} <search query> - <number of images>\nExample: {pn} cat - 10"
 };
 
-module.exports.run = async ({ bot, message, msg, args, chatId, usages }) => {
+module.exports.run = async ({ bot, message, msg, args, chatId }) => {
   try {
     const keySearch = args.join(" ");
 
     if (!keySearch.includes("-")) {
-      return usages();
+      return message.reply(
+            'Please enter in the format: "keyword - number". Example: pinterest Naruto - 10'
+        );
     }
 
     const [searchQuery, numImagesStr] = keySearch.split("-").map(s => s.trim());
