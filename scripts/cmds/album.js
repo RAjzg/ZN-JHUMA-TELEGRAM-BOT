@@ -62,7 +62,7 @@ module.exports = {
       
   const Shaon = apis.data.api;
 
-      const data = await axios.get(`${Shaon}${name}`);
+      const data = await axios.get`${Shaon}${name}`;
       
       console.log(data.data);
       const url = data.data || data.url;
