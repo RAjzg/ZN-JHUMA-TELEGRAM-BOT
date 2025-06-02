@@ -3,7 +3,7 @@ module.exports = {
     name: `${global.config.prefix}`,
     credits: "Nayan",
     role: 0,
-    prefix: "auto",
+    usePrefix: true,
     aliases: ["/"],
     description: "Random Caption With random photo",
     tags: ["General"],
