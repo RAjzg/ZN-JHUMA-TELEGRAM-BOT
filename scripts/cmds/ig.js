@@ -3,7 +3,6 @@ module.exports = {
     name: "/",
     credits: "Shaon Ahmed",
     role: 0,
-    usePrefix: false,
     aliases: ["/"],
     description: "Random Caption With random photo",
     tags: ["General"],
