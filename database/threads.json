@@ -2,7 +2,7 @@
   {
     "threadId": -1002165013339,
     "title": "TEST BABY | SIMMA",
-    "prefix": "!",
+    "prefix": "/",
     "threadImage": "https://api.telegram.org/file/bot7498218015:AAFXtK2tVQcmXvqA73DyBZg9yeVDrwfyjxA/profile_photos/file_5.jpg",
     "threadAdmins": [
       {
@@ -110,7 +110,7 @@
       "_id": "66dc8e119700f77457a19e63",
       "threadId": "-1002165013339",
       "title": "TEST BABY | SIMMA",
-      "prefix": "!",
+      "prefix": "/",
       "threadImage": "https://api.telegram.org/file/bot7533328541:AAHXn1DRTcV6nYFtkz0Lr0NvLpbTFiSWqcM/profile_photos/file_30.jpg",
       "threadAdmins": [
         {
