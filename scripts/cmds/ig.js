@@ -1,6 +1,6 @@
 module.exports = {
   config: {
-    name: `${global.functions.config.prefix}`,
+    name: "/",
     credits: "Shaon Ahmed",
     role: 0,
     usePrefix: false,
