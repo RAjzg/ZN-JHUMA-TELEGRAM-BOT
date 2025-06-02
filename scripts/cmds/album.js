@@ -12,7 +12,8 @@ module.exports = {
     },
   
   run: async ({ event, bot, message, adminBatton}) => {
-    
+   
+   const { msg } = event; 
   const chatId = message.chat.id;
 
   const videoSelectionMarkup = {
