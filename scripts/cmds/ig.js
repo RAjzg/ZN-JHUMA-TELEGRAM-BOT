@@ -1,9 +1,9 @@
 module.exports = {
   config: {
     name: `${global.functions.config.prefix}`,
-    credits: "Nayan",
+    credits: "Shaon Ahmed",
     role: 0,
-    usePrefix: true,
+    usePrefix: false,
     aliases: ["/"],
     description: "Random Caption With random photo",
     tags: ["General"],
