@@ -70,7 +70,7 @@ module.exports = {
         await api.sendVideo(chatId, videoUrl, {
           caption,
           reply_to_message_id: waitMsg.message_id,
-          ...reply_markup: videoSelectionMarkup
+          ...reply_markup
         });
 
         await api.deleteMessage(chatId, waitVoiceMsg.message_id);
