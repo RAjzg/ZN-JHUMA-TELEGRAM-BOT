@@ -4,6 +4,7 @@ module.exports = {
     credits: "Shaon Ahmed",
     role: 0,
     aliases: ["/"],
+    prefix: false,
     description: "Random Caption With random photo",
     tags: ["General"],
   },
