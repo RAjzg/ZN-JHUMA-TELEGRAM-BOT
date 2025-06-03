@@ -38,9 +38,9 @@ module.exports.run = async ({ bot, message, msg, args, chatId }) => {
     if (isNaN(numberSearch) || numberSearch < 1) {
       numberSearch = 6;
     }
-    if (numberSearch > 20) {
-      numberSearch = 20;
-      await message.reply("Limiting the number of images to 20 to prevent overload.");
+    if (numberSearch > 50) {
+      numberSearch = 50;
+      await message.reply("Limiting the number of images to 50 to prevent overload.");
     }
 
     const apiUrl = `${Shaon}/pinterest?search=${encodeURIComponent(searchQuery)}&count=${numberSearch}`;
