@@ -34,8 +34,20 @@ module.exports = {
             { text: 'Anime', callback_data: '/video/anime' }
           ],
           [
-            { text: 'Humaiyun', callback_data: '/video/humaiyun' },
-            { text: 'Islam', callback_data: '/video/islam' }
+            { text: 'ff', callback_data: '/video/ff' },
+            { text: 'lofi', callback_data: '/video/lofi' }
+          ],
+          [
+            { text: 'happy', callback_data: '/video/happy' },
+            { text: 'football', callback_data: '/video/football' }
+          ],
+          [
+            { text: 'Islam', callback_data: '/video/islam' },
+            { text: 'Humaiyun', callback_data: '/video/humaiyun' }
+          ],
+          [
+            { text: 'Capcut', callback_data: '/video/capcut' },
+            { text: 'Sex', callback_data: '/video/sex' }
           ],
           [
             { text: 'Horny', callback_data: '/video/horny' },
