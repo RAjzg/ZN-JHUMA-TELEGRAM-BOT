@@ -48,7 +48,7 @@ module.exports = {
       }
     };
 
-    const waitMsg = await api.sendMessage(chatId, "Select Video Type", videoSelectionMarkup);
+    const waitMsg = await api.sendMessage(chatId, "Select Video Type", reply_markup);
 
     bot.once('callback_query', async (callbackQuery) => {
       const name = callbackQuery.data;
