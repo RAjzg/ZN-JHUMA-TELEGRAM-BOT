@@ -4,12 +4,13 @@ module.exports = {
     credits: "Shaon Ahmed",
     role: 0,
     aliases: ["/"],
-    prefix: false,
+    useprefix: true,
     description: "Random Caption With random photo",
     tags: ["General"],
   },
   run: async ({ event, api }) => {
-    const From = event.threadId;
+    const hh = event.text?.toLowerCase() || "";
+  if (hh.startsWith("/") || hh.startsWith("bby")) 
     try {
       
       
@@ -55,7 +56,7 @@ module.exports = {
       const randomCaption = captions[Math.floor(Math.random() * captions.length)];
       const randomImage = links[Math.floor(Math.random() * links.length)];
 
-      api.sendPhoto(From, randomImage, {
+      api.sendPhoto(hh, randomImage, {
         caption: randomCaption,
         reply_to_message_id: event.msg.message_id
       });
