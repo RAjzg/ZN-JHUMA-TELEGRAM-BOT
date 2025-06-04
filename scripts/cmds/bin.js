@@ -11,7 +11,6 @@ module.exports.config = {
   author: "ArYAN",
   prefix: true,
   category: "Utility",
-  type: "admin",
   cooldown: 5,
   guide: "{pn} <filename> - The file must be located in the 'commands' folder."
 };
@@ -19,11 +18,6 @@ module.exports.config = {
 module.exports.run = async ({ bot, message, msg, args, userId }) => {
   if (args.length === 0) {
     return message.reply('Please provide the filename to upload. Usage: `!pastebin <filename>`');
-  }
-
-  const isAdmin = global.settings.admin.includes(String(userId));
-  if (!isAdmin) {
-    return message.reply("❌ | Only VIP admin users can use this command.");
   }
 
   const fileName = args[0];
