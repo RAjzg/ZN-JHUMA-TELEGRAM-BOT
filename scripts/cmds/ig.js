@@ -9,7 +9,7 @@ module.exports.config = {
   usages:"{p}"
 };
 
-module.exports.onChat = async ({ message, event }) => {
+module.exports.onChat = async ({ message, event, api  }) => {
   const hh = event.text?.toLowerCase() || "";
   if (hh.startsWith("/") || hh.startsWith("bby")) {
     try {
