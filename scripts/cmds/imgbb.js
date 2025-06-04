@@ -1,7 +1,7 @@
 const axios = require('axios');
 const FormData = require('form-data');
 const { createWriteStream, unlinkSync, existsSync, mkdirSync } = require('fs-extra');
-const imgbbApiKey = 'e6a573af64fc40a0b618acccd6677b74'; // Replace with your ImgBB API key
+const imgbbApiKey = '84f1105546c6832d65bd0f279e7e01ae'; // Replace with your ImgBB API key
 
 module.exports = {
     config: {
@@ -29,7 +29,7 @@ module.exports = {
 
             const fileId = reply_to_message.photo[reply_to_message.photo.length - 1].file_id;
             const file = await bot.getFile(fileId);
-            const fileUrl = `https://api.telegram.org/file/bot${config.botToken}/${file.file_path}`;
+            const fileUrl = `https://api.telegram.org/file/bot${botToken}/${file.file_path}`;
 
             const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
 
