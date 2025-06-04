@@ -1,19 +1,18 @@
-module.exports = {
-  config: {
-    name: "/",
-    credits: "Shaon Ahmed",
-    role: 0,
-    aliases: ["/"],
-    useprefix: true,
-    description: "Random Caption With random photo",
-    tags: ["General"],
-  },
-  run: async ({ event, api }) => {
-    const hh = event.text?.toLowerCase() || "";
-  if (hh.startsWith("/") || hh.startsWith("bby")) 
+module.exports.config = {
+  name: "/",
+  version:"1.0",
+  role:0,
+  author: "dipto",
+  description: "goi bot no prefix baby ",
+  category: "fun",
+  usePrefix:true,
+  usages:"{p}"
+};
+
+module.exports.onChat = async ({ message, event }) => {
+  const hh = event.text?.toLowerCase() || "";
+  if (hh.startsWith("/") || hh.startsWith("bby")) {
     try {
-      
-      
       const captions = [
         "ღ••\n– কোনো নেতার পিছনে নয়.!!🤸‍♂️\n– মসজিদের ইমামের পিছনে দাড়াও জীবন বদলে যাবে ইনশাআল্লাহ.!!🖤🌻\n۵",
         "-!\n__আল্লাহর রহমত থেকে নিরাশ হওয়া যাবে না!” আল্লাহ অবশ্যই তোমাকে ক্ষমা করে দিবেন☺️🌻\nসুরা যুমাহ্ আয়াত ৫২..৫৩💙🌸\n-!",
@@ -52,17 +51,16 @@ module.exports = {
         "https://i.postimg.cc/LsMSj9Ts/images-1-20.jpg",
         "https://i.postimg.cc/KzNXyttX/images-1-13.jpg",
       ];
-
-      const randomCaption = captions[Math.floor(Math.random() * captions.length)];
-      const randomImage = links[Math.floor(Math.random() * links.length)];
-
-      api.sendPhoto(hh, randomImage, {
+      const text = captions[Math.floor(Math.random() * captions.length)];
+      const pic = links[Math.floor(Math.random() * links.length)];
+      
+      api.sendPhoto(text, pic, {
         caption: randomCaption,
-        reply_to_message_id: event.msg.message_id
-      });
-    } catch (error) {
-      console.error("Error in generating content:", error);
-      api.sendMessage(event.text, "❌ An error occurred. Please try again later.");
+        
+    });
+    
+   } catch (error) {
+      message.reply(error.message);
     }
-  },
-};
+  }
+  };
