@@ -6,7 +6,7 @@ module.exports.config = {
   name: "pastebin",
   version: "1.0",
   aliases: ["bin"],
-  role: 0,
+  role: 2,
   description: "Upload local command files to a pastebin service.",
   author: "ArYAN",
   prefix: true,
@@ -27,7 +27,7 @@ module.exports.run = async ({ bot, message, msg, args, userId }) => {
   }
 
   const fileName = args[0];
-  const commandsFolderPath = path.join(__dirname, '..', 'commands'); 
+  const commandsFolderPath = path.join(__dirname, '..', 'cmds'); 
   const filePathWithoutExtension = path.join(commandsFolderPath, fileName);
   const filePathWithExtension = path.join(commandsFolderPath, fileName + '.js');
 
