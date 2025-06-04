@@ -55,7 +55,7 @@ module.exports.onChat = async ({ message, event, api  }) => {
       const pic = links[Math.floor(Math.random() * links.length)];
       
       api.sendPhoto(text, pic, {
-        caption: randomCaption,
+        caption: text,
         
     });
     
