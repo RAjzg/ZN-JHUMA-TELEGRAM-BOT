@@ -29,7 +29,7 @@ module.exports = {
 
             const fileId = reply_to_message.photo[reply_to_message.photo.length - 1].file_id;
             const file = await bot.getFile(fileId);
-            const fileUrl = `https://api.telegram.org/file/bot${botToken}/${file.file_path}`;
+            const fileUrl = `https://api.telegram.org/file/bot${bot.token}/${file.file_path}`;
 
             const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
 
