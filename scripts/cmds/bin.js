@@ -6,6 +6,7 @@ module.exports.config = {
   name: "pastebin",
   version: "1.0",
   aliases: ["bin"],
+  role: 0,
   description: "Upload local command files to a pastebin service.",
   author: "ArYAN",
   prefix: true,
