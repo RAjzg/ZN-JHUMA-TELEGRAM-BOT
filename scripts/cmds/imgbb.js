@@ -5,7 +5,7 @@ const imgbbApiKey = '84f1105546c6832d65bd0f279e7e01ae'; // Replace with your Img
 
 module.exports = {
     config: {
-        name: 'imgbb',
+        name: 'imgbb1',
         aliases: ['uploadimg'],
         category: 'utility',
         role: 0, // All users can use this command
