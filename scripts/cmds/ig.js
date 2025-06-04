@@ -62,7 +62,7 @@ module.exports = {
       });
     } catch (error) {
       console.error("Error in generating content:", error);
-      api.sendMessage(event.threadId, "❌ An error occurred. Please try again later.");
+      api.sendMessage(event.text, "❌ An error occurred. Please try again later.");
     }
   },
 };
