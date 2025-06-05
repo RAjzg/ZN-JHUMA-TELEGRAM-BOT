@@ -50,7 +50,8 @@ module.exports.onChat = async ({ event,bot, msg }) => {
     {
       const chatId = msg.chat.id;
       const messageId = msg.message_id;
-    
+   
+      const startTime = Date.now();
       
       const wait = await bot.sendMessage(chatId, "⏳ Processing your request...", {
         reply_to_message_id: messageId,
@@ -75,7 +76,6 @@ module.exports.onChat = async ({ event,bot, msg }) => {
  const tinyUrlRes = await axios.get(`${await baseApiUrl()}/tinyurl?url=${encodeURIComponent(data.url)}`);
       const shortUrl = tinyUrlRes.data.url;
 
-      const startTime = Date.now();
       const speed = ((Date.now() - startTime) / 1000).toFixed(2);
 
       const bodyText = 
