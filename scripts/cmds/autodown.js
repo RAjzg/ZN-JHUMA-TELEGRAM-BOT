@@ -75,7 +75,8 @@ module.exports.onChat = async ({ event,bot, msg }) => {
  const tinyUrlRes = await axios.get(`${await baseApiUrl()}/tinyurl?url=${encodeURIComponent(data.url)}`);
       const shortUrl = tinyUrlRes.data.url;
 
-      const speed = "100 ms";
+      const startTime = Date.now();
+      const speed = ((Date.now() - startTime) / 1000).toFixed(2);
 
       const bodyText = 
 `╭━━━[ ✅ 𝗠𝗲𝗱𝗶𝗮 𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱𝗲𝗱 ]━━━╮
