@@ -2,7 +2,7 @@ const axios = require('axios');
 
 module.exports.config = {
   name: 'emojimix',
-  version: '1.0.0',
+  version: '1.0.1',
   usePrefix: true,
   author: 'Shaon',
   category: 'Fun',
@@ -21,11 +21,11 @@ module.exports.onStart = async ({ message, args }) => {
 
   try {
     const imageUrl = `https://web-api-delta.vercel.app/emojimix?emoji1=${encodeURIComponent(emoji1)}&emoji2=${encodeURIComponent(emoji2)}`;
-    const imageStream = await axios.get(imageUrl, { responseType: 'stream' });
+    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' }); // buffer আকারে ডাউনলোড কর
 
     return message.send({
-      body: `🎨 ইমোজি মিক্স: ${emoji1} + ${emoji2}`,
-      attachment: imageStream.data
+      body: `🎨 মিক্সড ইমোজি: ${emoji1} + ${emoji2}`,
+      attachment: Buffer.from(response.data) // Buffer দিয়ে attachment পাঠাও
     });
 
   } catch (error) {
