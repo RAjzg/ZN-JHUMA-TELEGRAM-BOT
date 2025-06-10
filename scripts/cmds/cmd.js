@@ -1,48 +1,94 @@
-const axios = require('axios');
 const fs = require('fs');
+const path = require('path');
+const axios = require('axios');
 const vm = require('vm');
 
 module.exports.config = {
   name: "cmd",
-  version: "1.0.0",
+  version: "2.0.0",
   role: 2,
-  credits: "dipto",
-  description: "Create a new file with code from a link or provided code, with syntax error checking",
+  credits: "Shaon + chatgpt",
+  description: "Create, load, or load all .js files with syntax check",
   commandCategory: "utility",
-  usages: "[file name] [link/code]",
+  usages: "[create filename code/link] | [load filename] | [loadall]",
   cooldowns: 5
 };
 
 module.exports.run = async ({ message, args }) => {
-  try {
-    const fileName = args[0];
-    const input = args.slice(1).join(' ');
+  const action = args[0];
+  const target = args[1];
+  const input = args.slice(2).join(' ');
+  const basePath = __dirname;
 
-    if (!fileName || !input) {
-      return message.reply("Please provide both a file name and code or a valid link!");
+  // Function to load a file
+  const loadFile = (filePath) => {
+    try {
+      const code = fs.readFileSync(filePath, 'utf-8');
+      const context = vm.createContext({ console, require, module, __dirname, __filename, process });
+      const script = new vm.Script(code);
+      script.runInContext(context);
+      return true;
+    } catch (err) {
+      console.error(`Failed to load ${filePath}:`, err.message);
+      return false;
     }
+  };
+
+  // ============================
+  // create <filename> <code/url>
+  // ============================
+  if (action === 'create') {
+    if (!target || !input) return message.reply("Usage: cmd create <filename> <code or url>");
 
     let code;
-    const linkPattern = /^(http|https):\/\/[^ "]+$/;
+    const isURL = /^(http|https):\/\/[^ "]+$/;
 
-    if (linkPattern.test(input)) {
-      const response = await axios.get(input);
-      code = response.data;
-    } else {
-      code = input;
-    }
     try {
+      if (isURL.test(input)) {
+        const res = await axios.get(input);
+        code = res.data;
+      } else {
+        code = input;
+      }
+
+      // Syntax Check
       new vm.Script(code);
-    } catch (syntaxError) {
-      return message.reply(`❌ Syntax error in the provided code: ${syntaxError.message}`);
+
+      const filePath = path.join(basePath, target);
+      fs.writeFileSync(filePath, code, 'utf-8');
+      return message.reply(`✅ File created: ${target}`);
+    } catch (err) {
+      return message.reply(`❌ Error: ${err.message}`);
+    }
+  }
+
+  // ======================
+  // load <filename>
+  // ======================
+  if (action === 'load') {
+    if (!target) return message.reply("Usage: cmd load <filename>");
+
+    const filePath = path.join(basePath, target);
+    if (!fs.existsSync(filePath)) return message.reply("❌ File not found.");
+
+    const success = loadFile(filePath);
+    return message.reply(success ? `✅ Loaded: ${target}` : `❌ Failed to load: ${target}`);
+  }
+
+  // ======================
+  // loadall
+  // ======================
+  if (action === 'loadall') {
+    const files = fs.readdirSync(basePath).filter(f => f.endsWith('.js') && f !== path.basename(__filename));
+
+    let loaded = 0;
+    for (const file of files) {
+      const filePath = path.join(basePath, file);
+      if (loadFile(filePath)) loaded++;
     }
 
-    const filePath = `${__dirname}/${fileName}`;
-    fs.writeFileSync(filePath, code, 'utf-8');
-
-    message.reply(`✅ File created successfully: ${filePath}`);
-  } catch (error) {
-    console.error("Error:", error);
-    message.reply("An error occurred while creating the file.");
+    return message.reply(`✅ Loaded ${loaded}/${files.length} .js files.`);
   }
+
+  return message.reply("Invalid usage. Use: cmd create/load/loadall");
 };
