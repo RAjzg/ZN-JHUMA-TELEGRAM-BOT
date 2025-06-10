@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 module.exports.config = {
-  name: 'emojimix',
+  name: 'mix',
   version: '1.0.0',
   usePrefix: true,
   author: 'Shaon',
