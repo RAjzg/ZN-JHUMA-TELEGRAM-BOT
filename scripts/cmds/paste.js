@@ -17,7 +17,7 @@ module.exports.config = {
 
 module.exports.run = async ({ message, args }) => {
   if (args.length === 0) {
-    return message.reply('📁 Please provide the filename to upload.\nUsage: `!pastebin1 <filename>`');
+    return message.reply('📁 Please provide the filename to upload.\nUsage: `!pastebin <filename>`');
   }
 
   const fileName = args[0];
@@ -45,14 +45,14 @@ module.exports.run = async ({ message, args }) => {
     try {
       await message.reply("📤 Uploading file to PasteBin, please wait...");
 
-      const apiBase = 'https://pastebin-30pq.onrender.com';
+      const apiBase = 'https://pastebin-api.vercel.app';
 
-      const res = await axios.post(`${apiBase}/paste`, {
+      const res = await axios.post(`${apiBase}/`, {
         text: fileData
       });
 
       if (res.data && res.data.id) {
-        const finalUrl = `${apiBase}/paste/${res.data.id}`;
+        const finalUrl = `${apiBase}/raw/${res.data.id}`;
         return message.reply(`✅ File uploaded successfully:\n🔗 ${finalUrl}`);
       } else {
         return message.reply('⚠️ Upload failed. Please try again later.');
