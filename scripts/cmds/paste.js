@@ -47,7 +47,7 @@ module.exports.run = async ({ message, args }) => {
 
       const apiBase = 'https://pastebin-api.vercel.app';
 
-      const res = await axios.post(`${apiBase}/`, {
+      const res = await axios.post(`${apiBase}/paste`, {
         text: fileData
       });
 
