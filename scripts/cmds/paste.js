@@ -47,7 +47,7 @@ module.exports.run = async ({ bot, message, msg, args, userId }) => {
 
       if (response.data && response.data.link) {
         const link = response.data.link;
-        message.reply(✅ File uploaded successfully:\n${link});
+        message.reply(`✅ File uploaded successfully:\n${link}`);
       } else {
         message.reply('Failed to upload the command to pastebin. Please try again later.');
       }
