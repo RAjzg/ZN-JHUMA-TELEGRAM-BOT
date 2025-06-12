@@ -3,9 +3,9 @@ const path = require('path');
 const axios = require('axios');
 
 module.exports.config = {
-  name: "pastebin1",
+  name: "pastebin",
   version: "1.0",
-  aliases: ["bin1"],
+  aliases: ["bin"],
   role: 2,
   description: "Upload local command files to a pastebin service.",
   author: "Shaon Ahmed",
