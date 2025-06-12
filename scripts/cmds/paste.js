@@ -8,52 +8,59 @@ module.exports.config = {
   aliases: ["bin1"],
   role: 2,
   description: "Upload local command files to a pastebin service.",
-  author: "ArYAN",
+  author: "Shaon Ahmed",
   prefix: true,
   category: "Utility",
   cooldown: 5,
-  guide: "{pn} <filename> - The file must be located in the 'commands' folder."
+  guide: "{pn} <filename> - The file must be located in the 'cmds' folder."
 };
 
-module.exports.run = async ({ bot, message, msg, args, userId }) => {
+module.exports.run = async ({ message, args }) => {
   if (args.length === 0) {
-    return message.reply('Please provide the filename to upload. Usage: !pastebin <filename>');
+    return message.reply('📁 Please provide the filename to upload.\nUsage: `!pastebin1 <filename>`');
   }
 
   const fileName = args[0];
-  const commandsFolderPath = path.join(__dirname, '..', 'cmds');
-  const filePathWithoutExtension = path.join(commandsFolderPath, fileName);
-  const filePathWithExtension = path.join(commandsFolderPath, fileName + '.js');
+  const cmdsFolderPath = path.join(__dirname, '..', 'cmds');
+
+  const filePathWithoutExt = path.join(cmdsFolderPath, fileName);
+  const filePathWithExt = path.join(cmdsFolderPath, fileName + '.js');
 
   let filePath;
 
-  if (fs.existsSync(filePathWithoutExtension)) {
-    filePath = filePathWithoutExtension;
-  } else if (fs.existsSync(filePathWithExtension)) {
-    filePath = filePathWithExtension;
+  if (fs.existsSync(filePathWithoutExt)) {
+    filePath = filePathWithoutExt;
+  } else if (fs.existsSync(filePathWithExt)) {
+    filePath = filePathWithExt;
   } else {
-    return message.reply('Invalid command or file not found in the commands folder.');
+    return message.reply('❌ File not found in the `cmds` folder.');
   }
 
-  fs.readFile(filePath, 'utf8', async (err, data) => {
+  fs.readFile(filePath, 'utf8', async (err, fileData) => {
     if (err) {
-      console.error("Error reading file for pastebin:", err);
-      return message.reply('An error occurred while reading the file.');
+      console.error("Read error:", err);
+      return message.reply('❗ Error while reading the file.');
     }
 
     try {
-      await message.reply("Uploading file to pastebin, please wait...");
-      const response = await axios.post('https://pastebin-30pq.onrender.com/paste', { code: data });
+      await message.reply("📤 Uploading file to PasteBin, please wait...");
 
-      if (response.data && response.data.link) {
-        const link = response.data.link;
-        message.reply(`✅ File uploaded successfully:\n${link}`);
+      const apiBase = 'https://pastebin-30pq.onrender.com';
+
+      const res = await axios.post(`${apiBase}/paste`, {
+        text: fileData
+      });
+
+      if (res.data && res.data.id) {
+        const finalUrl = `${apiBase}/paste/${res.data.id}`;
+        return message.reply(`✅ File uploaded successfully:\n🔗 ${finalUrl}`);
       } else {
-        message.reply('Failed to upload the command to pastebin. Please try again later.');
+        return message.reply('⚠️ Upload failed. Please try again later.');
       }
-    } catch (uploadErr) {
-      console.error("Error uploading to pastebin:", uploadErr);
-      message.reply('An error occurred while uploading the command to pastebin.');
+
+    } catch (error) {
+      console.error("Upload error:", error.message);
+      return message.reply('❌ Failed to upload the file to pastebin.');
     }
   });
-}
+};
