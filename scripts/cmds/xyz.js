@@ -40,9 +40,15 @@ module.exports.run = async ({ bot, message }) => {
   try {
     const file = await bot.telegram.getFile(file_id);
     const fileUrl = `https://api.telegram.org/file/bot${bot.token}/${file.file_path}`;
-    const tempPath = path.join(__dirname, "..", "caches", `media_${Date.now()}${ext}`);
+    const tempDir = path.join(__dirname, "..", "caches");
 
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    const tempPath = path.join(tempDir, `media_${Date.now()}${ext}`);
     const writer = fs.createWriteStream(tempPath);
+
     const res = await axios.get(fileUrl, { responseType: "stream" });
     res.data.pipe(writer);
 
@@ -60,14 +66,15 @@ module.exports.run = async ({ bot, message }) => {
 
     fs.unlinkSync(tempPath);
 
-    if (uploadRes.data?.url || uploadRes.data?.link) {
-      return message.reply(`✅ Uploaded Successfully:\n🔗 ${uploadRes.data.url || uploadRes.data.link}`);
+    const url = uploadRes.data?.url || uploadRes.data?.link;
+    if (url) {
+      return message.reply(`✅ Uploaded Successfully:\n🔗 ${url}`);
     } else {
-      return message.reply("⚠️ Upload failed. No link returned.");
+      return message.reply("⚠️ Upload failed. No link returned from the server.");
     }
 
   } catch (err) {
-    console.error("Upload error:", err.message);
-    return message.reply("❌ Upload failed. File may be too large or server is down.");
+    console.error("Upload error:", err);
+    return message.reply("❌ Upload failed. File may be too large or server might be down.");
   }
 };
