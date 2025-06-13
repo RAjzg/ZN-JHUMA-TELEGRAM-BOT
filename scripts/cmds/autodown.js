@@ -61,7 +61,7 @@ module.exports.onChat = async ({ event,bot, msg }) => {
       const videoPath = path.join(__dirname, "caches", "diptoo.mp4");
 
       const { data } = await axios.get(
-        `${await baseApiUrl()}/alldl?url=${encodeURIComponent(messageText)}`
+        `${await baseApiUrl()}/alldown?url=${encodeURIComponent(messageText)}`
       );
       const videoBuffer = (
         await axios.get(data.url, { responseType: "arraybuffer" })
