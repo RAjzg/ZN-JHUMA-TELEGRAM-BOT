@@ -6,75 +6,75 @@ const FormData = require("form-data");
 module.exports.config = {
   name: "xyz",
   version: "1.0",
-  aliases: [],
   role: 0,
-  description: "Upload replied media (image, video, or audio) and get a direct download link.",
-  author: "Shaon Modified",
+  credits: "Shaon Ahmed",
+  usePrefix: true,
+  description: "Upload replied media (image, video, audio) to custom upload server",
   category: "media",
-  cooldown: 5,
-  guide: "{pn} (reply to an image/video/audio)"
+  usages: "{pn} (reply to media)",
+  cooldowns: 10,
 };
 
-module.exports.run = async ({ bot, message }) => {
-  const { reply_to_message } = message;
-
-  if (!reply_to_message) {
-    return message.reply("❌ Please reply to an image, video, or audio file.");
-  }
-
-  let file_id, ext;
-  if (reply_to_message.photo) {
-    const sizes = reply_to_message.photo;
-    file_id = sizes[sizes.length - 1].file_id;
-    ext = ".jpg";
-  } else if (reply_to_message.video) {
-    file_id = reply_to_message.video.file_id;
-    ext = ".mp4";
-  } else if (reply_to_message.audio) {
-    file_id = reply_to_message.audio.file_id;
-    ext = ".mp3";
-  } else {
-    return message.reply("❌ Unsupported media type. Only photo, video, and audio are allowed.");
-  }
-
+module.exports.onStart = async ({ api, event, message }) => {
   try {
-    const file = await bot.telegram.getFile(file_id);
-    const fileUrl = `https://api.telegram.org/file/bot${bot.token}/${file.file_path}`;
-    const tempDir = path.join(__dirname, "..", "caches");
-
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
+    const reply = event.reply_to_message;
+    if (!reply) {
+      return await message.reply("❌ Please reply to an image, video, or audio file.");
     }
 
-    const tempPath = path.join(tempDir, `media_${Date.now()}${ext}`);
-    const writer = fs.createWriteStream(tempPath);
+    let fileId, ext;
+    if (reply.photo && Array.isArray(reply.photo) && reply.photo.length > 0) {
+      fileId = reply.photo[reply.photo.length - 1].file_id;
+      ext = ".jpg";
+    } else if (reply.video && reply.video.file_id) {
+      fileId = reply.video.file_id;
+      ext = ".mp4";
+    } else if (reply.audio && reply.audio.file_id) {
+      fileId = reply.audio.file_id;
+      ext = ".mp3";
+    } else {
+      return await message.reply("❌ Unsupported media type. Only photo, video, and audio are supported.");
+    }
 
-    const res = await axios.get(fileUrl, { responseType: "stream" });
-    res.data.pipe(writer);
+    // Get direct Telegram file URL
+    const file = await api.getFile(fileId);
+    const fileUrl = `https://api.telegram.org/file/bot${api.token}/${file.file_path}`;
+
+    // Download file to temp cache folder
+    const tempDir = path.join(__dirname, "..", "caches");
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
+
+    const tempFilePath = path.join(tempDir, `media_${Date.now()}${ext}`);
+    const writer = fs.createWriteStream(tempFilePath);
+
+    const response = await axios.get(fileUrl, { responseType: "stream" });
+    response.data.pipe(writer);
 
     await new Promise((resolve, reject) => {
       writer.on("finish", resolve);
       writer.on("error", reject);
     });
 
+    // Upload to custom server
     const form = new FormData();
-    form.append("file", fs.createReadStream(tempPath));
+    form.append("file", fs.createReadStream(tempFilePath));
 
     const uploadRes = await axios.post("https://shaon-xyz.onrender.com/upload", form, {
-      headers: form.getHeaders()
+      headers: form.getHeaders(),
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
     });
 
-    fs.unlinkSync(tempPath);
+    // Delete temp file
+    fs.unlinkSync(tempFilePath);
 
-    const url = uploadRes.data?.url || uploadRes.data?.link;
-    if (url) {
-      return message.reply(`✅ Uploaded Successfully:\n🔗 ${url}`);
+    if (uploadRes.data?.url || uploadRes.data?.link) {
+      await message.reply(`✅ Uploaded Successfully:\n🔗 ${uploadRes.data.url || uploadRes.data.link}`);
     } else {
-      return message.reply("⚠️ Upload failed. No link returned from the server.");
+      await message.reply("⚠️ Upload failed. No link returned from server.");
     }
-
-  } catch (err) {
-    console.error("Upload error:", err);
-    return message.reply("❌ Upload failed. File may be too large or server might be down.");
+  } catch (error) {
+    console.error("Upload error:", error);
+    await message.reply("❌ Upload failed. File may be too large or server is down.");
   }
 };
