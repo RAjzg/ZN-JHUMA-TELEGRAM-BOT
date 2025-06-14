@@ -1,12 +1,5 @@
 const axios = require("axios");
-const fs = require('fs');
-
-const baseApiUrl = async () => {
-  const base = await axios.get(
-    `https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json`
-  );
-  return base.data.alldl;
-};
+const fs = require("fs");
 
 module.exports.config = {
   name: "sing",
@@ -17,15 +10,11 @@ module.exports.config = {
   role: 0,
   description: "Download audio from YouTube",
   category: "media",
-  guide:
-    "{pn} [<song name>|<song link>]:" +
-    "\n   Example:" +
-    "\n{pn} chipi chipi chapa chapa",
+  guide: "{pn} [<song name>|<song link>]\nExample: {pn} chipi chipi chapa chapa"
 };
 
-module.exports.run = async ({ api, args, event, commandName, message }) => {
-  const checkurl =
-    /^(?:https?:\/\/)?(?:m\.|www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))((\w|-){11})(?:\S+)?$/;
+module.exports.run = async ({ api, args, event, message }) => {
+  const checkurl = /^(?:https?:\/\/)?(?:m\.|www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))((\w|-){11})(?:\S+)?$/;
   let videoID;
   const urlYtb = checkurl.test(args[0]);
 
@@ -33,89 +22,94 @@ module.exports.run = async ({ api, args, event, commandName, message }) => {
     const match = args[0].match(checkurl);
     videoID = match ? match[1] : null;
 
-    const { data: { title, url } } = await axios.get(
-      `${await baseApiUrl()}/ytmp3?url=${videoID}`
-    );
+    try {
+      const { data: { title, url } } = await axios.get(`https://noobs-api-sable.vercel.app/ytmp3?url=${videoID}`);
+      const stream = await downloadAudio(url, "audio.mp3");
 
-    return message.stream({
-      url: await dipto(url, 'audio.mp3'),
-      caption: `• Title: ${title}`,
-    });
+      const stats = fs.statSync("audio.mp3");
+      if (stats.size > 26000000) {
+        fs.unlinkSync("audio.mp3");
+        return message.reply("⭕ Sorry, audio file is larger than 26MB and cannot be sent.");
+      }
+
+      await message.stream({
+        url: stream,
+        caption: title
+      });
+
+      fs.unlinkSync("audio.mp3");
+    } catch (err) {
+      console.error(err);
+      return message.reply("⭕ Sorry, audio size was more than allowed or an error occurred.");
+    }
+
+    return;
   }
 
-  let keyWord = args.join(" ");
-  keyWord = keyWord.includes("?feature=share")
-    ? keyWord.replace("?feature=share", "")
-    : keyWord;
-  const maxResults = 6;
-  let result;
+  const query = args.join(" ");
   try {
-    result = (
-      await axios.get(`${await baseApiUrl()}/ytsearch?query=${keyWord}`)
-    ).data.results.slice(0, maxResults);
+    const { data: results } = await axios.get(`https://noobs-api-sable.vercel.app/ytsearch?query=${encodeURIComponent(query)}`);
+
+    if (!Array.isArray(results) || results.length === 0) {
+      return message.reply("⭕ No search results match the keyword: " + query);
+    }
+
+    const topResults = results.slice(0, 6);
+    let msg = "";
+    topResults.forEach((info, index) => {
+      msg += `${index + 1}. ${info.title}\nTime: ${info.time}\nChannel: ${info.channel.name}\n\n`;
+    });
+
+    const sent = await message.reply(msg + "Reply to this message with a number to download the audio.");
+    global.functions.reply.set(sent.messageID, {
+      commandName: "sing",
+      messageID: sent.messageID,
+      result: topResults
+    });
   } catch (err) {
-    return message.reply("❌ An error occurred:" + err.message);
+    console.error(err);
+    return message.reply("❌ সার্চ করতে সমস্যা হয়েছে: " + err.message);
   }
-  if (result.length == 0)
-    return message.reply("⭕ No search results match the keyword:" + keyWord);
-
-  let msg = "";
-  let i = 1;
-
-  for (const info of result) {
-    msg += `${i++}. ${info.title}\nTime: ${info.time}\nChannel: ${info.channel}\n\n`;
-  }
-
-  const info = await message.reply(
-    msg + "Reply to this message with a number want to listen"
-  );
-  const ii = info.message_id;
-
-  global.functions.reply.set(ii, {
-    commandName: "sing",
-    messageID: ii,
-    result,
-  });
 };
 
-module.exports.reply = async ({ event, api, Reply, message }) => {
+module.exports.reply = async ({ event, Reply, message }) => {
   try {
     const { result } = Reply;
     const choice = parseInt(event.text);
-    if (!isNaN(choice) && choice <= result.length && choice > 0) {
-      const infoChoice = result[choice - 1];
-      const idvideo = infoChoice.id;
+    if (!isNaN(choice) && choice >= 1 && choice <= result.length) {
+      const video = result[choice - 1];
+      const videoID = video.id;
 
-      const { data: { title, url } } = await axios.get(
-        `${await baseApiUrl()}/ytmp3?url=${idvideo}`
-      );
+      const { data: { title, url } } = await axios.get(`https://noobs-api-sable.vercel.app/ytmp3?url=${videoID}`);
+      const stream = await downloadAudio(url, "audio.mp3");
 
-      await message.unsend(Reply.messageID);
+      const stats = fs.statSync("audio.mp3");
+      if (stats.size > 26000000) {
+        fs.unlinkSync("audio.mp3");
+        return message.reply("⭕ Sorry, audio file is larger than 26MB and cannot be sent.");
+      }
 
       await message.stream({
-        url: await dipto(url, "audio.mp3"),
-        caption: `• Title: ${title}`,
+        url: stream,
+        caption: `• Title: ${title}`
       });
 
       fs.unlinkSync("audio.mp3");
     } else {
-      message.reply("Invalid choice. Please enter a number between 1 and 6.");
+      message.reply("❌ Invalid choice. Please enter a number between 1 and " + result.length);
     }
   } catch (error) {
-    console.log(error);
-    message.reply("⭕ Sorry, audio size was more than allowed or an error occurred.");
+    console.error(error);
+    return message.reply("⭕ Sorry, audio size was more than allowed or an error occurred.");
   }
 };
 
-async function dipto(url, pathName) {
+async function downloadAudio(url, pathName) {
   try {
-    const response = (
-      await axios.get(url, {
-        responseType: "arraybuffer",
-      })
-    ).data;
-
-    fs.writeFileSync(pathName, Buffer.from(response));
+    const response = await axios.get(url, {
+      responseType: "arraybuffer"
+    });
+    fs.writeFileSync(pathName, Buffer.from(response.data));
     return fs.createReadStream(pathName);
   } catch (err) {
     throw err;
