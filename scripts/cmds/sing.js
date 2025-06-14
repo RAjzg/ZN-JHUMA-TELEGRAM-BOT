@@ -23,7 +23,7 @@ module.exports.run = async ({ api, args, event, message }) => {
     videoID = match ? match[1] : null;
 
     try {
-      const { data: { title, url } } = await axios.get(`https://noobs-api-sable.vercel.app/ytmp3?url=${videoID}`);
+      const { data: { title, url } } = await axios.get(`https://noobs-api-sable.vercel.app/ytmp3?url=https://youtube.com/watch?v=${videoID}`);
       const stream = await downloadAudio(url, "audio.mp3");
 
       const stats = fs.statSync("audio.mp3");
@@ -48,7 +48,8 @@ module.exports.run = async ({ api, args, event, message }) => {
 
   const query = args.join(" ");
   try {
-    const { data: results } = await axios.get(`https://noobs-api-sable.vercel.app/ytsearch?query=${encodeURIComponent(query)}`);
+    const { data } = await axios.get(`https://noobs-api-sable.vercel.app/ytsearch?query=${encodeURIComponent(query)}`);
+    const results = data.results;
 
     if (!Array.isArray(results) || results.length === 0) {
       return message.reply("⭕ No search results match the keyword: " + query);
@@ -57,7 +58,7 @@ module.exports.run = async ({ api, args, event, message }) => {
     const topResults = results.slice(0, 6);
     let msg = "";
     topResults.forEach((info, index) => {
-      msg += `${index + 1}. ${info.title}\nTime: ${info.time}\nChannel: ${info.channel.name}\n\n`;
+      msg += `${index + 1}. ${info.title}\nTime: ${info.time}\nChannel: ${info.channel}\n\n`;
     });
 
     const sent = await message.reply(msg + "Reply to this message with a number to download the audio.");
@@ -78,9 +79,9 @@ module.exports.reply = async ({ event, Reply, message }) => {
     const choice = parseInt(event.text);
     if (!isNaN(choice) && choice >= 1 && choice <= result.length) {
       const video = result[choice - 1];
-      const videoID = video.id;
+      const videoID = video.url.split("v=")[1];
 
-      const { data: { title, url } } = await axios.get(`https://noobs-api-sable.vercel.app/ytmp3?url=${videoID}`);
+      const { data: { title, url } } = await axios.get(`https://noobs-api-sable.vercel.app/ytmp3?url=${encodeURIComponent(video.url)}`);
       const stream = await downloadAudio(url, "audio.mp3");
 
       const stats = fs.statSync("audio.mp3");
