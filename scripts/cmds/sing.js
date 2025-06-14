@@ -1,118 +1,80 @@
-const axios = require("axios");
+const { default: axios } = require("axios");
 const fs = require("fs");
+const { getBuffer } = require("../lib/myfunc");
 
-module.exports.config = {
+module.exports = {
   name: "sing",
-  version: "2.1.0",
-  aliases: ["music", "play"],
-  author: "dipto",
-  countDown: 5,
-  role: 0,
-  description: "Download audio from YouTube",
-  category: "media",
-  guide: "{pn} [<song name>|<song link>]\nExample: {pn} chipi chipi chapa chapa"
-};
-
-module.exports.run = async ({ api, args, event, message }) => {
-  const checkurl = /^(?:https?:\/\/)?(?:m\.|www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))((\w|-){11})(?:\S+)?$/;
-  let videoID;
-  const urlYtb = checkurl.test(args[0]);
-
-  if (urlYtb) {
-    const match = args[0].match(checkurl);
-    videoID = match ? match[1] : null;
+  alias: ["play", "ytmusic", "song"],
+  desc: "Search and download music from YouTube",
+  category: "Media",
+  usage: "sing <query>",
+  react: "🎵",
+  start: async (Miku, m, { text, prefix, args, pushName }) => {
+    if (!text) return m.reply(`🔎 *Please provide a song name to search!*`);
 
     try {
-      const { data: { title, url } } = await axios.get(`https://noobs-api-sable.vercel.app/ytmp3?url=https://youtube.com/watch?v=${videoID}`);
-      const stream = await downloadAudio(url, "audio.mp3");
+      const response = await axios.get(`https://noobs-api-sable.vercel.app/ytsearch?query=${encodeURIComponent(text)}`);
+      const results = response.data.results;
 
-      const stats = fs.statSync("audio.mp3");
-      if (stats.size > 26000000) {
-        fs.unlinkSync("audio.mp3");
-        return message.reply("⭕ Sorry, audio file is larger than 26MB and cannot be sent.");
+      if (!Array.isArray(results) || results.length === 0) {
+        return m.reply("⭕ No search results found for your query.");
       }
 
-      await message.stream({
-        url: stream,
-        caption: title
-      });
+      const listText = results
+        .map((item, index) => {
+          return `${index + 1}. ${item.title}\nTime: ${item.time}\nChannel: ${item.channel}`;
+        })
+        .join("\n\n");
 
-      fs.unlinkSync("audio.mp3");
-    } catch (err) {
-      console.error(err);
-      return message.reply("⭕ Sorry, audio size was more than allowed or an error occurred.");
+      const message = `*SHAON AHMED*\n\n${listText}\n\nReply to this message with a number to download the audio.`;
+
+      const sentMsg = await Miku.sendMessage(m.chat, { text: message }, { quoted: m });
+
+      // Store video list by message ID
+      global.videoList = global.videoList || {};
+      global.videoList[sentMsg.key.id] = results;
+
+    } catch (error) {
+      console.error(error);
+      return m.reply("❌ সার্চ করতে সমস্যা হয়েছে। আবার চেষ্টা করুন!");
     }
+  },
+  onReply: async (Miku, m) => {
+    try {
+      const replied = m.quoted;
+      if (!replied) return;
 
-    return;
-  }
+      const msgId = replied.key.id;
+      if (!global.videoList || !global.videoList[msgId]) return;
 
-  const query = args.join(" ");
-  try {
-    const { data } = await axios.get(`https://noobs-api-sable.vercel.app/ytsearch?query=${encodeURIComponent(query)}`);
-    const results = data.results;
-
-    if (!Array.isArray(results) || results.length === 0) {
-      return message.reply("⭕ No search results match the keyword: " + query);
-    }
-
-    const topResults = results.slice(0, 6);
-    let msg = "";
-    topResults.forEach((info, index) => {
-      msg += `${index + 1}. ${info.title}\nTime: ${info.time}\nChannel: ${info.channel}\n\n`;
-    });
-
-    const sent = await message.reply(msg + "Reply to this message with a number to download the audio.");
-    global.functions.reply.set(sent.messageID, {
-      commandName: "sing",
-      messageID: sent.messageID,
-      result: topResults
-    });
-  } catch (err) {
-    console.error(err);
-    return message.reply("❌ সার্চ করতে সমস্যা হয়েছে: " + err.message);
-  }
-};
-
-module.exports.reply = async ({ event, Reply, message }) => {
-  try {
-    const { result } = Reply;
-    const choice = parseInt(event.text);
-    if (!isNaN(choice) && choice >= 1 && choice <= result.length) {
-      const video = result[choice - 1];
-      const videoID = video.url.split("v=")[1];
-
-      const { data: { title, url } } = await axios.get(`https://noobs-api-sable.vercel.app/ytmp3?url=${encodeURIComponent(video.url)}`);
-      const stream = await downloadAudio(url, "audio.mp3");
-
-      const stats = fs.statSync("audio.mp3");
-      if (stats.size > 26000000) {
-        fs.unlinkSync("audio.mp3");
-        return message.reply("⭕ Sorry, audio file is larger than 26MB and cannot be sent.");
+      const index = parseInt(m.body.trim()) - 1;
+      if (isNaN(index) || index < 0 || index >= global.videoList[msgId].length) {
+        return m.reply("❌ Invalid number. Try again.");
       }
 
-      await message.stream({
-        url: stream,
-        caption: `• Title: ${title}`
-      });
+      const selectedVideo = global.videoList[msgId][index];
+      const videoUrl = selectedVideo.url;
 
-      fs.unlinkSync("audio.mp3");
-    } else {
-      message.reply("❌ Invalid choice. Please enter a number between 1 and " + result.length);
+      // Download using ytmp3 API
+      const audioRes = await axios.get(`https://noobs-api-sable.vercel.app/ytmp3?url=${encodeURIComponent(videoUrl)}`);
+      const audio = audioRes.data;
+
+      if (!audio || !audio.audio || audio.audio === "") {
+        return m.reply("⭕ Sorry, audio not available or an error occurred.");
+      }
+
+      const audioBuffer = await getBuffer(audio.audio);
+      await Miku.sendMessage(m.chat, {
+        audio: audioBuffer,
+        mimetype: "audio/mp4",
+        fileName: `${selectedVideo.title}.mp3`,
+      }, { quoted: m });
+
+      delete global.videoList[msgId]; // Clear cache after download
+
+    } catch (e) {
+      console.log(e);
+      return m.reply("❌ একটি সমস্যা হয়েছে অডিও ডাউনলোড করতে!");
     }
-  } catch (error) {
-    console.error(error);
-    return message.reply("⭕ Sorry, audio size was more than allowed or an error occurred.");
-  }
+  },
 };
-
-async function downloadAudio(url, pathName) {
-  try {
-    const response = await axios.get(url, {
-      responseType: "arraybuffer"
-    });
-    fs.writeFileSync(pathName, Buffer.from(response.data));
-    return fs.createReadStream(pathName);
-  } catch (err) {
-    throw err;
-  }
-}
