@@ -99,7 +99,7 @@ module.exports.onChat = async ({ event, bot, msg }) => {
           reply_to_message_id: messageId,
         });
 
-        await delay(2000); // ২ সেকেন্ড delay প্রতি ব্যাচের পরে
+        await delay(5000); // ৫ সেকেন্ড delay প্রতি ব্যাচের পরে
       }
 
       await bot.deleteMessage(chatId, loadingMsgId);
