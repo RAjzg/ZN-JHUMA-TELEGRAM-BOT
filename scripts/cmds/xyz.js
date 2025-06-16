@@ -59,7 +59,7 @@ module.exports.onStart = async ({ api, event, message }) => {
     const form = new FormData();
     form.append("file", fs.createReadStream(tempFilePath));
 
-    const uploadRes = await axios.post("https://shaon-xyz.onrender.com/upload", form, {
+    const uploadRes = await axios.post("https://shaon-xyz-production.up.railway.app/upload", form, {
       headers: form.getHeaders(),
       maxContentLength: Infinity,
       maxBodyLength: Infinity,
