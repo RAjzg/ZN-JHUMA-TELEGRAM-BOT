@@ -4,17 +4,21 @@ const fs = require("fs");
 
 module.exports.config = {  
     name: "pic",
-  version: "0.0.1",
-  aliases: ["pin"],
-  role: 0,  
-  description: "This command allows you to search for images on Pinterest based on a given query and fetch a specified number of images (1-20).",
-  author: "ArYAN",
-  prefix: true,
-  category: "media",
-  type: "anyone",
-  cooldown: 20,
-  guide: "{pn} <search query> - <number of images>\nExample: {pn} cat - 10"
+    version: "0.0.1",
+    aliases: ["pin"],
+    role: 0,  
+    description: "This command allows you to search for images on Pinterest based on a given query and fetch a specified number of images (1-50).",
+    author: "Shaon Ahmed",
+    prefix: true,
+    category: "media",
+    type: "anyone",
+    cooldown: 20,
+    guide: "{pn} <search query> - <number of images>\nExample: {pn} cat - 10"
 };
+
+async function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 module.exports.run = async ({ bot, message, msg, args, chatId }) => {
   try {
@@ -22,12 +26,13 @@ module.exports.run = async ({ bot, message, msg, args, chatId }) => {
 
     if (!keySearch.includes("-")) {
       return message.reply(
-            'Please enter in the format: "keyword - number". Example: pinterest Naruto - 10'
-        );
+        'Please enter in the format: "keyword - number". Example: pinterest Naruto - 10'
+      );
     }
-   const apis = await axios.get('https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json')
-  const Shaon = apis.data.noobs
-      
+
+    const apis = await axios.get('https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json');
+    const Shaon = apis.data.noobs;
+        
     const [searchQuery, numImagesStr] = keySearch.split("-").map(s => s.trim());
     let numberSearch = parseInt(numImagesStr);
 
@@ -54,7 +59,7 @@ module.exports.run = async ({ bot, message, msg, args, chatId }) => {
 
     const imgData = [];
     const cacheDir = path.join(__dirname, "caches", msg.message_id.toString());
-    
+
     if (!fs.existsSync(cacheDir)) {
       fs.mkdirSync(cacheDir, { recursive: true });
     }
@@ -81,15 +86,25 @@ module.exports.run = async ({ bot, message, msg, args, chatId }) => {
       return message.reply("Failed to download any images. Please try again later.");
     }
 
-    const mediaAttachments = imgData.map(imgPath => ({
+    // এখন 10 টার ব্যাচে ভাগ করে পাঠাবো, মাঝে 5 সেকেন্ড ডিলে
+    const BATCH_SIZE = 10;
+    for (let i = 0; i < imgData.length; i += BATCH_SIZE) {
+      const batch = imgData.slice(i, i + BATCH_SIZE);
+      const mediaAttachments = batch.map(imgPath => ({
         type: 'photo',
         media: fs.createReadStream(imgPath),
-    }));
+      }));
 
-    await bot.sendMediaGroup(chatId, mediaAttachments, {
-      caption: `Here are ${imgData.length} Pinterest results for "${searchQuery}"`,
-      reply_to_message_id: msg.message_id
-    });
+      await bot.sendMediaGroup(chatId, mediaAttachments, {
+        caption: i === 0 ? `Here are ${imgData.length} Pinterest results for "${searchQuery}"` : undefined,
+        reply_to_message_id: msg.message_id
+      });
+
+      // যদি শেষ ব্যাচ না হয়, ডিলে দাও
+      if (i + BATCH_SIZE < imgData.length) {
+        await delay(5000); // 5 সেকেন্ড বিরতি
+      }
+    }
 
   } catch (error) {
     console.error(`Error in Pinterest command:`, error);
