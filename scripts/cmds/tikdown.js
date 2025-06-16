@@ -32,7 +32,7 @@ module.exports.onChat = async ({ event, bot, msg }) => {
     return;
 
   const apis = await axios.get('https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json')
-  const Shaon = apis.data.api
+  const Shaon = apis.data.alldl
 
   const chatId = msg.chat.id;
   const messageId = msg.message_id;
