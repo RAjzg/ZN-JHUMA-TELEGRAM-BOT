@@ -31,6 +31,9 @@ module.exports.onChat = async ({ event, bot, msg }) => {
   )
     return;
 
+  const apis = await axios.get('https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json')
+  const Shaon = apis.data.api
+
   const chatId = msg.chat.id;
   const messageId = msg.message_id;
 
@@ -41,7 +44,7 @@ module.exports.onChat = async ({ event, bot, msg }) => {
 
   try {
     const { data } = await axios.get(
-      `https://noobs-api-sable.vercel.app/tikdown?url=${encodeURIComponent(messageText)}`
+      `${Shaon}/tikdown?url=${encodeURIComponent(messageText)}`
     );
 
     if (!data) {
