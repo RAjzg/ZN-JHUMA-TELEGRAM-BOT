@@ -5,13 +5,13 @@ const request = require("request");
 
 module.exports.config = {
   name: "covid",
-  version: "1.0",
+  version: "1.1",
   role: 0,
-  author: "Shaon Ahmed (Modified by Shaon Ahmed)",
-  description: "Shows Covid-19 info for a country and the world including yesterday's stats with flag",
+  author: "Islamick Chat Bot (Converted by ChatGPT)",
+  description: "Shows COVID-19 info of a country with flag",
   category: "𝗜𝗡𝗙𝗢",
   cooldown: 10,
-  guide: "{pn} [country name]\nExample: {pn} Bangladesh"
+  guide: "{pn} [country name]"
 };
 
 module.exports.onStart = async ({ event, args, message }) => {
@@ -19,7 +19,7 @@ module.exports.onStart = async ({ event, args, message }) => {
   if (!country) return message.reply("🌍 একটি দেশের নাম লিখুন!\nযেমন: covid Bangladesh");
 
   try {
-    // আজকের দেশের Covid তথ্য
+    // আজকের দেশের তথ্য
     const todayData = await axios.get(`https://disease.sh/v3/covid-19/countries/${encodeURIComponent(country)}?strict=true`);
     const todayCases = todayData.data.todayCases || 0;
     const todayDeaths = todayData.data.todayDeaths || 0;
@@ -31,7 +31,7 @@ module.exports.onStart = async ({ event, args, message }) => {
     const yesterdayCases = yesterdayData.data.todayCases || 0;
     const yesterdayDeaths = yesterdayData.data.todayDeaths || 0;
 
-    // গত ৭ দিনের ইতিহাস
+    // ৭ দিনের হিস্টোরি
     const history = await axios.get(`https://disease.sh/v3/covid-19/historical/${encodeURIComponent(country)}?lastdays=8`);
     const timeline = history.data.timeline;
     const cases = Object.values(timeline.cases);
@@ -42,13 +42,12 @@ module.exports.onStart = async ({ event, args, message }) => {
     // বিশ্ব তথ্য
     const worldToday = await axios.get("https://disease.sh/v3/covid-19/all");
     const worldYesterday = await axios.get("https://disease.sh/v3/covid-19/all?yesterday=true");
-
     const worldTodayCases = worldToday.data.todayCases || 0;
     const worldTodayDeaths = worldToday.data.todayDeaths || 0;
     const worldYestCases = worldYesterday.data.todayCases || 0;
     const worldYestDeaths = worldYesterday.data.todayDeaths || 0;
 
-    const msg = 
+    const msg =
 `🦠 COVID-19 রিপোর্ট (${countryName}):
 ━━━━━━━━━━━━━━━━━━
 📆 আজকের তথ্য:
@@ -73,17 +72,22 @@ module.exports.onStart = async ({ event, args, message }) => {
 ➤ মৃত্যু: ${worldYestDeaths.toLocaleString()}
 ━━━━━━━━━━━━━━━━━━`;
 
-    // Flag নামিয়ে মেসেজে পাঠানো
+    // ফ্ল্যাগ নামিয়ে পাঠানো
     const filePath = path.join(__dirname, "caches", `flag-${Date.now()}.png`);
-    request(flagUrl).pipe(fs.createWriteStream(filePath)).on("close", () => {
-      message.send({
-        body: msg,
-        attachment: fs.createReadStream(filePath)
-      }).then(() => fs.unlinkSync(filePath));
+    const writer = fs.createWriteStream(filePath);
+    const stream = request(flagUrl).pipe(writer);
+
+    stream.on("close", () => {
+      message.send(
+        {
+          document: filePath,
+          caption: msg
+        }
+      ).then(() => fs.unlinkSync(filePath));
     });
 
-  } catch (e) {
-    console.error(e);
-    message.reply("❌ দেশটি খুঁজে পাওয়া যায়নি বা তথ্য পাওয়া যায়নি। আবার চেষ্টা করুন ইংরেজিতে লিখে।");
+  } catch (err) {
+    console.error(err);
+    message.reply("❌ দেশটি খুঁজে পাওয়া যায়নি বা তথ্য পাওয়া যায়নি। ইংরেজিতে সঠিক নাম লিখে আবার চেষ্টা করুন।");
   }
 };
