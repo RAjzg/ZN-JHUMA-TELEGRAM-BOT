@@ -16,47 +16,60 @@ module.exports.config = {
 
 module.exports.onStart = async ({ event, args, message }) => {
   const country = args.join(" ");
-  if (!country) return message.reply("🌍 একটি দেশের নাম লিখুন!\nযেমন: covid Bangladesh");
+  if (!country)
+    return message.reply("🌍 একটি দেশের নাম লিখুন!\nযেমন: covid Bangladesh");
 
   try {
-    // আজকের দেশের তথ্য
-    const todayData = await axios.get(`https://disease.sh/v3/covid-19/countries/${encodeURIComponent(country)}?strict=true`);
+    const todayData = await axios.get(
+      `https://disease.sh/v3/covid-19/countries/${encodeURIComponent(
+        country
+      )}?strict=true`
+    );
+
     const todayCases = todayData.data.todayCases || 0;
     const todayDeaths = todayData.data.todayDeaths || 0;
     const flagUrl = todayData.data.countryInfo.flag;
     const countryName = todayData.data.country;
 
-    // গতকালের তথ্য
-    const yesterdayData = await axios.get(`https://disease.sh/v3/covid-19/countries/${encodeURIComponent(country)}?yesterday=true&strict=true`);
+    const yesterdayData = await axios.get(
+      `https://disease.sh/v3/covid-19/countries/${encodeURIComponent(
+        country
+      )}?yesterday=true&strict=true`
+    );
+
     const yesterdayCases = yesterdayData.data.todayCases || 0;
     const yesterdayDeaths = yesterdayData.data.todayDeaths || 0;
 
-    // ৭ দিনের হিস্টোরি
-    const history = await axios.get(`https://disease.sh/v3/covid-19/historical/${encodeURIComponent(country)}?lastdays=8`);
+    const history = await axios.get(
+      `https://disease.sh/v3/covid-19/historical/${encodeURIComponent(
+        country
+      )}?lastdays=8`
+    );
+
     const timeline = history.data.timeline;
     const cases = Object.values(timeline.cases);
     const deaths = Object.values(timeline.deaths);
     const weeklyCases = cases[cases.length - 1] - cases[0];
     const weeklyDeaths = deaths[deaths.length - 1] - deaths[0];
 
-    // বিশ্ব তথ্য
     const worldToday = await axios.get("https://disease.sh/v3/covid-19/all");
-    const worldYesterday = await axios.get("https://disease.sh/v3/covid-19/all?yesterday=true");
+    const worldYesterday = await axios.get(
+      "https://disease.sh/v3/covid-19/all?yesterday=true"
+    );
     const worldTodayCases = worldToday.data.todayCases || 0;
     const worldTodayDeaths = worldToday.data.todayDeaths || 0;
     const worldYestCases = worldYesterday.data.todayCases || 0;
     const worldYestDeaths = worldYesterday.data.todayDeaths || 0;
 
-    const msg =
-`🦠 COVID-19 রিপোর্ট (${countryName}):
+    const msg = `🦠 COVID-19 রিপোর্ট (${countryName}):
 ━━━━━━━━━━━━━━━━━━
 📆 আজকের তথ্য:
 ➤ নতুন আক্রান্ত: ${todayCases.toLocaleString()}
 ➤ নতুন মৃত্যু: ${todayDeaths.toLocaleString()}
 
 📆 গতকালের তথ্য:
-➤ আক্রান্ত: ${yesterdayCases.toLocaleString()}
-➤ মৃত্যু: ${yesterdayDeaths.toLocaleString()}
+➤ নতুন আক্রান্ত: ${yesterdayCases.toLocaleString()}
+➤ নতুন মৃত্যু: ${yesterdayDeaths.toLocaleString()}
 
 📊 গত ৭ দিনে:
 ➤ মোট আক্রান্ত: ${weeklyCases.toLocaleString()}
@@ -72,22 +85,34 @@ module.exports.onStart = async ({ event, args, message }) => {
 ➤ মৃত্যু: ${worldYestDeaths.toLocaleString()}
 ━━━━━━━━━━━━━━━━━━`;
 
-    // ফ্ল্যাগ নামিয়ে পাঠানো
-    const filePath = path.join(__dirname, "caches", `flag-${Date.now()}.png`);
+    const cacheDir = path.join(__dirname, "caches");
+    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir);
+
+    const filePath = path.join(cacheDir, `flag-${Date.now()}.png`);
     const writer = fs.createWriteStream(filePath);
-    const stream = request(flagUrl).pipe(writer);
 
-    stream.on("close", () => {
-      message.send(
-        {
-          document: filePath,
-          caption: msg
+    request(flagUrl)
+      .pipe(writer)
+      .on("finish", async () => {
+        try {
+          await message.stream({
+            url: fs.createReadStream(filePath),
+            caption: msg,
+          });
+          fs.unlinkSync(filePath);
+        } catch (err) {
+          console.error(err);
+          await message.reply("⚠️ ফাইল পাঠাতে সমস্যা হয়েছে।");
         }
-      ).then(() => fs.unlinkSync(filePath));
-    });
-
+      })
+      .on("error", async (err) => {
+        console.error(err);
+        await message.reply("⚠️ ফ্ল্যাগ ডাউনলোড করতে সমস্যা হয়েছে।");
+      });
   } catch (err) {
     console.error(err);
-    message.reply("❌ দেশটি খুঁজে পাওয়া যায়নি বা তথ্য পাওয়া যায়নি। ইংরেজিতে সঠিক নাম লিখে আবার চেষ্টা করুন।");
+    message.reply(
+      "❌ দেশটি খুঁজে পাওয়া যায়নি বা তথ্য পাওয়া যায়নি। ইংরেজিতে সঠিক নাম লিখে আবার চেষ্টা করুন।"
+    );
   }
 };
