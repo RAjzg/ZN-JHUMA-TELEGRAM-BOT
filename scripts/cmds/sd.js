@@ -6,6 +6,7 @@ module.exports = {
   config: {
     name: "sd",
     version: "2.0",
+    role: 0,
     author: "Shaon",
     description: "Find song from video link and download audio/video",
     category: "media",
