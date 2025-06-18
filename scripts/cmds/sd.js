@@ -5,93 +5,100 @@ const path = require("path");
 module.exports = {
   config: {
     name: "sd",
-    version: "1.2",
-    description: "YouTube downloader — audio or video",
-    author: "Shaon x Nayan",
-    role: 0,
+    version: "2.0",
+    author: "Shaon",
+    description: "Find song from video link and download audio/video",
     category: "media",
-    usages: "[link]",
-    cooldown: 5,
+    use: "<video link>",
   },
 
-  onStart: async function ({ message, event, args }) {
-    const input =
-      message.reply_to_message?.text?.trim() ||
-      message.reply_to_message?.video?.file_id ||
-      args.join(" ")?.trim();
-
-    if (!input || (!input.includes("http") && !input.startsWith("www."))) {
-      return message.reply("📌 Reply with or send a valid YouTube link.");
+  onStart: async function ({ message, args, event }) {
+    const link = args.join(" ");
+    if (!link || !/^https?:\/\//.test(link)) {
+      return message.reply("📌 Reply with or send a valid video link (e.g. TikTok, Facebook, etc.).");
     }
 
-    const url = encodeURIComponent(input);
-
     try {
-      const searchRes = await axios.get(`http://65.109.80.126:20392/nayan/song?url=${url}`);
+      const encoded = encodeURIComponent(link);
+      const searchRes = await axios.get(`http://65.109.80.126:20392/nayan/song?url=${encoded}`);
       const results = searchRes.data;
 
       if (!results || results.length === 0) {
-        return message.reply("❌ No media found for this link.");
+        return message.reply("❌ No result found from this video.");
       }
 
-      const info = results[0];
-      const ytUrl = encodeURIComponent(info.url);
+      const list = results
+        .map((item, index) => `${index + 1}. ${item.title}\n⏱ Duration: ${item.length}`)
+        .join("\n\n");
 
-      // Store info in global map for follow-up reply
-      global.sdTemp = global.sdTemp || {};
-      global.sdTemp[event.sender_id] = {
-        ytUrl,
-        title: info.title || "Unknown Title",
-      };
-
-      return message.reply(`🎵 *${info.title}*\n\nReply with:\n1️⃣ for Audio\n2️⃣ for Video`);
-    } catch (e) {
-      console.error("Search error:", e.message);
-      return message.reply("❌ Failed to fetch info.");
+      message.reply(`🎧 Select a song by replying 1/2/3...\n\n${list}`, async (err, info) => {
+        global.replyData.set(info.message_id, {
+          name: this.config.name,
+          author: event.sender_id,
+          step: "select",
+          results,
+        });
+      });
+    } catch (err) {
+      console.error(err);
+      message.reply("⚠️ Error fetching song info.");
     }
   },
 
-  onMessage: async function ({ message, event }) {
-    const reply = message.text?.trim();
+  onReply: async function ({ message, event, Reply }) {
+    if (event.sender_id !== Reply.author) return;
+    const choice = parseInt(event.body.trim());
+    if (isNaN(choice) || choice < 1 || choice > Reply.results.length) {
+      return message.reply("❌ Invalid number. Please reply with a valid choice.");
+    }
 
-    if (!["1", "2"].includes(reply)) return;
+    const selected = Reply.results[choice - 1];
+    const encodedUrl = encodeURIComponent(selected.url);
 
-    const data = global.sdTemp?.[event.sender_id];
-    if (!data) return;
+    message.reply(`✅ You selected:\n${selected.title}\n\n🎵 Reply:\n1 - Audio\n2 - Video`, async (err, info) => {
+      global.replyData.set(info.message_id, {
+        name: module.exports.config.name,
+        author: event.sender_id,
+        step: "download",
+        ytUrl: encodedUrl,
+        title: selected.title,
+      });
+    });
+  },
 
-    const { ytUrl, title } = data;
+  onReplyStep: async function ({ message, event, Reply }) {
+    if (event.sender_id !== Reply.author) return;
+    const reply = event.body.trim();
+    if (reply !== "1" && reply !== "2") {
+      return message.reply("❗ Reply 1 for audio or 2 for video.");
+    }
+
     const type = reply === "1" ? "audio" : "video";
 
-    delete global.sdTemp[event.sender_id];
-
     try {
-      const dlRes = await axios.get(`https://nayan-video-downloader.vercel.app/ytdown?url=${ytUrl}`);
-      const dlData = dlRes.data;
+      const res = await axios.get(`https://nayan-video-downloader.vercel.app/ytdown?url=${Reply.ytUrl}`);
+      const data = res.data?.data;
 
-      if (!dlData?.status || !dlData?.data?.video) {
-        return message.reply("❌ Failed to retrieve download URL.");
+      if (!data || !data.video) {
+        return message.reply("⚠️ Failed to fetch download URL.");
       }
 
-      const dlUrl = dlData.data.video;
+      const url = data.video;
       const ext = type === "audio" ? "mp3" : "mp4";
-      const fileName = `media_${Date.now()}.${ext}`;
-      const filePath = path.join(__dirname, "caches", fileName);
+      const fileName = `caches/${Date.now()}.${ext}`;
 
-      const stream = await axios.get(dlUrl, { responseType: "stream" });
-      const writer = fs.createWriteStream(filePath);
-      stream.data.pipe(writer);
+      const fileData = await axios.get(url, { responseType: "arraybuffer" });
+      fs.writeFileSync(fileName, fileData.data);
 
-      writer.on("finish", async () => {
-        await message.stream(fs.createReadStream(filePath), `✅ Here is your ${type}:\n${title}`);
-        fs.unlinkSync(filePath);
+      await message.send({
+        body: `✅ Here is your ${type}:\n${Reply.title}`,
+        attachment: fs.createReadStream(fileName),
       });
 
-      writer.on("error", () => {
-        message.reply("❌ Error saving the file.");
-      });
+      fs.unlinkSync(fileName);
     } catch (e) {
-      console.error("Download error:", e.message);
-      return message.reply("❌ An error occurred during download.");
+      console.error(e);
+      message.reply("❌ Error while downloading the file.");
     }
   },
 };
