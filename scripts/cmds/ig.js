@@ -3,10 +3,11 @@ const path = require("path");
 const request = require("request");
 
 module.exports.config = {
-  name: "\n",
+  name: "/",
   version: "1.0",
   role: 0,
   author: "Shaon Ahmed",
+  usePrefix: false,
   description: "Send random Islamic video with caption",
   category: "Islamic",
   cooldown: 5,
