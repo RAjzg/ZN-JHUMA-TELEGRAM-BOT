@@ -34,7 +34,7 @@ const uptimeString = `${days} days ${hours} hours ${minutes} minutes ${seconds} 
                 inline_keyboard: [
                     [
         { text: "Facebook", url: authorFB },
-  { text: "Instagram", url: authorInsta } }
+  { text: "Instagram", url: `${authorInsta}` }
                     ]
                 ]
             };
