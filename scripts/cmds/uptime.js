@@ -1,6 +1,6 @@
 const os = require('os');
 const process = require('process');
-const { createCanvas, loadImage } = require('canvas');
+const { createCanvas } = require('canvas');
 const fs = require('fs');
 const path = require('path');
 
@@ -9,7 +9,7 @@ module.exports = {
     name: "uptime",
     aliases: ["upt", "up"],
     author: "dipto",
-    description: "Get system and bot uptime info in a visual dashboard",
+    description: "Get system and bot uptime info in image form",
     commandCategory: "utility",
     usage: "uptime",
     usePrefix: true,
@@ -18,7 +18,7 @@ module.exports = {
 
   onStart: async ({ message }) => {
     try {
-      // Collect system data
+      // Basic system info
       const uptimeSec = os.uptime();
       const hours = Math.floor(uptimeSec / 3600);
       const minutes = Math.floor((uptimeSec % 3600) / 60);
@@ -27,8 +27,6 @@ module.exports = {
       const ramUsed = (os.totalmem() - os.freemem()) / (1024 ** 2);
       const ramTotal = os.totalmem() / (1024 ** 2);
       const ramUsagePercent = ((ramUsed / ramTotal) * 100).toFixed(1);
-      const cpuLoad = 2.92;
-      const cpuLoadPercent = 9.13;
 
       // Canvas setup
       const width = 1200, height = 700;
@@ -39,15 +37,10 @@ module.exports = {
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, width, height);
 
-      // Fonts
-      const fontBold = "bold 50px Sans";
-      const fontSub = "bold 30px Sans";
-      const fontText = "26px Sans";
-      ctx.font = fontBold;
+      ctx.font = "bold 50px Sans";
       ctx.fillStyle = "#00f0ff";
       ctx.fillText("xyz | 1.1.7", 80, 70);
 
-      // Host badge
       ctx.font = "24px Sans";
       const hostText = "HOST: e88c8ca4-cc55-47d7";
       const textWidth = ctx.measureText(hostText).width;
@@ -57,29 +50,25 @@ module.exports = {
       ctx.fillStyle = "#000";
       ctx.fillText(hostText, badgeX, 68);
 
-      // Info section
-      ctx.font = fontSub;
-      ctx.fillStyle = "#00f0ff";
-
+      // Info text
       const infos = [
         ["Uptime", `${hours}h ${minutes}m ${seconds}s`],
         ["CPU", `${os.cpus()[0].model} (${os.cpus().length} cores)`],
-        ["Load Avg (1 min)", `${cpuLoad}`],
-        ["RAM Usage", `${ramUsed.toFixed(1)} MB / ${ramTotal.toFixed(1)} MB (${ramUsagePercent}%)`],
+        ["RAM", `${ramUsed.toFixed(1)} MB / ${ramTotal.toFixed(1)} MB (${ramUsagePercent}%)`],
         ["Platform", `${os.platform()} (${os.arch()})`],
         ["Node.js", `${process.version}`],
         ["Hostname", os.hostname()]
       ];
 
-      ctx.font = fontSub;
+      ctx.font = "bold 30px Sans";
       let startY = 140;
       infos.forEach(([label, value], i) => {
         ctx.fillStyle = "#00f0ff";
         ctx.fillText(`${label}`, 80, startY + i * 55);
-        ctx.font = fontText;
+        ctx.font = "26px Sans";
         ctx.fillStyle = "#fff";
         ctx.fillText(`: ${value}`, 320, startY + i * 55);
-        ctx.font = fontSub;
+        ctx.font = "bold 30px Sans";
       });
 
       // RAM Usage donut
@@ -104,37 +93,37 @@ module.exports = {
       ctx.arc(cx, cy, r - 20, 0, 2 * Math.PI);
       ctx.fill();
 
-      ctx.font = fontText;
+      ctx.font = "26px Sans";
       ctx.fillStyle = "#ccc";
       ctx.fillText("RAM Usage", cx - 50, cy - 10);
-      ctx.font = fontSub;
+      ctx.font = "bold 30px Sans";
       ctx.fillStyle = "#fff";
       ctx.fillText(`${ramUsagePercent}%`, cx - 30, cy + 30);
 
-      // CPU Load Bar
+      // CPU Bar
       const barX = 80, barY = 620, barW = 1040, barH = 24;
       ctx.fillStyle = "#222";
       ctx.fillRect(barX, barY, barW, barH);
 
+      const cpuLoad = 2.92;
+      const cpuLoadPercent = 9.13;
       ctx.fillStyle = "#00f0ff";
       ctx.fillRect(barX, barY, barW * (cpuLoadPercent / 100), barH);
 
       ctx.fillStyle = "#00f0ff";
-      ctx.font = fontText;
+      ctx.font = "26px Sans";
       ctx.fillText(`CPU Load (${cpuLoad} | ${cpuLoadPercent}%)`, barX, barY - 10);
 
-      // Save and send image
-      const filePath = path.join(__dirname, 'uptime_dashboard.png');
-      const buffer = canvas.toBuffer("image/png");
-      fs.writeFileSync(filePath, buffer);
+      // Convert to stream and send
+      const imageBuffer = canvas.toBuffer("image/png");
+      const stream = require("stream");
+      const readable = new stream.PassThrough();
+      readable.end(imageBuffer);
 
-      await message.reply({
-        body: "🖥 System Uptime Dashboard",
-        attachment: fs.createReadStream(filePath)
-      });
+      return message.stream(readable, "uptime.png");
 
     } catch (err) {
-      await message.reply(`❌ Error: ${err.message}`);
+      return message.reply(`❌ Error: ${err.message}`);
     }
   }
 };
