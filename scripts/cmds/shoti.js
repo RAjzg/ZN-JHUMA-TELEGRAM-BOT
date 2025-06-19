@@ -15,7 +15,10 @@ module.exports.config = {
 
 module.exports.run = async function ({ api, message }) {
   try {
-    const res = await axios.get("https://noobs-api-sable.vercel.app/api/shoti");
+    const apis = await axios.get('https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json')
+  const Shaon = apis.data.alldl
+    
+    const res = await axios.get(`${Shaon}/api/shoti`);
     let data = res.data;
 
     // যদি response অ্যারে হয়, তাহলে র্যান্ডম বা প্রথম এলিমেন্ট নাও
