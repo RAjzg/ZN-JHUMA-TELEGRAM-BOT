@@ -5,12 +5,12 @@ const vm = require('vm');
 
 module.exports.config = {
   name: "cmd",
-  version: "2.0.0",
+  version: "2.1.0",
   role: 2,
   credits: "Shaon + chatgpt",
-  description: "Create, load, or load all .js files with syntax check",
+  description: "Load, load all .js files with syntax check, and install js files from url or code",
   commandCategory: "utility",
-  usages: "[create filename code/link] | [load filename] | [loadall]",
+  usages: "[install filename code/link] | [load filename] | [loadall]",
   cooldowns: 5
 };
 
@@ -20,7 +20,6 @@ module.exports.run = async ({ message, args }) => {
   const input = args.slice(2).join(' ');
   const basePath = __dirname;
 
-  // Function to load a file
   const loadFile = (filePath) => {
     try {
       const code = fs.readFileSync(filePath, 'utf-8');
@@ -34,17 +33,17 @@ module.exports.run = async ({ message, args }) => {
     }
   };
 
-  // ============================
-  // create <filename> <code/url>
-  // ============================
-  if (action === 'create') {
-    if (!target || !input) return message.reply("Usage: cmd create <filename> <code or url>");
+  // install <filename> <code or url>
+  if (action === 'install') {
+    if (!target || !input) return message.reply("Usage: cmd install <filename> <code or url>");
 
-    let code;
     const isURL = /^(http|https):\/\/[^ "]+$/;
 
     try {
+      let code;
+
       if (isURL.test(input)) {
+        // URL থেকে কোড ডাউনলোড
         const res = await axios.get(input);
         code = res.data;
       } else {
@@ -56,15 +55,13 @@ module.exports.run = async ({ message, args }) => {
 
       const filePath = path.join(basePath, target);
       fs.writeFileSync(filePath, code, 'utf-8');
-      return message.reply(`✅ File created: ${target}`);
+      return message.reply(`✅ File installed: ${target}`);
     } catch (err) {
       return message.reply(`❌ Error: ${err.message}`);
     }
   }
 
-  // ======================
   // load <filename>
-  // ======================
   if (action === 'load') {
     if (!target) return message.reply("Usage: cmd load <filename>");
 
@@ -75,9 +72,7 @@ module.exports.run = async ({ message, args }) => {
     return message.reply(success ? `✅ Loaded: ${target}` : `❌ Failed to load: ${target}`);
   }
 
-  // ======================
   // loadall
-  // ======================
   if (action === 'loadall') {
     const files = fs.readdirSync(basePath).filter(f => f.endsWith('.js') && f !== path.basename(__filename));
 
@@ -90,5 +85,5 @@ module.exports.run = async ({ message, args }) => {
     return message.reply(`✅ Loaded ${loaded}/${files.length} .js files.`);
   }
 
-  return message.reply("Invalid usage. Use: cmd create/load/loadall");
+  return message.reply("Invalid usage. Use: cmd install/load/loadall");
 };
