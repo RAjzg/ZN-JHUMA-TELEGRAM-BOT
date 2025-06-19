@@ -5,7 +5,7 @@ module.exports = {
     name: "album",
     version: "1.0.0",
     role: 0,
-    author: "Dipto", // Don't change author name.
+    author: "Dipto", // Do not change author
     description: "Displays album options for selection.",
     category: "Media",
     countDown: 5,
@@ -60,7 +60,8 @@ module.exports = {
       }
     };
 
-    const waitMsg = await api.sendMessage(chatId, "Select Video Type", videoSelectionMarkup);
+    // send selection buttons
+    const waitMsg = await api.sendMessage(chatId, "🎬 Select Video Type", videoSelectionMarkup);
 
     bot.once('callback_query', async (callbackQuery) => {
       const name = callbackQuery.data;
@@ -79,17 +80,21 @@ module.exports = {
         const videoUrl = res.data.url || res.data.data;
         const caption = res.data.cp || res.data.shaon || "";
 
+        // Send the video with caption
         await api.sendVideo(chatId, videoUrl, {
           caption,
           reply_to_message_id: waitMsg.message_id,
           reply_markup: {
             inline_keyboard: [
-              [{ text: "❤️ Like", callback_data: "like" }]
+              [{ text: "Bot Owner", callback_data: "@shaonproject" }]
             ]
           }
         });
 
+        // Delete selection menu and loading message
+        await api.deleteMessage(chatId, waitMsg.message_id);
         await api.deleteMessage(chatId, waitVoiceMsg.message_id);
+
       } catch (error) {
         console.error("❌ Error fetching video:", error.message);
         await api.deleteMessage(chatId, waitVoiceMsg.message_id);
