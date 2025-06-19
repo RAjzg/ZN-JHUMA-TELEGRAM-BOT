@@ -1,8 +1,7 @@
 const os = require('os');
 const process = require('process');
 const { createCanvas } = require('canvas');
-const fs = require('fs');
-const path = require('path');
+const { PassThrough } = require('stream');
 
 module.exports = {
   config: {
@@ -65,22 +64,14 @@ module.exports = {
         ctx.font = "bold 30px Sans";
       });
 
-      // 🔥 Save file to 'caches' folder
-      const filePath = path.join(__dirname, "caches", "uptime.png");
+      // Convert to Buffer and PassThrough stream
+      const buffer = canvas.toBuffer("image/png");
+      const stream = new PassThrough();
+      stream.end(buffer);
 
-      // Make sure 'caches' folder exists
-      if (!fs.existsSync(path.join(__dirname, "caches"))) {
-        fs.mkdirSync(path.join(__dirname, "caches"));
-      }
-
-      fs.writeFileSync(filePath, canvas.toBuffer("image/png"));
-
-      // Send file as stream
-      const stream = fs.createReadStream(filePath);
+      // Send stream with filename
       await message.stream(stream, "uptime.png");
 
-      // Optional: delete after sending
-      // fs.unlinkSync(filePath);
     } catch (err) {
       await message.reply(`❌ | Error occurred: ${err.message}`);
     }
