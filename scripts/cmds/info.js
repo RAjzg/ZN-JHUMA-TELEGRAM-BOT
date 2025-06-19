@@ -19,7 +19,7 @@ module.exports = {
             const ownAge = "18";
             const teamName = "Noobs team";
       const authorFB = "https://m.me/Hey.Its.Me.Shaon.Ahmed";
-          const authorInsta = "@Hey.Its.Me.Shaon.Ahmed";
+          const authorInsta = "https://www.instagram.com/hey.its.me.shaon.ahmed";
   const link = "https://i.imgur.com/qMe4oK0.jpg";
         const now = moment().tz('Asia/Dhaka');
       const date = now.format('MMMM Do YYYY');
@@ -34,7 +34,7 @@ const uptimeString = `${days} days ${hours} hours ${minutes} minutes ${seconds} 
                 inline_keyboard: [
                     [
         { text: "Facebook", url: authorFB },
-  { text: "Instagram", url: `https://t.me/${authorInsta}` }
+  { text: "Instagram", url: authorInsta } }
                     ]
                 ]
             };
