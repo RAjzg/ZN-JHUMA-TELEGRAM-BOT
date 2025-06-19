@@ -86,7 +86,7 @@ module.exports = {
           reply_to_message_id: waitMsg.message_id,
           reply_markup: {
             inline_keyboard: [
-              [{ text: "Bot Owner", callback_data: "https://t.me/shaonproject" }]
+              [{ text: "Bot Owner", callback_data: 'https://t.me/shaonproject' }]
             ]
           }
         });
