@@ -4,7 +4,7 @@ const path = require("path");
 
 module.exports.config = {
   name: "shoti",
-  version: "1.0.2",
+  version: "1.0.3",
   role: 0,
   credits: "Shaon Ahmed",
   description: "Send a random shoti (TikTok short video)",
@@ -16,7 +16,15 @@ module.exports.config = {
 module.exports.run = async function ({ api, message }) {
   try {
     const res = await axios.get("https://shaon-shoti.vercel.app/api/shoti");
-    const data = res.data;
+    let data = res.data;
+
+    // যদি response অ্যারে হয়, তাহলে র্যান্ডম বা প্রথম এলিমেন্ট নাও
+    if (Array.isArray(data)) {
+      if (data.length === 0) {
+        return message.reply("❌ ভিডিও পাওয়া যায়নি!");
+      }
+      data = data[Math.floor(Math.random() * data.length)];
+    }
 
     const videoUrl = data.shotiurl || data.url;
     if (!videoUrl) {
@@ -50,7 +58,7 @@ module.exports.run = async function ({ api, message }) {
       caption: caption,
     });
 
-    // ভিডিও পাঠানোর পর ফাইল ডিলিট করা (এক্সিকিউশন async হওয়ায় একটু ডিলে দিতে পারো)
+    // ভিডিও পাঠানোর পর ফাইল ডিলিট করা (async তাই একটু ডিলে দাও)
     setTimeout(() => {
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     }, 10000); // 10 সেকেন্ড পরে ডিলিট
