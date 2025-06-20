@@ -3,13 +3,13 @@ const fs = require("fs");
 const path = require("path");
 
 module.exports.config = {
-  name: "tiktokinfo",
+  name: "tikinfo",
   version: "1.0.2",
   role: 0,
   credits: "Shaon Ahmed",
   description: "Get TikTok user info by username",
   category: "media",
-  usages: "/tiktokinfo <username>",
+  usages: "/tikinfo <username>",
   cooldowns: 5,
 };
 
