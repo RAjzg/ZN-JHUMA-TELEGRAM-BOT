@@ -23,7 +23,7 @@ module.exports = {
       return message.reply("❌ Usage:\n/tiktok <search text>");
     }
 
-    await message.react("⏳");
+    //await message.react("⏳");
 
     try {
       const res = await axios.get(`https://noobs-api-sable.vercel.app/tiktok/search?keywords=${encodeURIComponent(query)}`);
@@ -44,7 +44,7 @@ module.exports = {
 👤 *Author:* ${video.author.nickname}
 🔗 *Username:* @${video.author.unique_id}`;
 
-      const filePath = path.join(__dirname, "cache", `tt_${Date.now()}.mp4`);
+      const filePath = path.join(__dirname, "caches", `tt_${Date.now()}.mp4`);
       const writer = fs.createWriteStream(filePath);
 
       const videoStream = await axios({ url: videoUrl, method: "GET", responseType: "stream" });
@@ -57,7 +57,7 @@ module.exports = {
           msgText
         );
         fs.unlinkSync(filePath);
-        await message.react("✅");
+        //await message.react("✅");
       });
 
       writer.on("error", () => {
