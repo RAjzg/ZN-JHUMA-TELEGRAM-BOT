@@ -18,7 +18,7 @@ module.exports.config = {
 module.exports.run = async function ({ message, args, event }) {
   const body = event.body?.trim();
 
-  // 🧾 যদি ইউজার নাম্বার রিপ্লাই করে
+  // যদি ইউজার নাম্বার রিপ্লাই করে
   if (/^\d+$/.test(body) && searchResults[event.senderID]) {
     const index = parseInt(body) - 1;
     const video = searchResults[event.senderID][index];
@@ -27,7 +27,7 @@ module.exports.run = async function ({ message, args, event }) {
       return message.reply("❌ ভুল নাম্বার দিয়েছেন। লিস্টে থাকা নাম্বার দিন।");
     }
 
-    const videoUrl = video.play || video.playUrl || video.videoUrl;
+    const videoUrl = video.play || video.wmplay;
     if (!videoUrl) return message.reply("❌ ভিডিও লিংক পাওয়া যায়নি।");
 
     const filePath = path.join(__dirname, "caches", `tiktok_${Date.now()}.mp4`);
@@ -61,7 +61,7 @@ module.exports.run = async function ({ message, args, event }) {
     return;
   }
 
-  // 🔍 সার্চ কুয়েরি হ্যান্ডলিং
+  // সার্চ কুয়েরি হ্যান্ডলিং
   const query = args.join(" ");
   if (!query) {
     return message.reply("❌ লিখুন:\n/tik <search text>");
@@ -72,20 +72,12 @@ module.exports.run = async function ({ message, args, event }) {
     const api = apis.data.alldl;
 
     const res = await axios.get(`${api}/tiktok/search?keywords=${encodeURIComponent(query)}`);
-    const videos = res.data?.data;
+    const videos = res.data?.data?.videos;
 
     if (!Array.isArray(videos) || videos.length === 0) {
       return message.reply("❌ কোনো TikTok ভিডিও পাওয়া যায়নি।");
     }
 
-    // ✅ ভিডিও লিস্ট সেভ করো
     searchResults[event.senderID] = videos.slice(0, 10);
 
-    const list = videos.slice(0, 10).map((v, i) => `${i + 1}. ${v.title?.slice(0, 80) || "No Title"}`).join("\n\n");
-
-    return message.reply(`🔍 "${query}" এর জন্য ভিডিওগুলো:\n\n${list}\n\n➡️ রিপ্লাই দিয়ে নাম্বার দিন যেকোনো ভিডিও প্লে করতে।`);
-  } catch (e) {
-    console.error(e);
-    return message.reply("❌ TikTok সার্ভার থেকে ডেটা আনতে সমস্যা হয়েছে। পরে চেষ্টা করুন।");
-  }
-};
+    const list = videos.slice(0,
