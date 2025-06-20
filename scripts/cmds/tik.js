@@ -2,83 +2,88 @@ const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 
+let searchResults = {};
+
 module.exports.config = {
   name: "tik",
-  version: "2.0.0",
+  version: "1.2.0",
   role: 0,
   credits: "Shaon Ahmed",
-  description: "Search and send TikTok video from a list",
+  description: "Search and send TikTok video by number",
   category: "media",
-  usages: "/tik <search>",
+  usages: "/tik <search> or reply with number",
   cooldowns: 5,
 };
 
-const searchCache = new Map();
+module.exports.run = async function ({ message, args, event }) {
+  const body = event.body?.trim();
 
-module.exports.run = async function ({ message, args, event, api }) {
+  // If user replies with a number
+  if (/^\d+$/.test(body) && searchResults[event.senderID]) {
+    const index = parseInt(body) - 1;
+    const video = searchResults[event.senderID][index];
+
+    if (!video) {
+      return message.reply("❌ ভুল নাম্বার দিয়েছেন। লিস্টে থাকা নাম্বার দিন।");
+    }
+
+    const videoUrl = video.play;
+    const filePath = path.join(__dirname, "caches", `tiktok_${Date.now()}.mp4`);
+
+    try {
+      const videoResp = await axios.get(videoUrl, {
+        responseType: "arraybuffer",
+        headers: { "User-Agent": "Mozilla/5.0" },
+      });
+      fs.writeFileSync(filePath, Buffer.from(videoResp.data));
+
+      const caption =
+        `🎵 𝗧𝗶𝗸𝗧𝗼𝗸 𝗩𝗶𝗱𝗲𝗼 🎵\n` +
+        `👤 Author: ${video.author?.nickname || "N/A"}\n` +
+        `🔗 User: @${video.author?.unique_id || "N/A"}\n` +
+        `🎬 Title: ${video.title || "N/A"}`;
+
+      message.stream({
+        url: fs.createReadStream(filePath),
+        caption: caption,
+      });
+
+      setTimeout(() => {
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      }, 10000);
+    } catch (err) {
+      console.error(err);
+      return message.reply("❌ ভিডিও ডাউনলোড করতে সমস্যা হয়েছে।");
+    }
+
+    return;
+  }
+
+  // If user sends search query
   const query = args.join(" ");
-  const threadID = event.threadID;
-  const messageID = event.messageID;
-
-  if (!query) return message.reply("❌ লিখুন:\n/tiktok <search>");
+  if (!query) {
+    return message.reply("❌ লিখুন:\n/tiktok <search text>");
+  }
 
   try {
-    const res = await axios.get(`https://noobs-api-sable.vercel.app/tiktok/search?keywords=${encodeURIComponent(query)}`);
+    const apis = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
+    const api = apis.data.alldl;
+
+    const res = await axios.get(`${api}/tiktok/search?keywords=${encodeURIComponent(query)}`);
     const videos = res.data?.data?.videos;
 
     if (!Array.isArray(videos) || videos.length === 0) {
       return message.reply("❌ কোনো TikTok ভিডিও পাওয়া যায়নি।");
     }
 
-    searchCache.set(threadID, videos);
+    // Save videos for this user
+    searchResults[event.senderID] = videos.slice(0, 10); // max 10
 
-    let list = `📄 TikTok ভিডিও লিস্ট:\n\n`;
-    videos.slice(0, 10).forEach((v, i) => {
-      list += `${i + 1}. ${v.title?.slice(0, 80)}\n`;
-    });
-    list += `\n👉 রিপ্লাই করুন 1-10 এর মধ্যে কোন ভিডিওটি দেখতে চান। সময়সীমা 30 সেকেন্ড`;
+    const list = videos.slice(0, 10).map((v, i) => `${i + 1}. ${v.title?.slice(0, 80) || "No Title"}`).join("\n\n");
 
-    api.sendMessage(list, threadID, (err, info) => {
-      const handleReply = async (reply) => {
-        if (reply.senderID !== event.senderID || reply.threadID !== threadID) return;
-
-        const index = parseInt(reply.body) - 1;
-        if (isNaN(index) || index < 0 || index >= videos.length) {
-          return api.sendMessage("❌ সঠিক নাম্বার দিন (1-10)।", threadID);
-        }
-
-        const selected = videos[index];
-        const videoUrl = selected.play;
-        if (!videoUrl) return api.sendMessage("❌ ভিডিও URL পাওয়া যায়নি।", threadID);
-
-        const filePath = path.join(__dirname, "caches", `tiktok_${Date.now()}.mp4`);
-        const videoResp = await axios.get(videoUrl, {
-          responseType: "arraybuffer",
-          headers: { "User-Agent": "Mozilla/5.0" },
-        });
-
-        fs.writeFileSync(filePath, Buffer.from(videoResp.data));
-
-        const caption = `🎬 𝗧𝗶𝗸𝗧𝗼𝗸\n🎵 Title: ${selected.title || "N/A"}`;
-
-        message.stream({
-          url: fs.createReadStream(filePath),
-          caption,
-        }, () => {
-          setTimeout(() => fs.existsSync(filePath) && fs.unlinkSync(filePath), 10000);
-        });
-
-        api.removeListener("message", handleReply);
-        api.unsendMessage(info.messageID);
-        searchCache.delete(threadID);
-      };
-
-      api.listenMqtt(handleReply);
-      setTimeout(() => api.removeListener("message", handleReply), 30000);
-    }, messageID);
-
-  } catch (err) {
-    console.error(err);
-    message.reply("❌ কিছু সমস্যা হয়েছে TikTok সার্চ করতে।");
+    return message.reply(`I found these videos for "${query}":\n\n${list}\n\nReply with the number of the video you want to play.`);
+  } catch (e) {
+    console.error(e);
+    return message.reply("❌ TikTok সার্ভার থেকে ডেটা আনতে সমস্যা হয়েছে। পরে চেষ্টা করুন।");
   }
 };
