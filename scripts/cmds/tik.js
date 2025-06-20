@@ -30,6 +30,8 @@ module.exports.run = async function ({ message, args, event }) {
     const videoUrl = video.play || video.wmplay;
     if (!videoUrl) return message.reply("❌ ভিডিও লিংক পাওয়া যায়নি।");
 
+    console.log("📽️ ভিডিও লিংক:", videoUrl);
+
     const filePath = path.join(__dirname, "caches", `tiktok_${Date.now()}.mp4`);
 
     try {
@@ -38,13 +40,18 @@ module.exports.run = async function ({ message, args, event }) {
         headers: { "User-Agent": "Mozilla/5.0" },
       });
 
+      console.log("📥 ভিডিও সাইজ:", videoResp.data.length);
+
       fs.writeFileSync(filePath, Buffer.from(videoResp.data));
+
+      const nickname = video.author?.nickname || "Unknown";
+      const uid = video.author?.unique_id || "Unknown";
 
       const caption =
         `🎵 𝗧𝗶𝗸𝗧𝗼𝗸 𝗩𝗶𝗱𝗲𝗼 🎵\n` +
-        `👤 Author: ${video.author?.nickname || "N/A"}\n` +
-        `🔗 User: @${video.author?.unique_id || "N/A"}\n` +
-        `🎬 Title: ${video.title || "N/A"}`;
+        `🎬 Title: ${video.title || "N/A"}\n` +
+        `👤 Author: ${nickname}\n` +
+        `🔗 User: @${uid}`;
 
       message.stream({
         url: fs.createReadStream(filePath),
@@ -55,7 +62,7 @@ module.exports.run = async function ({ message, args, event }) {
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
       }, 10000);
     } catch (err) {
-      console.error(err);
+      console.error("❌ ভিডিও ডাউনলোড সমস্যা:", err);
       return message.reply("❌ ভিডিও ডাউনলোড করতে সমস্যা হয়েছে।");
     }
 
@@ -73,6 +80,8 @@ module.exports.run = async function ({ message, args, event }) {
     const api = apis.data.alldl;
 
     const res = await axios.get(`${api}/tiktok/search?keywords=${encodeURIComponent(query)}`);
+    console.log("📦 TikTok API রেসপন্স:", res.data);
+
     const videos = res.data?.data?.videos;
 
     if (!Array.isArray(videos) || videos.length === 0) {
@@ -85,7 +94,7 @@ module.exports.run = async function ({ message, args, event }) {
 
     return message.reply(`🔍 "${query}" এর জন্য ভিডিওগুলো:\n\n${list}\n\n➡️ রিপ্লাই দিয়ে নাম্বার দিন যেকোনো ভিডিও প্লে করতে।`);
   } catch (e) {
-    console.error(e);
+    console.error("❌ সার্চ API সমস্যা:", e);
     return message.reply("❌ TikTok সার্ভার থেকে ডেটা আনতে সমস্যা হয়েছে। পরে চেষ্টা করুন।");
   }
 };
