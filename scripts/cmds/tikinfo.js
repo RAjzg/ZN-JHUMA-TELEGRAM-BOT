@@ -1,13 +1,15 @@
 const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
 
 module.exports.config = {
-  name: "tikinfo",
-  version: "1.0.1",
+  name: "tiktokinfo",
+  version: "1.0.2",
   role: 0,
   credits: "Shaon Ahmed",
   description: "Get TikTok user info by username",
   category: "media",
-  usages: "/tikinfo <username>",
+  usages: "/tiktokinfo <username>",
   cooldowns: 5,
 };
 
@@ -31,7 +33,7 @@ module.exports.run = async function ({ message, args }) {
       return message.reply(`❌ ইউজার খুঁজে পাওয়া যায়নি বা ভুল ইউজারনেম: ${username}`);
     }
 
-    const caption = 
+    const caption =
 `👤 𝗧𝗶𝗸𝗧𝗼𝗸 𝗨𝘀𝗲𝗿 𝗜𝗻𝗳𝗼
 
 🆔 𝗨𝘀𝗲𝗿𝗻𝗮𝗺𝗲: ${data.username}
@@ -44,12 +46,25 @@ module.exports.run = async function ({ message, args }) {
 ❤️ 𝗟𝗶𝗸𝗲𝘀: ${data.heartCount}
 🔗 𝗥𝗲𝗹𝗮𝘁𝗶𝗼𝗻: ${data.relation || "N/A"}`;
 
-    const avatarStream = (await axios.get(data.avatarLarger, { responseType: "stream" })).data;
+    // Ensure caches folder exists
+    const cachesDir = path.join(__dirname, "caches");
+    if (!fs.existsSync(cachesDir)) fs.mkdirSync(cachesDir);
 
+    // Download avatar image locally
+    const filePath = path.join(cachesDir, `avatar_${Date.now()}.jpg`);
+    const response = await axios.get(data.avatarLarger, { responseType: "arraybuffer" });
+    fs.writeFileSync(filePath, Buffer.from(response.data));
+
+    // Send with message.stream
     message.stream({
-      url: avatarStream,
+      url: filePath,
       caption: caption
     });
+
+    // Delete file after 10 seconds
+    setTimeout(() => {
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    }, 10000);
 
   } catch (e) {
     console.error(e);
