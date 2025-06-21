@@ -35,6 +35,12 @@ module.exports.run = async function ({ message, args, event }) {
     const filePath = path.join(__dirname, "caches", `tiktok_${Date.now()}.mp4`);
 
     try {
+      // লিংক আগে check করো — HEAD request
+      const check = await axios.head(videoUrl).catch(() => null);
+      if (!check || check.status !== 200) {
+        return message.reply("❌ ভিডিও এখন আর ডাউনলোডযোগ্য না। অন্য একটি ভিডিও চেষ্টা করুন।");
+      }
+
       const videoResp = await axios.get(videoUrl, {
         responseType: "arraybuffer",
         headers: { "User-Agent": "Mozilla/5.0" },
@@ -44,16 +50,11 @@ module.exports.run = async function ({ message, args, event }) {
 
       fs.writeFileSync(filePath, Buffer.from(videoResp.data));
 
-      const nickname = video.author?.nickname || "Unknown";
-      const uid = video.author?.unique_id || "Unknown";
-
       const caption =
         `🎵 𝗧𝗶𝗸𝗧𝗼𝗸 𝗩𝗶𝗱𝗲𝗼 🎵\n` +
-        `🎬 Title: ${video.title || "N/A"}\n` +
-        `👤 Author: ${nickname}\n` +
-        `🔗 User: @${uid}`;
+        `🎬 Title: ${video.title?.slice(0, 150) || "N/A"}`;
 
-      message.stream({
+      await message.stream({
         url: fs.createReadStream(filePath),
         caption: caption,
       });
@@ -62,8 +63,8 @@ module.exports.run = async function ({ message, args, event }) {
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
       }, 10000);
     } catch (err) {
-      console.error("❌ ভিডিও ডাউনলোড সমস্যা:", err);
-      return message.reply("❌ ভিডিও ডাউনলোড করতে সমস্যা হয়েছে।");
+      console.error("❌ ভিডিও ডাউনলোড সমস্যা:", err?.message || err);
+      return message.reply("❌ ভিডিও পাঠাতে সমস্যা হয়েছে, সম্ভবত লিংকটি আর কাজ করছে না।");
     }
 
     return;
@@ -90,11 +91,14 @@ module.exports.run = async function ({ message, args, event }) {
 
     searchResults[event.senderID] = videos.slice(0, 10);
 
-    const list = videos.slice(0, 10).map((v, i) => `${i + 1}. ${v.title?.slice(0, 80) || "No Title"}`).join("\n\n");
+    const list = videos
+      .slice(0, 10)
+      .map((v, i) => `${i + 1}. ${v.title?.slice(0, 80) || "No Title"}`)
+      .join("\n\n");
 
     return message.reply(`🔍 "${query}" এর জন্য ভিডিওগুলো:\n\n${list}\n\n➡️ রিপ্লাই দিয়ে নাম্বার দিন যেকোনো ভিডিও প্লে করতে।`);
   } catch (e) {
-    console.error("❌ সার্চ API সমস্যা:", e);
+    console.error("❌ সার্চ API সমস্যা:", e?.message || e);
     return message.reply("❌ TikTok সার্ভার থেকে ডেটা আনতে সমস্যা হয়েছে। পরে চেষ্টা করুন।");
   }
 };
