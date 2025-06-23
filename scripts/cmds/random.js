@@ -34,7 +34,6 @@ module.exports.run = async function ({ api, message }) {
       url: fs.createReadStream(filePath),
       caption:
         `${res.data.cp}\n\n` +
-        `🔗 Video URL: ${res.data.url}\n` +
         `🎞️ Total Videos: [${res.data.count}]\n` +
         `🆔 Added by: ${res.data.name}`
     });
