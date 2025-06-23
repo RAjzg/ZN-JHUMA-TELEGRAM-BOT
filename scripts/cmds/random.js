@@ -1,39 +1,48 @@
+const axios = require("axios");
+const fs = require("fs");
+
 module.exports.config = {
   name: "random",
   version: "11.9.7",
   role: 0,
-  credits: "Islamick Cyber Chat",
-  prefix: true,
+  credits: "Islamick Cyber Chat (Modified by Shaon)",
   description: "random love story video",
-  category: "video",
+  commandCategory: "video",
   usages: "random",
-  cooldowns: 30,
+  cooldowns: 30
 };
 
 module.exports.run = async function ({ api, message }) {
-try{
-  const axios = require("axios");
-  const fs = require("fs");
-  const { data } = await axios.get(
-    "https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json",
-  );
-  const video = data.api;
-  var shaon = [`${video}/video/random`, `${video}/video/random`];
-  var shaon1 = shaon[Math.floor(Math.random() * shaon.length)];
-  const res = await axios.get(shaon1);
-  const vidUrl = res.data.url;
-  const vid = await axios.get(vidUrl, {
-    responseType: "arraybuffer",
-    headers: { "User-Agent": "Mozila/5.0" },
-  });
-  const filep = __dirname + "/caches/video.mp4";
-  fs.writeFileSync(filep, Buffer.from(vid.data,"utf-8"));
-  message.stream({
-    url: fs.createReadStream(filep),
-    caption: `${res.data.cp}\n\n𝐓𝐨𝐭𝐚𝐥 𝐕𝐢𝐝𝐞𝐨𝐬: [${res.data.count}]\n𝐀𝐝𝐝𝐞𝐝 𝐓𝐡𝐢𝐬 𝐕𝐢𝐝𝐞𝐨 𝐀𝐩𝐢 𝐁𝐲 [${res.data.name}]`,
-  });
-  //fs.unlinkSync(filep);
-} catch(e){
-message.reply(e.message)
-}
+  try {
+    const { data } = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
+    const video = data.api;
+    const urlList = [`${video}/video/random`, `${video}/video/random`];
+    const selectedUrl = urlList[Math.floor(Math.random() * urlList.length)];
+
+    const res = await axios.get(selectedUrl);
+    const vidUrl = res.data.url;
+
+    const vid = await axios.get(vidUrl, {
+      responseType: "arraybuffer",
+      headers: { "User-Agent": "Mozilla/5.0" }
+    });
+
+    const filePath = __dirname + "/caches/video.mp4";
+    fs.writeFileSync(filePath, Buffer.from(vid.data, "utf-8"));
+
+    message.stream({
+      url: fs.createReadStream(filePath),
+      caption:
+        `${res.data.cp}\n\n` +
+        `🔗 Video URL: ${res.data.url}\n` +
+        `🎞️ Total Videos: [${res.data.count}]\n` +
+        `🆔 Added by: ${res.data.name}`
+    });
+
+    // অপশনাল: ফাইল ডিলিট করতে চাইলে নিচের লাইন আনকমেন্ট করো
+    // fs.unlinkSync(filePath);
+
+  } catch (e) {
+    message.reply("❌ Error: " + e.message);
+  }
 };
