@@ -2,106 +2,88 @@ const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 
+// 🔗 তোমার main API URL JSON থেকে নেয়া হবে
 const baseApiUrl = async () => {
-  const base = await axios.get(
-`https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json`
-  );
-  return base.data.noobs;
+  const res = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
+  return res.data.noobs;
 };
 
 module.exports.config = {
   name: "autodown",
-  version: "1.0.1",
-  author: "Dipto",
-  countDown: 0,
-  role: 0,
-  description: {
-    en: "Auto download video from TikTok, Facebook, Instagram, YouTube, and more",
-  },
-  category: "𝗠𝗘𝗗𝗜𝗔",
-  commandCategory: "𝗠𝗘𝗗𝗜𝗔",
-  guide: {
-    en: "[video_link]",
-  },
+  version: "1.0.2",
+  author: "Shaon Ahmed",
+  permission: 0,
+  usePrefix: false,
+  description: "Automatically download videos from links"
 };
 
-module.exports.run = async ({ event,bot, msg }) => {
-  this.onChat({ event,bot, msg });
-};
+module.exports.run = async () => {}; // dummy run()
 
-module.exports.onChat = async ({ event,bot, msg }) => {
-  const messageText = msg.link_preview_options?.url || msg.text || "";
+module.exports.onChat = async ({ event, bot, msg }) => {
+  const text = msg.text || "";
+  const urlRegex = /https?:\/\/[^\s]+/;
+  const match = text.match(urlRegex);
+  if (!match) return;
+
+  const mediaUrl = match[0];
+  const supportedDomains = [
+    "facebook.com", "fb.watch", "instagram.com", "youtube.com",
+    "youtu.be", "twitter.com", "x.com", "twitch.tv", "pin.it"
+  ];
+
+  if (!supportedDomains.some(domain => mediaUrl.includes(domain))) return;
+
+  const chatId = msg.chat.id;
+  const senderId = msg.from.id.toString();
+  const messageId = msg.message_id;
+  const startTime = Date.now();
+
+  const cacheDir = path.join(__dirname, "../../cache");
+  if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir);
+
+  const videoPath = path.join(cacheDir, `autodown_${Date.now()}.mp4`);
 
   try {
-    if (
-      messageText.startsWith("https://www.facebook.com") ||
-      messageText.startsWith("https://www.instagram.com/") ||
-      messageText.startsWith("https://x.com/") ||
-      messageText.startsWith("https://www.twitch.tv/") || 
-      messageText.startsWith("https://www.instagram.com/p/") ||
-      messageText.startsWith("https://pin.it/") ||
-      messageText.startsWith("https://twitter.com/") ||
-      messageText.startsWith("https://fb.watch") ||
-      messageText.startsWith("https://youtube.com/") ||
-      messageText.startsWith("https://youtu.be/") 
-    )
-    {
-      const chatId = msg.chat.id;
-      const messageId = msg.message_id;
-   
-      const startTime = Date.now();
-      
-      const wait = await bot.sendMessage(chatId, "⏳ Processing your request...", {
-        reply_to_message_id: messageId,
-      });
-// Store the ID of the "processing" message//
-      const waitMId = wait.message_id; 
-      const videoPath = path.join(__dirname, "caches", "diptoo.mp4");
+    const wait = await bot.sendMessage(chatId, "⏳ ভিডিও প্রসেস হচ্ছে...", {
+      reply_to_message_id: messageId,
+    });
+    const waitMsgId = wait.message_id;
 
-      const { data } = await axios.get(
-        `${await baseApiUrl()}/alldown?url=${encodeURIComponent(messageText)}`
-      );
-      const videoBuffer = (
-        await axios.get(data.url, { responseType: "arraybuffer" })
-      ).data;
+    const api = await baseApiUrl();
+    const res = await axios.get(`${api}/alldown?url=${encodeURIComponent(mediaUrl)}`);
+    const data = res.data;
 
-      fs.writeFileSync(videoPath, Buffer.from(videoBuffer, "utf-8"));
+    if (!data.url) throw new Error("ভিডিও লিংক পাওয়া যায়নি বা ডাউনলোড করা যাচ্ছে না।");
 
-      // Delete the "processing" message///
-     
- await bot.deleteMessage(chatId, waitMId)
- 
- const tinyUrlRes = await axios.get(`${await baseApiUrl()}/tinyurl?url=${encodeURIComponent(data.url)}`);
-      const shortUrl = tinyUrlRes.data.url;
+    const videoBuffer = (await axios.get(data.url, { responseType: "arraybuffer" })).data;
+    fs.writeFileSync(videoPath, videoBuffer);
 
-      const speed = ((Date.now() - startTime) / 1000).toFixed(2);
+    await bot.deleteMessage(chatId, waitMsgId);
 
-      const bodyText = 
-`╭━━━[ ✅ 𝗠𝗲𝗱𝗶𝗮 𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱𝗲𝗱 ]━━━╮
+    const shortRes = await axios.get(`${api}/tinyurl?url=${encodeURIComponent(data.url)}`);
+    const shortUrl = shortRes.data.url || data.url;
+
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+
+    const caption = `
+╭━━━[ ✅ 𝗠𝗲𝗱𝗶𝗮 𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱 ]━━━╮
 ┃ 🎬 Type: Video
-┃ ⚡ Speed: ${speed}s
-┃ 🔗 Link: ${shortUrl}
-┃ 👤 Requested by: ${event.from.id}
+┃ ⚡ Time: ${elapsed}s
+┃ 🔗 Short URL: ${shortUrl}
+┃ 👤 Requested by: ${senderId}
 ╰━━━━━━━━━━━━━━━━━━━━━━╯
-𝐄𝐧𝐣𝐨𝐲 𝐲𝐨𝐮𝐫 𝐯𝐢𝐝𝐞𝐨!.`;
+Enjoy your video!`;
 
+    await bot.sendVideo(chatId, videoPath, {
+      caption,
+      reply_to_message_id: messageId,
+    });
 
-      await bot.sendVideo(
-        chatId,
-        videoPath,
-        {
-          caption: `${bodyText}`,
-          reply_to_message_id: messageId,
-        },
-        {
-          filename: "video.mp4",
-          contentType: "video/mp4",
-        },
-      );
-
-      fs.unlinkSync(videoPath);
-    }
-  } catch (error) {
-    await bot.sendMessage(msg.chat.id, `❎ Error: ${error.message}`);
+    fs.unlinkSync(videoPath);
+  } catch (err) {
+    console.error("❌ autodown error:", err.message);
+    await bot.sendMessage(chatId, `❌ ভিডিও আনতে সমস্যা হয়েছে:\n${err.message}`, {
+      reply_to_message_id: messageId,
+    });
   }
 };
