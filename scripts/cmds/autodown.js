@@ -12,7 +12,7 @@ module.exports.config = {
   name: "autodown",
   version: "1.0.2",
   author: "Shaon Ahmed",
-  permission: 0,
+  role: 0,
   usePrefix: false,
   description: "Automatically download videos from links"
 };
