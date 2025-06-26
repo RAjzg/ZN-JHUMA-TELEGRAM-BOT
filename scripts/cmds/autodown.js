@@ -38,7 +38,7 @@ module.exports.onChat = async ({ event, bot, msg }) => {
   const messageId = msg.message_id;
   const startTime = Date.now();
 
-  const cacheDir = path.join(__dirname, "../../cache");
+  const cacheDir = path.join(__dirname, "../../caches");
   if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir);
 
   const videoPath = path.join(cacheDir, `autodown_${Date.now()}.mp4`);
