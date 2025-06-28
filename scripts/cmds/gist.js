@@ -1,54 +1,62 @@
 const fs = require('fs');
 const axios = require('axios');
 
-const baseApiUrl = async () => {
-  const base = await axios.get('https://raw.githubusercontent.com/Blankid018/D1PT0/main/baseApiUrl.json');
-  return base.data.api;
-};
-
 module.exports.config = {
   name: "gist",
   version: "6.9.0",
   role: 2,
-  author: "dipto",
+  author: "Shaon",
   usePrefix: true,
   description: "Convert code into link",
   category: "convert",
-guide: "{p}[filename]/[reply and file name]",
+  guide: "{p}gist [filename] or reply + [filename]",
   countDown: 1
 };
 
-module.exports.onStart = async function ({ message ,event, args }) {
- // const admin = ["your uid here"];
+module.exports.onStart = async function ({ message, event, args }) {
   const fileName = args[0];
 
- // if (!admin.includes(event.senderID)) {
-   // message.reply("⚠ | You do not have permission to use this command.", event.threadID, event.messageID);
-   // return;
-  //}
+  if (!fileName) {
+    return message.reply(`❌ Please provide filename.\n\nExample:\n${global.prefix}gist hello`);
+  }
 
   const path = `scripts/cmds/${fileName}.js`;
+
   try {
     let code = '';
 
+    // যদি reply করা হয়, তাহলে reply এর content নিবে
     if (event.type === "message_reply") {
       code = event.reply_to_message?.text;
-    } else {
+      if (!code) {
+        return message.reply("❌ Reply message does not contain any text.");
+      }
+    } 
+    // নাহলে scripts/cmds ফাইল থেকে কোড নিবে
+    else {
       code = await fs.promises.readFile(path, 'utf-8');
     }
 
-    const en = encodeURIComponent(code);
-
-    const response = await axios.post(`${await baseApiUrl()}/gist`, {
-      code: en,
-      nam: `${fileName}.js`
+    // Request পাঠাবে তোমার API তে
+    const response = await axios.get(`https://noobs-api-sable.vercel.app/gist`, {
+      params: {
+        filename: `${fileName}.js`,
+        code: code,
+        description: 'Uploaded via Bot',
+        isPublic: true
+      }
     });
 
-    const diptoUrl = response.data.data;
-    message.reply(diptoUrl);
+    const data = response.data;
+
+    if (data.success) {
+      message.reply(`✅ Gist Created Successfully!\n\n📥 Raw URL:\n${data.raw_url}`);
+    } else {
+      message.reply("❌ Failed to create Gist. Check API.");
+    }
 
   } catch (error) {
-    console.error("An error occurred:", error); 
-    message.reply("command not found or api problem.");
+    console.error("❌ An error occurred:", error);
+    message.reply("❌ Command not found or API error.");
   }
 };
