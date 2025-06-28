@@ -32,7 +32,7 @@ module.exports = {
         const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
 
         // মেসেজ পাঠানো (GIF সহ)
-        await bot.sendAnimation(msg.chat.id, randomGif, { caption: welcomeText });
+        await message.stream(msg.chat.id, randomGif, { caption: welcomeText });
 
       } catch (error) {
         console.error('❌ Error fetching member count:', error);
