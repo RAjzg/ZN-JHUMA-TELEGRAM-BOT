@@ -10,7 +10,7 @@ module.exports = {
 
       try {
         // GIF সহ মেসেজ পাঠাও
-        await bot.sendAnimation(msg.chat.id, gifUrl, { caption: leaveMessage });
+        await bot.sendVideo(msg.chat.id, gifUrl, { caption: leaveMessage });
       } catch (error) {
         console.error('Error sending goodbye animation:', error);
         // যদি GIF পাঠানো না যায়, তাহলে শুধু টেক্সট মেসেজ পাঠাও
