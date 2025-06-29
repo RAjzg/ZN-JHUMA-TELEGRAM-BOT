@@ -6,23 +6,45 @@ const FormData = require("form-data");
 
 module.exports.config = {
   name: "catbox",
-  version: "1.0.0",
+  version: "1.1.0",
   role: 0,
-  credits: "Shaon Ahmed",
+  credits: "Shaon Ahmed Fix by ChatGPT",
   usePrefix: true,
   description: "Upload replied media to Catbox",
   category: "media",
-  usages: "[reply to photo/video/audio]",
+  usages: "[reply to photo/video/audio/document]",
   cooldowns: 10
 };
 
+// Extension detect function
+function getExtension(contentType) {
+  const map = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/gif': 'gif',
+    'video/mp4': 'mp4',
+    'audio/mpeg': 'mp3',
+    'audio/ogg': 'ogg',
+    'audio/wav': 'wav',
+    'application/zip': 'zip',
+    'application/pdf': 'pdf',
+    'application/octet-stream': 'bin'
+  };
+  return map[contentType] || 'dat';
+}
+
+// Download file
 async function downloadFile(url, destPath) {
-  const writer = fs.createWriteStream(destPath);
   const response = await axios({
     url,
     method: "GET",
     responseType: "stream",
+    headers: {
+      'User-Agent': 'Mozilla/5.0'
+    }
   });
+
+  const writer = fs.createWriteStream(destPath);
   response.data.pipe(writer);
   return new Promise((resolve, reject) => {
     writer.on("finish", resolve);
@@ -30,8 +52,10 @@ async function downloadFile(url, destPath) {
   });
 }
 
+// Upload to Catbox
 async function uploadFileToCatbox(filePath) {
-  const CATBOX_USER_HASH = '8e68fd8d6375763e3ec135499'; // তোমার userhash বসাও
+  const CATBOX_USER_HASH = '8e68fd8d6375763e3ec135499'; // ✅ Userhash বসাও
+
   const form = new FormData();
   form.append("reqtype", "fileupload");
   form.append("userhash", CATBOX_USER_HASH);
@@ -50,50 +74,47 @@ async function uploadFileToCatbox(filePath) {
   return url;
 }
 
+// Main Command
 module.exports.onStart = async ({ api, event, message }) => {
   try {
     if (!event) return message.reply("❌ Event data missing.");
-    if (!message) return; // message object না থাকলে কিছু করা যাবে না
 
-    // নিশ্চিত হও যে reply_to_message আছে
-    const repliedMsg = event.reply_to_message;
-    if (!repliedMsg) {
-      return message.reply("❐ Please reply to a photo/video/audio file.");
+    const replied = event.reply_to_message;
+    if (!replied) {
+      return message.reply("❐ Please reply to a photo/video/audio/document.");
     }
 
-    // ফটো, ভিডিও বা অডিও থেকে file_id পাওয়ার চেষ্টা করো
     const fileId =
-      repliedMsg.photo ? repliedMsg.photo[repliedMsg.photo.length - 1].file_id :
-      repliedMsg.video ? repliedMsg.video.file_id :
-      repliedMsg.audio ? repliedMsg.audio.file_id :
-      null;
+      replied?.photo?.[replied.photo.length - 1]?.file_id ||
+      replied?.video?.file_id ||
+      replied?.audio?.file_id ||
+      replied?.document?.file_id;
 
     if (!fileId) {
-      return message.reply("❐ Replied message does not contain photo/video/audio.");
+      return message.reply("❐ Replied message does not contain supported media.");
     }
 
-    // Telegram থেকে ফাইল URL নাও
     const fileUrl = await api.getFileLink(fileId);
 
-    // ফাইলের এক্সটেনশন নির্ণয়
-    let ext = path.extname(fileUrl).split("?")[0];
-    if (!ext) ext = ".jpg";
-
-    // টেম্প ফাইল পাথ তৈরি
-    const tempFilePath = path.join(os.tmpdir(), `catbox_upload_${Date.now()}${ext}`);
-
-    // ফাইল ডাউনলোড করো
-    await downloadFile(fileUrl, tempFilePath);
-
-    // Catbox এ আপলোড করো
-    const uploadedUrl = await uploadFileToCatbox(tempFilePath);
-
-    // লোকাল টেম্প ফাইল মুছে ফেলো
-    if (fs.existsSync(tempFilePath)) {
-      fs.unlinkSync(tempFilePath);
+    // Get content-type to determine extension
+    let ext = 'dat';
+    try {
+      const head = await axios.head(fileUrl);
+      const contentType = head.headers['content-type'];
+      ext = getExtension(contentType);
+    } catch (e) {
+      const guessed = path.extname(new URL(fileUrl).pathname).replace('.', '');
+      if (guessed) ext = guessed;
     }
 
-    // ইউজারকে সফলতার মেসেজ পাঠাও
+    const tempFilePath = path.join(os.tmpdir(), `catbox_${Date.now()}.${ext}`);
+
+    await downloadFile(fileUrl, tempFilePath);
+
+    const uploadedUrl = await uploadFileToCatbox(tempFilePath);
+
+    fs.unlinkSync(tempFilePath);
+
     return message.reply(`✅ Uploaded successfully:\n${uploadedUrl}`);
 
   } catch (error) {
