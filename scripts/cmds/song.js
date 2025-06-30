@@ -8,7 +8,7 @@ const baseApiUrl = async () => API_BASE_URL;
 module.exports.config = {
     name: "song",
     version: "2.1.0",
-    aliases: ["music", "play"],
+    aliases: [],
     author: "dipto",
     countDown: 5,
     role: 0,
