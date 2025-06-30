@@ -1,98 +1,94 @@
 const axios = require("axios");
-const fs = require('fs');
 
-const API_BASE_URL = "https://web-api-delta.vercel.app";
-
-const baseApiUrl = async () => API_BASE_URL;
+const API_URL = "https://web-api-delta.vercel.app";
 
 module.exports.config = {
     name: "song",
-    version: "2.1.0",
-    aliases: [],
-    author: "dipto",
+    version: "1.0.0",
+    aliases: ["play", "music"],
+    author: "Dipto",
     countDown: 5,
     role: 0,
-    description: "Download audio from YouTube",
+    description: "Search and download audio from YouTube",
     category: "media",
-    guide: "{pn} [<song name>|<song link>]:\n   Example:\n{pn} chipi chipi chapa chapa"
+    guide: "{pn} [song name or link]\nExample: {pn} despacito"
 };
 
-module.exports.run = async ({ api, args, event, commandName, message }) => {
-    const checkurl = /^(?:https?:\/\/)?(?:m\.|www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))((\w|-){11})(?:\S+)?$/;
-    let videoID;
-    const urlYtb = checkurl.test(args[0]);
+module.exports.run = async ({ api, args, event, message }) => {
+    if (!args[0]) return message.reply("❌ Please provide a song name or YouTube link.");
 
-    if (urlYtb) {
+    const checkurl = /^(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([\w-]{11})/;
+    const urlTest = checkurl.test(args[0]);
+
+    if (urlTest) {
         const match = args[0].match(checkurl);
-        videoID = match ? match[1] : null;
+        const videoID = match[1];
 
-        // mp3 ডাউনলোড API কল
-        const { data } = await axios.get(`${await baseApiUrl()}/ytmp3=${videoID}`);
+        try {
+            const { data } = await axios.get(`${API_URL}/ytmp3=${videoID}`);
 
-        if (!data.url) return message.reply("❌ Download URL not found");
+            if (!data.url) return message.reply("❌ Failed to fetch download URL.");
+
+            return message.stream({
+                url: data.url,
+                caption: `🎶 Title: ${data.title}`
+            });
+
+        } catch (e) {
+            return message.reply("❌ Error: " + e.message);
+        }
+    } else {
+        const keyword = args.join(" ");
+
+        try {
+            const res = await axios.get(`${API_URL}/yt?q=${encodeURIComponent(keyword)}`);
+            const results = res.data.results.slice(0, 6);
+
+            if (!results.length) return message.reply("❌ No results found.");
+
+            let msg = "🎧 Search Results:\n\n";
+            let count = 1;
+            for (const item of results) {
+                msg += `${count++}. ${item.video.title}\nDuration: ${item.video.duration}\nChannel: ${item.channel.name}\n\n`;
+            }
+
+            const sent = await message.reply(msg + "👉 Reply with the number to download.");
+            global.functions.reply.set(sent.message_id, {
+                commandName: "song",
+                messageID: sent.message_id,
+                results
+            });
+
+        } catch (e) {
+            return message.reply("❌ Error fetching search results.");
+        }
+    }
+};
+
+module.exports.reply = async ({ event, Reply, message }) => {
+    const { results } = Reply;
+    const choice = parseInt(event.text);
+
+    if (isNaN(choice) || choice < 1 || choice > results.length) {
+        return message.reply("❌ Invalid choice. Please enter a valid number.");
+    }
+
+    const selected = results[choice - 1];
+    const videoID = selected.video.id;
+
+    try {
+        const { data } = await axios.get(`${API_URL}/ytmp3=${videoID}`);
+
+        if (!data.url) return message.reply("❌ Failed to fetch download URL.");
+
+        await message.unsend(Reply.messageID);
 
         return message.stream({
             url: data.url,
-            caption: data.title || 'Audio',
+            caption: `🎶 Title: ${data.title}`
         });
-    }
 
-    // সার্চ API কল
-    let keyWord = args.join(" ");
-    keyWord = keyWord.includes("?feature=share") ? keyWord.replace("?feature=share", "") : keyWord;
-
-    let result;
-    try {
-        const res = await axios.get(`${await baseApiUrl()}/yt?q=${encodeURIComponent(keyWord)}`);
-        result = res.data.results.slice(0, 6); // সর্বোচ্চ ৬ ফলাফল
-    } catch (err) {
-        return message.reply("❌ An error occurred: " + err.message);
-    }
-
-    if (!result || result.length === 0)
-        return message.reply("⭕ No search results match the keyword: " + keyWord);
-
-    let msg = "";
-    let i = 1;
-    for (const info of result) {
-        msg += `${i++}. ${info.video.title}\nDuration: ${info.video.duration}\nChannel: ${info.channel.name}\n\n`;
-    }
-
-    const info = await message.reply(msg + "Reply to this message with a number to listen");
-    const ii = info.message_id;
-
-    global.functions.reply.set(ii, {
-        commandName: 'song',
-        messageID: ii,
-        result
-    });
-};
-
-module.exports.reply = async ({ event, api, Reply, message }) => {
-    try {
-        const { result } = Reply;
-        const choice = parseInt(event.text);
-        if (!isNaN(choice) && choice <= result.length && choice > 0) {
-            const infoChoice = result[choice - 1];
-            const videoID = infoChoice.video.id;
-
-            // mp3 ডাউনলোড API কল
-            const { data } = await axios.get(`${await baseApiUrl()}/ytmp3=${videoID}`);
-
-            if (!data.url) return message.reply("❌ Download URL not found");
-
-            await message.unsend(Reply.messageID);
-
-            await message.stream({
-                url: data.url,
-                caption: `• Title: ${data.title}\n• Quality: ${data.quality || 'N/A'}`
-            });
-
-        } else {
-            message.reply("Invalid choice. Please enter a valid number.");
-        }
-    } catch (error) {
-        console.log(error);
-        message.reply("⭕ Sorry, audio size was less than 26MB or an error occurred.");
+    } catch (e) {
+        return message.reply("❌ Error downloading: " + e.message);
     }
 };
