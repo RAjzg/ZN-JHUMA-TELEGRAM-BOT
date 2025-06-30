@@ -6,9 +6,9 @@ module.exports.config = {
   role: 0,
   credits: "Islamick Cyber Chat",
   usePrefix: true,
-  description: "Manage BetterStack uptime monitors: create, delete, status",
+  description: "BetterStack uptime monitor: create, delete, status",
   category: "uptime",
-  usages: "upt create <url> | upt delete <id> | upt status <id> | upt <url> (alias create)",
+  usages: "upt [url] | upt delete [id] | upt status [id]",
   cooldowns: 30,
 };
 
@@ -16,82 +16,80 @@ module.exports.onStart = async ({ api, event, args, message }) => {
   try {
     if (!args.length) {
       return message.reply(
-        `📌 Usage:\n` +
-        `- upt create <url>\n` +
-        `- upt delete <monitor_id>\n` +
-        `- upt status <monitor_id>\n` +
-        `- upt <url> (alias for create)`
+        `📍 ব্যবহার:\n` +
+        `- upt [url] → Create Monitor\n` +
+        `- upt delete [id] → Delete Monitor\n` +
+        `- upt status [id] → Monitor Status\n\n` +
+        `Example:\n` +
+        `upt https://example.com\n` +
+        `upt delete 123456\n` +
+        `upt status 123456`
       );
     }
 
-    const API_BASE = "https://noobs-api-sable.vercel.app";
+    const apiLink = "https://noobs-api-sable.vercel.app/upt"; // 🔥 তোমার API URL বসাও
 
-    // If first arg is "create", remove it, treat rest as URL
-    let action = args[0].toLowerCase();
-    if (action === "create") {
-      args.shift();
-      action = "create";
+    const command = args[0].toLowerCase();
+
+    // 🗑️ Delete
+    if (command === "delete") {
+      const id = args[1];
+      if (!id) return message.reply("❌ দয়া করে ID দিন।\nUsage: upt delete <id>");
+
+      const res = await axios.get(`${apiLink}?delete=true&id=${encodeURIComponent(id)}`);
+      if (res.data.success) {
+        return message.reply(`🗑️ ${res.data.message}`);
+      } else {
+        return message.reply(`❌ Error:\n${JSON.stringify(res.data)}`);
+      }
     }
 
-    if (action === "delete") {
+    // 📊 Status
+    if (command === "status") {
       const id = args[1];
-      if (!id) return message.reply("❌ Please provide monitor ID to delete.\nExample: upt delete 123456");
+      if (!id) return message.reply("❌ দয়া করে ID দিন।\nUsage: upt status <id>");
 
-      const response = await axios.get(`${API_BASE}/upt/delete?id=${encodeURIComponent(id)}`);
+      const res = await axios.get(`${apiLink}?status=true&id=${encodeURIComponent(id)}`);
+      const data = res.data.data;
 
-      if (response.data.success) {
-        return message.reply(`✅ Monitor with ID ${id} deleted successfully.`);
-      } else {
-        return message.reply(`❌ Failed to delete monitor.\nDetails: ${JSON.stringify(response.data)}`);
-      }
-
-    } else if (action === "status") {
-      const id = args[1];
-      if (!id) return message.reply("❌ Please provide monitor ID to check status.\nExample: upt status 123456");
-
-      const response = await axios.get(`${API_BASE}/upt/status?id=${encodeURIComponent(id)}`);
-
-      if (response.data.success && response.data.data) {
-        const data = response.data.data;
-
+      if (res.data.success) {
         return message.reply(
-          `🆔 Monitor ID: ${data.id}\n` +
+          `📊 Monitor Status:\n` +
+          `🆔 ID: ${data.id}\n` +
           `🌐 Name: ${data.name}\n` +
           `🔗 URL: ${data.url}\n` +
           `⏰ Interval: ${data.interval} seconds\n` +
-          `📊 Status: ${data.status}\n` +
-          `🔗 Dashboard: https://uptime.betterstack.com/dashboard/${data.id}`
+          `📶 Status: ${data.status}`
         );
       } else {
-        return message.reply(`❌ Failed to fetch status.\nDetails: ${JSON.stringify(response.data)}`);
+        return message.reply(`❌ Error:\n${JSON.stringify(res.data)}`);
       }
+    }
 
-    } else {
-      // Treat as create monitor with arg as URL (default)
-      const url = args.join(" ").trim();
-      if (!url) return message.reply("❌ Please provide a URL.\nUsage: upt <url>");
+    // ✅ Create
+    const url = args.join(" ").trim();
+    if (!url.startsWith("http")) {
+      return message.reply("❌ দয়া করে একটি সঠিক URL দিন।\nUsage: upt <url>");
+    }
 
-      const response = await axios.get(`${API_BASE}/upt?url=${encodeURIComponent(url)}`);
+    const res = await axios.get(`${apiLink}?url=${encodeURIComponent(url)}`);
+    const data = res.data.data;
 
-      if (response.data.error) {
-        return message.reply(`❌ Error: ${response.data.error}`);
-      }
-
-      const data = response.data.data;
-
+    if (res.data.success) {
       return message.reply(
-        `✅ Monitor Created Successfully!\n\n` +
+        `✅ Monitor Created Successfully!\n` +
         `🆔 ID: ${data.id}\n` +
         `🌐 Name: ${data.name}\n` +
         `🔗 URL: ${data.url}\n` +
         `⏰ Interval: ${data.interval} seconds\n` +
-        `📊 Status: ${data.status}\n` +
-        `🔗 Dashboard: https://uptime.betterstack.com/dashboard/${data.id}`
+        `📶 Status: ${data.status}`
       );
+    } else {
+      return message.reply(`❌ Error:\n${JSON.stringify(res.data)}`);
     }
 
   } catch (e) {
     console.log(e);
-    return message.reply(`❌ An error occurred: ${e.message}`);
+    return message.reply(`❌ Error: ${e.message}`);
   }
 };
