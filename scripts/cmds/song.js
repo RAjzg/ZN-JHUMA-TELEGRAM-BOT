@@ -5,7 +5,7 @@ const API_URL = "https://web-api-delta.vercel.app";
 module.exports.config = {
     name: "song",
     version: "1.0.0",
-    aliases: ["play", "music"],
+    aliases: [],
     author: "Dipto",
     countDown: 5,
     role: 0,
