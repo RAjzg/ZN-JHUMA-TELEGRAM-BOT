@@ -2,7 +2,7 @@ const axios = require('axios');
 
 module.exports.config = {
   name: "upt",
-  version: "1.0.1",
+  version: "1.0.2",
   role: 0,
   credits: "Islamick Cyber Chat",
   usePrefix: true,
@@ -14,11 +14,11 @@ module.exports.config = {
 
 module.exports.onStart = async ({ message, args }) => {
   try {
-    const apiLink = "https://noobs-api-sable.vercel.app/upt"; // ✅ তোমার API লিংক
+    const apiLink = "https://noobs-api-sable.vercel.app/upt"; // 🟩 এখানে তোমার API URL বসাও
 
     if (!args.length) {
       return message.reply(
-        `📍 ব্যবহারের নিয়ম:\n\n` +
+        `📍 কমান্ড:\n\n` +
         `✅ Create: upt [url]\n` +
         `🗑️ Delete: upt delete [id]\n` +
         `📊 Status: upt status [id]\n` +
@@ -70,10 +70,10 @@ module.exports.onStart = async ({ message, args }) => {
 
     // 📜 List Command
     if (command === "list") {
-      const res = await axios.get(`${apiLink}`);
-      const list = res.data.list;
+      const res = await axios.get(`${apiLink}?list=true`);
+      const list = res.data.monitors;
 
-      if (list.length === 0) {
+      if (!list.length) {
         return message.reply("❌ কোনো মনিটর পাওয়া যায়নি।");
       }
 
@@ -85,7 +85,7 @@ module.exports.onStart = async ({ message, args }) => {
             `🆔 ID: ${item.id}\n` +
             `📶 Status: ${item.status}\n`
         )
-        .join("\n");
+        .join("\n\n");
 
       return message.reply(`📜 All Monitors:\n\n${output}`);
     }
