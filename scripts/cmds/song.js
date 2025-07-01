@@ -2,6 +2,8 @@ const axios = require('axios');
 const fs = require('fs');
 const apiBase = 'https://ytdl.up.railway.app';
 
+const MAX_FILE_SIZE = 25692000; // 26MB
+
 module.exports.config = {
     name: "song",
     version: "3.0.0",
@@ -22,12 +24,17 @@ module.exports.run = async ({ api, args, event, commandName, message }) => {
     if (urlCheck) {
         const match = args[0].match(checkurl);
         videoID = match ? match[1] : null;
-        const { data } = await axios.get(`${apiBase}/ytmp3?url=https://www.youtube.com/watch?v=${videoID}`);
 
-        return message.stream({
-            url: await downloadFile(data.download_url, 'audio.mp3'),
-            caption: data.title
-        });
+        try {
+            const { data } = await axios.get(`${apiBase}/ytmp3?url=https://www.youtube.com/watch?v=${videoID}`);
+            await message.stream({
+                url: await downloadFile(data.download_url, 'audio.mp3'),
+                caption: data.title
+            });
+        } catch (err) {
+            return message.reply(`❌ Failed: ${err.message}`);
+        }
+        return;
     }
 
     const keyword = args.join(" ");
@@ -82,12 +89,19 @@ module.exports.reply = async ({ event, api, Reply, message }) => {
 
     } catch (error) {
         console.log(error);
-        message.reply("⭕ Failed. Probably file is larger than 26MB or another issue.");
+        message.reply("⭕ Failed! File is larger than 26MB or another issue occurred.");
     }
 };
 
 async function downloadFile(url, filename) {
     const response = await axios.get(url, { responseType: 'arraybuffer' });
     fs.writeFileSync(filename, Buffer.from(response.data));
+
+    const stats = fs.statSync(filename);
+    if (stats.size > MAX_FILE_SIZE) {
+        fs.unlinkSync(filename);
+        throw new Error('File size exceeds 26MB limit.');
+    }
+
     return fs.createReadStream(filename);
 }
