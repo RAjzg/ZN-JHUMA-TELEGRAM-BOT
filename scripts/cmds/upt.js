@@ -27,7 +27,7 @@ module.exports.onStart = async ({ api, event, args, message }) => {
       );
     }
 
-    const apiLink = "https://noobs-api-sable.vercel.app/upt"; // 🔥 তোমার API URL বসাও
+    const apiLink = "https://noobs-api-sable.vercel.app/upt"; // তোমার API URL
 
     const command = args[0].toLowerCase();
 
@@ -36,8 +36,8 @@ module.exports.onStart = async ({ api, event, args, message }) => {
       const id = args[1];
       if (!id) return message.reply("❌ দয়া করে ID দিন।\nUsage: upt delete <id>");
 
-      const res = await axios.get(`${apiLink}?delete=true&id=${encodeURIComponent(id)}`);
-      if (res.data.success) {
+      const res = await axios.get(`${apiLink}?delete&id=${encodeURIComponent(id)}`);
+      if (res.data.message) {
         return message.reply(`🗑️ ${res.data.message}`);
       } else {
         return message.reply(`❌ Error:\n${JSON.stringify(res.data)}`);
@@ -49,10 +49,10 @@ module.exports.onStart = async ({ api, event, args, message }) => {
       const id = args[1];
       if (!id) return message.reply("❌ দয়া করে ID দিন।\nUsage: upt status <id>");
 
-      const res = await axios.get(`${apiLink}?status=true&id=${encodeURIComponent(id)}`);
+      const res = await axios.get(`${apiLink}?status&id=${encodeURIComponent(id)}`);
       const data = res.data.data;
 
-      if (res.data.success) {
+      if (data) {
         return message.reply(
           `📊 Monitor Status:\n` +
           `🆔 ID: ${data.id}\n` +
@@ -75,7 +75,7 @@ module.exports.onStart = async ({ api, event, args, message }) => {
     const res = await axios.get(`${apiLink}?url=${encodeURIComponent(url)}`);
     const data = res.data.data;
 
-    if (res.data.success) {
+    if (data) {
       return message.reply(
         `✅ Monitor Created Successfully!\n` +
         `🆔 ID: ${data.id}\n` +
