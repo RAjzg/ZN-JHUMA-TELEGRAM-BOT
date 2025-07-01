@@ -1,142 +1,162 @@
 const axios = require('axios');
 
-module.exports.config = {
-  name: "up",
-  version: "1.0.3",
-  role: 0,
-  credits: "Islamick Cyber Chat",
-  usePrefix: true,
-  description: "Uptime robot uptime monitor: create, delete, status, list with name + url",
-  category: "uptime",
-  usages: "up [name] [url] | up delete [id] | up status [id] | up list",
-  cooldowns: 30,
-};
+module.exports = {
+  config: {
+    name: "up", // 🔥 কমান্ডের নাম এখন "up"
+    version: "1.0.2",
+    role: 0,
+    credits: "Shaon Ahmed",
+    description: "Uptime monitor (create, delete, status, list)",
+    category: "system",
+    usages: "/up [name] [url] | /up delete [id] | /up status [id] | /up list",
+    cooldowns: 5,
+  },
 
-module.exports.onStart = async ({ message, args }) => {
-  try {
-    const apiLink = "https://web-api-delta.vercel.app/upt"; // 🟩 তোমার API URL
+  onStart: async ({ message, args }) => {
+    const apiLink = "https://web-api-delta.vercel.app/upt"; // 🔥 এখানে তোমার API URL বসাও
 
     if (!args.length) {
       return message.reply(
-        `📍 কমান্ড ব্যবহারের নির্দেশনা:\n\n` +
-        `✅ মনিটর তৈরি: up [name] [url]\n` +
-        `🗑️ মনিটর মুছে ফেলুন: up delete [id]\n` +
-        `📊 মনিটরের অবস্থা: up status [id]\n` +
-        `📜 সব মনিটর দেখুন: up list\n\n` +
-        `উদাহরণ:\n` +
-        `up Shaon https://example.com\n` +
-        `up delete 123456\n` +
-        `up status 123456\n` +
-        `up list`
+        `📍 Usage:\n\n` +
+          `✅ Create: /up [name] [url]\n` +
+          `🗑️ Delete: /up delete [id]\n` +
+          `📊 Status: /up status [id]\n` +
+          `📜 List: /up list\n\n` +
+          `Example:\n` +
+          `/up Shaon https://example.com\n` +
+          `/up delete 123456\n` +
+          `/up status 123456\n` +
+          `/up list`
       );
     }
 
     const command = args[0].toLowerCase();
 
-    // 🗑️ Delete Command
+    // ✅ Delete Command
     if (command === "delete") {
       const id = args[1];
-      if (!id) return message.reply("❌ দয়া করে মনিটরের ID দিন।\nব্যবহার: up delete <id>");
+      if (!id)
+        return message.reply("❌ Please provide the monitor ID.\nUsage: /up delete <id>");
 
-      const res = await axios.get(`${apiLink}?delete&id=${encodeURIComponent(id)}`);
-      if (res.data.success) {
-        return message.reply(`🗑️ ${res.data.message}`);
-      } else {
-        return message.reply(`❌ ত্রুটি ঘটেছে:\n${res.data.error || JSON.stringify(res.data)}`);
+      try {
+        const res = await axios.get(`${apiLink}?delete=true&id=${id}`);
+        const result = res.data;
+        if (result.success) {
+          return message.reply(result.message);
+        } else {
+          return message.reply(`❌ Error:\n${result.message}`);
+        }
+      } catch (e) {
+        return message.reply(`🚫 API Error: ${e.message}`);
       }
     }
 
-    // 📊 Status Command
+    // ✅ Status Command
     if (command === "status") {
       const id = args[1];
-      if (!id) return message.reply("❌ দয়া করে মনিটরের ID দিন।\nব্যবহার: up status <id>");
+      if (!id)
+        return message.reply("❌ Please provide the monitor ID.\nUsage: /up status <id>");
 
-      const res = await axios.get(`${apiLink}?status&id=${encodeURIComponent(id)}`);
+      try {
+        const res = await axios.get(`${apiLink}?status=true&id=${id}`);
+        const result = res.data;
 
-      if (res.data.success && res.data.data) {
-        const data = res.data.data;
-        let statusText = "Unknown";
-        switch(data.status) {
-          case 0: statusText = "Paused"; break;
-          case 1: statusText = "Not Checked Yet"; break;
-          case 2: statusText = "Up"; break;
-          case 8: statusText = "Seems Down"; break;
-          case 9: statusText = "Down"; break;
+        if (result.success) {
+          const data = result.data;
+          return message.reply(
+            `📊 Monitor Status:\n` +
+              `🆔 ID: ${data.id}\n` +
+              `📛 Name: ${data.name}\n` +
+              `🔗 URL: ${data.url}\n` +
+              `⏰ Interval: ${data.interval} minutes\n` +
+              `📶 Status: ${
+                data.status == 2
+                  ? "🟢 Up"
+                  : data.status == 9
+                  ? "🔴 Down"
+                  : "⚪️ Paused"
+              }`
+          );
+        } else {
+          return message.reply(`❌ Error:\n${result.message}`);
         }
-
-        return message.reply(
-          `📊 মনিটরের অবস্থা:\n` +
-          `🆔 আইডি: ${data.id}\n` +
-          `🌐 নাম: ${data.name}\n` +
-          `🔗 URL: ${data.url}\n` +
-          `⏰ ইন্টারভ্যাল: ${data.interval} মিনিট\n` +
-          `📶 স্ট্যাটাস: ${statusText} (${data.status})`
-        );
-      } else {
-        return message.reply(`❌ ত্রুটি ঘটেছে:\n${res.data.error || JSON.stringify(res.data)}`);
+      } catch (e) {
+        return message.reply(`🚫 API Error: ${e.message}`);
       }
     }
 
-    // 📜 List Command
+    // ✅ List Command
     if (command === "list") {
-      const res = await axios.get(`${apiLink}?list=true`);
-      const list = res.data.monitors;
+      try {
+        const res = await axios.get(`${apiLink}?list=true`);
+        const result = res.data;
 
-      if (!list || !list.length) {
-        return message.reply("❌ কোনো মনিটর পাওয়া যায়নি।");
+        if (result.success) {
+          const list = result.monitors;
+          if (list.length === 0) {
+            return message.reply(`❌ No monitor found.`);
+          }
+
+          const msg = list
+            .map(
+              (item, index) =>
+                `${index + 1}. 🌐 ${item.name}\n` +
+                `🔗 ${item.url}\n` +
+                `🆔 ID: ${item.id}\n` +
+                `📶 Status: ${
+                  item.status == 2
+                    ? "🟢 Up"
+                    : item.status == 9
+                    ? "🔴 Down"
+                    : "⚪️ Paused"
+                }\n`
+            )
+            .join("\n");
+
+          return message.reply(`📜 Monitor List:\n\n${msg}`);
+        } else {
+          return message.reply(`❌ Error:\n${result.message}`);
+        }
+      } catch (e) {
+        return message.reply(`🚫 API Error: ${e.message}`);
       }
-
-      const output = list
-        .map(
-          (item, index) =>
-            `${index + 1}. 🌐 ${item.friendly_name || item.name}\n` +
-            `🔗 ${item.url}\n` +
-            `🆔 আইডি: ${item.id}\n` +
-            `📶 স্ট্যাটাস: ${item.status}\n`
-        )
-        .join("\n");
-
-      return message.reply(`📜 সব মনিটর:\n\n${output}`);
     }
 
-    // ✅ Create Command (name + url)
-    // এখানে প্রথম আর্গুমেন্ট নাম, বাকি সব URL
-    if (command !== "delete" && command !== "status" && command !== "list") {
-      const monitorName = args[0];
-      const url = args.slice(1).join(" ").trim();
+    // ✅ Create Command
+    const name = args[0];
+    const url = args[1];
 
-      if (!url.startsWith("http")) {
-        return message.reply("❌ দয়া করে সঠিক URL দিন।\nব্যবহার: up <name> <url>");
-      }
+    if (!url || !url.startsWith("http")) {
+      return message.reply(
+        "❌ Please provide name and valid URL.\nUsage: /up [name] [url]"
+      );
+    }
 
-      const res = await axios.get(`${apiLink}?url=${encodeURIComponent(url)}&name=${encodeURIComponent(monitorName)}`);
+    try {
+      const res = await axios.get(`${apiLink}?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`);
+      const result = res.data;
 
-      if (res.data.success && res.data.data) {
-        const data = res.data.data;
-        let statusText = "Unknown";
-        switch(data.status) {
-          case 0: statusText = "Paused"; break;
-          case 1: statusText = "Not Checked Yet"; break;
-          case 2: statusText = "Up"; break;
-          case 8: statusText = "Seems Down"; break;
-          case 9: statusText = "Down"; break;
-        }
-
+      if (result.success) {
+        const data = result.data;
         return message.reply(
-          `✅ মনিটর সফলভাবে তৈরি হয়েছে!\n` +
-          `🆔 আইডি: ${data.id}\n` +
-          `🌐 নাম: ${data.name}\n` +
-          `🔗 URL: ${data.url}\n` +
-          `⏰ ইন্টারভ্যাল: ${data.interval} মিনিট\n` +
-          `📶 স্ট্যাটাস: ${statusText} (${data.status})`
+          `✅ Monitor Created!\n──────────────\n` +
+            `🆔 ID: ${data.id}\n` +
+            `📛 Name: ${data.name}\n` +
+            `🔗 URL: ${data.url}\n` +
+            `⏰ Interval: ${data.interval} minutes\n` +
+            `📶 Status: ${
+              data.status == 2
+                ? "🟢 Up"
+                : data.status == 9
+                ? "🔴 Down"
+                : "⚪️ Paused"
+            }`
         );
       } else {
-        return message.reply(`❌ ত্রুটি ঘটেছে:\n${res.data.error || JSON.stringify(res.data)}`);
+        return message.reply(`❌ Error:\n${result.message}`);
       }
+    } catch (e) {
+      return message.reply(`🚫 API Error: ${e.message}`);
     }
-
-  } catch (e) {
-    console.error(e);
-    return message.reply(`❌ ত্রুটি: ${e.message}`);
-  }
+  },
 };
