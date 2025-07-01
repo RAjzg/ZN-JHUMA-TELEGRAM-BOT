@@ -2,49 +2,51 @@ const axios = require('axios');
 
 module.exports.config = {
   name: "upt",
-  version: "1.0.0",
+  version: "1.0.1",
   role: 0,
   credits: "Islamick Cyber Chat",
   usePrefix: true,
-  description: "BetterStack uptime monitor: create, delete, status",
+  description: "BetterStack uptime monitor: create, delete, status, list",
   category: "uptime",
-  usages: "upt [url] | upt delete [id] | upt status [id]",
+  usages: "upt [url] | upt delete [id] | upt status [id] | upt list",
   cooldowns: 30,
 };
 
-module.exports.onStart = async ({ api, event, args, message }) => {
+module.exports.onStart = async ({ message, args }) => {
   try {
+    const apiLink = "https://noobs-api-sable.vercel.app/upt"; // ✅ তোমার API লিংক
+
     if (!args.length) {
       return message.reply(
-        `📍 ব্যবহার:\n` +
-        `- upt [url] → Create Monitor\n` +
-        `- upt delete [id] → Delete Monitor\n` +
-        `- upt status [id] → Monitor Status\n\n` +
+        `📍 ব্যবহারের নিয়ম:\n\n` +
+        `✅ Create: upt [url]\n` +
+        `🗑️ Delete: upt delete [id]\n` +
+        `📊 Status: upt status [id]\n` +
+        `📜 List: upt list\n\n` +
         `Example:\n` +
         `upt https://example.com\n` +
         `upt delete 123456\n` +
-        `upt status 123456`
+        `upt status 123456\n` +
+        `upt list`
       );
     }
 
-    const apiLink = "https://noobs-api-sable.vercel.app/upt"; // তোমার API URL
-
     const command = args[0].toLowerCase();
 
-    // 🗑️ Delete
+    // 🗑️ Delete Command
     if (command === "delete") {
       const id = args[1];
       if (!id) return message.reply("❌ দয়া করে ID দিন।\nUsage: upt delete <id>");
 
       const res = await axios.get(`${apiLink}?delete&id=${encodeURIComponent(id)}`);
-      if (res.data.message) {
+      if (res.data.success) {
         return message.reply(`🗑️ ${res.data.message}`);
       } else {
         return message.reply(`❌ Error:\n${JSON.stringify(res.data)}`);
       }
     }
 
-    // 📊 Status
+    // 📊 Status Command
     if (command === "status") {
       const id = args[1];
       if (!id) return message.reply("❌ দয়া করে ID দিন।\nUsage: upt status <id>");
@@ -52,7 +54,7 @@ module.exports.onStart = async ({ api, event, args, message }) => {
       const res = await axios.get(`${apiLink}?status&id=${encodeURIComponent(id)}`);
       const data = res.data.data;
 
-      if (data) {
+      if (res.data.success) {
         return message.reply(
           `📊 Monitor Status:\n` +
           `🆔 ID: ${data.id}\n` +
@@ -66,7 +68,29 @@ module.exports.onStart = async ({ api, event, args, message }) => {
       }
     }
 
-    // ✅ Create
+    // 📜 List Command
+    if (command === "list") {
+      const res = await axios.get(`${apiLink}`);
+      const list = res.data.list;
+
+      if (list.length === 0) {
+        return message.reply("❌ কোনো মনিটর পাওয়া যায়নি।");
+      }
+
+      const output = list
+        .map(
+          (item, index) =>
+            `${index + 1}. 🌐 ${item.name}\n` +
+            `🔗 ${item.url}\n` +
+            `🆔 ID: ${item.id}\n` +
+            `📶 Status: ${item.status}\n`
+        )
+        .join("\n");
+
+      return message.reply(`📜 All Monitors:\n\n${output}`);
+    }
+
+    // ✅ Create Command
     const url = args.join(" ").trim();
     if (!url.startsWith("http")) {
       return message.reply("❌ দয়া করে একটি সঠিক URL দিন।\nUsage: upt <url>");
@@ -75,7 +99,7 @@ module.exports.onStart = async ({ api, event, args, message }) => {
     const res = await axios.get(`${apiLink}?url=${encodeURIComponent(url)}`);
     const data = res.data.data;
 
-    if (data) {
+    if (res.data.success) {
       return message.reply(
         `✅ Monitor Created Successfully!\n` +
         `🆔 ID: ${data.id}\n` +
