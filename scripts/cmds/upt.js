@@ -38,7 +38,7 @@ module.exports.onStart = async ({ message, args }) => {
       const id = args[1];
       if (!id) return message.reply("❌ দয়া করে ID দিন।\nUsage: upt delete <id>");
 
-      const res = await axios.get(`${apiLink}?delete&id=${encodeURIComponent(id)}`);
+      const res = await axios.get(`${apiLink}?delete=true&id=${encodeURIComponent(id)}`);
       if (res.data.success) {
         return message.reply(`🗑️ ${res.data.message}`);
       } else {
@@ -51,7 +51,7 @@ module.exports.onStart = async ({ message, args }) => {
       const id = args[1];
       if (!id) return message.reply("❌ দয়া করে ID দিন।\nUsage: upt status <id>");
 
-      const res = await axios.get(`${apiLink}?status&id=${encodeURIComponent(id)}`);
+      const res = await axios.get(`${apiLink}?status=true&id=${encodeURIComponent(id)}`);
       const data = res.data.data;
 
       if (res.data.success) {
