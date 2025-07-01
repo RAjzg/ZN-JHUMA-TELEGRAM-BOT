@@ -29,7 +29,7 @@ if (urlYtb) {
 }
     let keyWord = args.join(" ");
     keyWord = keyWord.includes("?feature=share") ? keyWord.replace("?feature=share", "") : keyWord;
-    const maxResults = 6;
+    const results = 6;
     let result;
     try {
       result = ((await axios.get(`https://ytdl.up.railway.app/youtube?q=${keyWord}`)).data).slice(0, results);
