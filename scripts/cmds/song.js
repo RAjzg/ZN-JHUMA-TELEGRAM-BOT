@@ -32,7 +32,7 @@ if (urlYtb) {
     const maxResults = 6;
     let result;
     try {
-      result = ((await axios.get(`${await baseApiUrl()}/youtube?q=${keyWord}`)).data).slice(0, results);
+      result = ((await axios.get(`https://ytdl.up.railway.app/youtube?q=${keyWord}`)).data).slice(0, results);
     } catch (err) {
       return message.reply("❌ An error occurred:"+err.message);
     }
