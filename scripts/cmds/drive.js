@@ -1,60 +1,63 @@
 const axios = require('axios');
 
-module.exports.config = {
-  name: "drive",
-  version: "0.0.4",
-  role: 0,
-  credits: "ArYAN + ChatGPT Fix",
-  usePrefix: true,
-  description: "Upload files to Google Drive",
-  category: "utility",
-  usages: "{pn} <link> or reply to media",
-  cooldowns: 10,
-};
+module.exports = {
+  meta: {
+    name: "drive",
+    version: "0.0.1",
+    author: "ArYAN",
+    cooldown: 5,
+    role: 0,
+    description: "Upload videos and other media to Google Drive easily!",
+    category: "Utility",
+    guide: "Use: {pn} <link> to upload a file from a direct link.\nOr reply to a photo, video, or document message to upload it."
+  },
 
-module.exports.onStart = async ({ api, event, args, message }) => {
-  let inputUrl = args[0];
+  onStart: async function ({ bot, message, msg, chatId, args }) {
+    let inputUrl = args[0];
 
-  try {
-    // Check for reply with media
-    if (!inputUrl && event.messageReply) {
-      const reply = event.messageReply;
+    if (!inputUrl && msg.reply_to_message) {
+      const repliedMessage = msg.reply_to_message;
 
-      let fileId;
-
-      if (reply.attachments && reply.attachments.length > 0) {
-        fileId = reply.attachments[0].file_id;
-      } else if (reply.photo) {
-        fileId = reply.photo[reply.photo.length - 1]?.file_id;
-      } else if (reply.video) {
-        fileId = reply.video.file_id;
-      } else if (reply.document) {
-        fileId = reply.document.file_id;
-      }
-
-      if (fileId) {
-        inputUrl = await api.getFileLink(fileId);
+      if (repliedMessage.photo) {
+        const fileId = repliedMessage.photo[repliedMessage.photo.length - 1].file_id;
+        inputUrl = await bot.getFileLink(fileId).catch(e => console.error("Error getting photo file link:", e));
+      } else if (repliedMessage.video) {
+        const fileId = repliedMessage.video.file_id;
+        inputUrl = await bot.getFileLink(fileId).catch(e => console.error("Error getting video file link:", e));
+      } else if (repliedMessage.document) {
+        const fileId = repliedMessage.document.file_id;
+        inputUrl = await bot.getFileLink(fileId).catch(e => console.error("Error getting document file link:", e));
       }
     }
 
-    // If no valid input URL
     if (!inputUrl) {
-      return message.reply("⚠️ Please provide a valid file URL or reply to a photo, video, or document.");
+      return message.reply("Please provide a valid file URL or reply to a message containing a photo, video, or document to upload.");
     }
 
-    await message.reply("⏳ Uploading file to Google Drive...");
+    const loadingMessage = await message.reply("⏳ Uploading your file to Google Drive...");
 
-    const res = await axios.get(`https://web-api-delta.vercel.app/drive?url=${encodeURIComponent(inputUrl)}`);
-    const data = res.data;
+    try {
+      const apiURL = `https://web-api-delta.vercel.app/drive?url=${encodeURIComponent(inputUrl)}`;
 
-    if (data.driveLink || data.driveLIink) {
-      return message.reply(`✅ Uploaded to Google Drive:\n🔗 ${data.driveLink || data.driveLIink}`);
-    } else {
-      return message.reply(`❌ Failed to upload:\n${data.message || data.error || "Unknown error"}`);
+      const res = await axios.get(apiURL);
+      const data = res.data || {};
+
+      const driveLink = data.driveLink || data.driveLIink;
+
+      if (driveLink) {
+        const successMsg = `✅ File uploaded to Google Drive!\n\n🔗 URL: ${driveLink}`;
+        await bot.deleteMessage(chatId, loadingMessage.message_id).catch(console.error);
+        return message.reply(successMsg);
+      } else {
+        const errorDetail = data.error || data.message || JSON.stringify(data);
+        const errorMsg = `❌ Upload failed: ${errorDetail}`;
+        await bot.deleteMessage(chatId, loadingMessage.message_id).catch(console.error);
+        return message.reply(errorMsg);
+      }
+    } catch (error) {
+      console.error("Google Drive Upload Error:", error);
+      await bot.deleteMessage(chatId, loadingMessage.message_id).catch(console.error);
+      return message.reply("An error occurred during upload. Please try again later. Check logs for details.");
     }
-
-  } catch (err) {
-    console.error(err);
-    return message.reply("❌ Internal error occurred while uploading. Try again later.");
   }
 };
