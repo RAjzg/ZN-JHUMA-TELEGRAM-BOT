@@ -2,13 +2,13 @@ const axios = require('axios');
 
 module.exports.config = {
   name: "drive",
-  version: "0.0.3",
+  version: "0.0.4",
   role: 0,
-  credits: "Shaon Ahmed + Modified by ChatGPT",
+  credits: "ArYAN + ChatGPT Fix",
   usePrefix: true,
   description: "Upload files to Google Drive",
   category: "utility",
-  usages: "{pn} <url> or reply to media",
+  usages: "{pn} <link> or reply to media",
   cooldowns: 10,
 };
 
@@ -16,13 +16,15 @@ module.exports.onStart = async ({ api, event, args, message }) => {
   let inputUrl = args[0];
 
   try {
+    // Check for reply with media
     if (!inputUrl && event.messageReply) {
       const reply = event.messageReply;
 
-      let fileId = null;
+      let fileId;
 
-      // Telegram attachment check
-      if (reply.photo) {
+      if (reply.attachments && reply.attachments.length > 0) {
+        fileId = reply.attachments[0].file_id;
+      } else if (reply.photo) {
         fileId = reply.photo[reply.photo.length - 1]?.file_id;
       } else if (reply.video) {
         fileId = reply.video.file_id;
@@ -35,25 +37,24 @@ module.exports.onStart = async ({ api, event, args, message }) => {
       }
     }
 
+    // If no valid input URL
     if (!inputUrl) {
       return message.reply("⚠️ Please provide a valid file URL or reply to a photo, video, or document.");
     }
 
-    const waitMsg = await message.reply("⏳ Uploading your file to Google Drive...");
+    await message.reply("⏳ Uploading file to Google Drive...");
 
     const res = await axios.get(`https://web-api-delta.vercel.app/drive?url=${encodeURIComponent(inputUrl)}`);
-    const data = res.data || {};
+    const data = res.data;
 
     if (data.driveLink || data.driveLIink) {
-      const link = data.driveLink || data.driveLIink;
-      return message.reply(`✅ Uploaded successfully!\n🔗 Google Drive Link:\n${link}`);
+      return message.reply(`✅ Uploaded to Google Drive:\n🔗 ${data.driveLink || data.driveLIink}`);
     } else {
-      const error = data.error || data.message || "Unknown error";
-      return message.reply(`❌ Upload failed:\n${error}`);
+      return message.reply(`❌ Failed to upload:\n${data.message || data.error || "Unknown error"}`);
     }
 
-  } catch (e) {
-    console.error("Upload error:", e);
-    return message.reply("🚫 An error occurred during upload. Please try again later.");
+  } catch (err) {
+    console.error(err);
+    return message.reply("❌ Internal error occurred while uploading. Try again later.");
   }
 };
