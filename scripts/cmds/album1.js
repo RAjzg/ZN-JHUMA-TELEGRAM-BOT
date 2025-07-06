@@ -3,7 +3,7 @@ const axios = require("axios");
 module.exports.config = {
   name: "album1",
   version: "3.0.1",
-  hasPermission: 0,
+  role: 0,
   credits: "Shaon Ahmed (fixed by ChatGPT)",
   description: "Category-based album with add, list, view using handleReply",
   commandCategory: "media",
