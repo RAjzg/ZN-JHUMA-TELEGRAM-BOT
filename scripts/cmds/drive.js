@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 module.exports = {
-  meta: {
+  config: {
     name: "drive",
     version: "0.0.1",
     author: "ArYAN",
