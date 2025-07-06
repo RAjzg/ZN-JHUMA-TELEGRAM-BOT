@@ -3,10 +3,10 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "album1",
-    version: "3.1.0",
+    version: "3.2.0",
     author: "Shaon Ahmed",
     role: 0,
-    description: "Category album with list, add, delete, create, and reply-view",
+    description: "Album with add, list, create, delete, and reply-based view",
     category: "media",
     countDown: 5
   },
@@ -24,36 +24,27 @@ module.exports = {
       const lines = res.data.data.split("\n");
       const categories = [];
 
-      let msg = "🎬 *Album Categories:*\n\n";
-      for (let i = 0; i < lines.length; i++) {
-        const match = lines[i].match(/(\d+)\. Total (.*?) videos available/);
+      let msg = "🎬 *VIDEO ALBUM* 📁\n";
+      lines.forEach((line, i) => {
+        const match = line.match(/(\d+)\. Total (.*?) videos available/);
         if (match) {
           const cat = match[2];
           categories.push(cat);
           msg += `${i + 1}. ${cat} Video\n`;
         }
-      }
-
-      msg += `\n📝 Reply this message with number (e.g., 1)`;
-
-      const sent = await api.sendMessage(chatId, msg, { parse_mode: "Markdown" });
-
-      bot.once("message", async (reply) => {
-        const number = parseInt(reply.text);
-        if (isNaN(number) || number < 1 || number > categories.length)
-          return api.sendMessage(chatId, `⚠️ Enter number 1 to ${categories.length}`);
-
-        const category = categories[number - 1];
-        const res = await axios.get(`${Shaon}/album?type=${encodeURIComponent(category)}`);
-        const { url, cp, count } = res.data;
-
-        await api.sendVideo(chatId, url, {
-          caption: `🎞️ Category: ${category}\n📦 Total: ${count || 1}\n\n${cp || ""}`,
-          reply_markup: {
-            inline_keyboard: [[{ text: "Owner", url: "https://t.me/shaonproject" }]]
-          }
-        });
       });
+
+      msg += `\n✨ Reply with number to get a video`;
+
+      const sent = await api.sendMessage(chatId, msg, {
+        parse_mode: "Markdown"
+      });
+
+      global.telegram._reply = global.telegram._reply || {};
+      global.telegram._reply[sent.message_id] = {
+        type: "get_video",
+        categories,
+      };
 
       return;
     }
@@ -75,24 +66,22 @@ module.exports = {
     // 📤 ADD
     if (input.startsWith("add ")) {
       const category = input.slice(4).trim();
-      api.sendMessage(chatId, `📥 Send media now to add to *${category}*`, { parse_mode: "Markdown" });
-
-      bot.once("message", async (msg) => {
-        const file = msg.video || msg.photo?.[msg.photo.length - 1];
-        if (!file) return api.sendMessage(chatId, "❗ No media detected.");
-
-        const link = await api.getFileLink(file.file_id);
-        const upload = await axios.get(`${Imgur}/imgur?link=${encodeURIComponent(link)}`);
-        const imgurLink = upload.data.link || upload.data.uploaded?.image;
-
-        await axios.get(`${Shaon}/album?add=${encodeURIComponent(category)}&url=${encodeURIComponent(imgurLink)}`);
-        return api.sendMessage(chatId, `✅ Media added to *${category}*`, { parse_mode: "Markdown" });
+      const msg = await api.sendMessage(chatId, `📥 Send a media file now to add to *${category}*`, {
+        parse_mode: "Markdown"
       });
+
+      global.telegram._reply = global.telegram._reply || {};
+      global.telegram._reply[msg.message_id] = {
+        type: "add_media",
+        category,
+        Imgur,
+        Shaon
+      };
 
       return;
     }
 
-    // ▶️ RANDOM VIEW by Category
+    // ▶️ RANDOM VIEW
     if (input) {
       try {
         const res = await axios.get(`${Shaon}/album?type=${encodeURIComponent(input)}`);
@@ -106,6 +95,57 @@ module.exports = {
         });
       } catch (e) {
         api.sendMessage(chatId, "❌ Failed to load video.");
+      }
+    }
+  },
+
+  reply: async ({ bot, api, event }) => {
+    const { message_id, reply_to_message, text, video, photo } = event;
+    const repliedMsg = reply_to_message;
+    if (!repliedMsg || !global.telegram._reply?.[repliedMsg.message_id]) return;
+
+    const data = global.telegram._reply[repliedMsg.message_id];
+    const chatId = event.chat.id;
+
+    if (data.type === "get_video") {
+      const number = parseInt(text);
+      const category = data.categories[number - 1];
+      if (!category)
+        return api.sendMessage(chatId, "❗ Invalid number.");
+
+      const apis = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
+      const Shaon = apis.data.api;
+
+      try {
+        const res = await axios.get(`${Shaon}/album?type=${encodeURIComponent(category)}`);
+        const { url, cp, count } = res.data;
+
+        return await api.sendVideo(chatId, url, {
+          caption: `🎞️ Category: ${category}\n📦 Total: ${count || 1}\n\n${cp || ""}`
+        });
+      } catch (e) {
+        return api.sendMessage(chatId, "❌ Failed to load video.");
+      }
+    }
+
+    if (data.type === "add_media") {
+      const media = video || (photo && photo[photo.length - 1]);
+      if (!media)
+        return api.sendMessage(chatId, "❗ No media detected.");
+
+      try {
+        const fileLink = await api.getFileLink(media.file_id);
+        const upload = await axios.get(`${data.Imgur}/imgur?link=${encodeURIComponent(fileLink)}`);
+        const imgurLink = upload.data.link || upload.data.uploaded?.image;
+
+        await axios.get(`${data.Shaon}/album?add=${encodeURIComponent(data.category)}&url=${encodeURIComponent(imgurLink)}`);
+        return api.sendMessage(chatId, `✅ Media added to *${data.category}*`, {
+          parse_mode: "Markdown"
+        });
+      } catch (e) {
+        return api.sendMessage(chatId, `❌ Failed to add media.`, {
+          parse_mode: "Markdown"
+        });
       }
     }
   }
