@@ -1,120 +1,120 @@
 const axios = require("axios");
 
-module.exports = {
-	config: {
-		name: "album1",
-		version: "2.0.1",
-		role: 0,
-		author: "Shaon Ahmed",
-		description: "Album system with Imgur and category support",
-		category: "media",
-		countDown: 5,
-	},
+module.exports.config = {
+  name: "album1",
+  version: "3.0.1",
+  hasPermission: 0,
+  credits: "Shaon Ahmed (fixed by ChatGPT)",
+  description: "Category-based album with add, list, view using handleReply",
+  commandCategory: "media",
+  usages: "[list | add <category> | <category>]",
+  cooldowns: 5
+};
 
-	onStart: async ({
-		event,
-		api,
-		bot,
-		args
-	}) => {
-		const chatId = event.chat.id;
-		const input = args.join(" ").trim().toLowerCase();
+module.exports.run = async function ({ api, event, args }) {
+  const input = args.join(" ");
+  const { messageReply, threadID, messageID, senderID } = event;
 
-		const apis = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
-		const Shaon = apis.data.api;
-		const Imgur = apis.data.imgur;
+  const apis = await axios.get('https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json');
+  const Shaon = apis.data.api;
+  const Imgur = apis.data.imgur;
 
-		// Help Message
-		if (input === "help") {
-			return api.sendMessage(chatId, `
+  // 🟩 Show List
+  if (input === "list" || input === "") {
+    try {
+      const res = await axios.get(`${Shaon}/album?list=true`);
+      const lines = res.data.data.split("\n");
+      const categories = [];
 
-╭─『 📁 Album Bot Help 』─╮
+      let msg = "╭─『 🎬 VIDEO ALBUM 』─╮\n";
+      lines.forEach((line, i) => {
+        const match = line.match(/\d+\. Total (.*?) videos available/);
+        if (match) {
+          const category = match[1];
+          categories.push(category);
+          msg += `│ ${(i + 1).toString().padStart(2, "0")}. ${category} Video\n`;
+        }
+      });
+      msg += "╰────────────────────╯\n\n✨ Reply with number (1–15) to watch";
 
-📝 Available Commands: /album                  ➤ List all categories /album <category>       ➤ Get random video from category /album add <category>   ➤ Add photo/video by replying /album create <name>    ➤ Create new category /album delete <name>    ➤ Delete category
+      return api.sendMessage(msg, threadID, (err, info) => {
+        global.client.handleReply.push({
+          name: module.exports.config.name,
+          messageID: info.messageID,
+          author: senderID,
+          categories
+        });
+      });
+    } catch (err) {
+      return api.sendMessage("❌ লিস্ট আনতে সমস্যা হয়েছে।", threadID, messageID);
+    }
+  }
 
-📌 Example: /album love /album add sad /album create anime /album delete funny
+  // 🟩 Add Media
+  if (input.startsWith("add ")) {
+    const category = input.slice(4).trim();
 
-⚠️ Note: 18+ content is strictly prohibited!
+    if (!messageReply || !messageReply.attachments || messageReply.attachments.length === 0)
+      return api.sendMessage("⚠️ একটি ভিডিও বা ছবি reply করে লিখুন: /album1 add <category>", threadID, messageID);
 
-© Developed by Shaon Project ╰────────────────────────╯ `);
-		}
+    const media = messageReply.attachments[0];
+    if (!["video", "photo"].includes(media.type))
+      return api.sendMessage("⚠️ শুধুমাত্র ছবি বা ভিডিওই যোগ করা যাবে।", threadID, messageID);
 
-		// List all categories
-		if (input === "" || input === "list") {
-			const res = await axios.get(`${Shaon}/album?list=true`);
-			return api.sendMessage(chatId, `📁 Categories:
+    try {
+      const imageUrl = media.url;
+      const imgur = await axios.get(`${Imgur}/imgur?link=${encodeURIComponent(imageUrl)}`);
+      const imgurLink = imgur.data.link || imgur.data.uploaded?.image;
 
-${res.data.data}`);
-		}
+      if (!imgurLink) throw new Error("Imgur upload failed");
 
-		// Create category
-		if (input.startsWith("create ")) {
-			const name = input.slice(7).trim();
-			const res = await axios.get(`${Shaon}/album?create=${encodeURIComponent(name)}`);
-			return api.sendMessage(chatId, `✅ ${res.data.message}`);
-		}
+      await axios.get(`${Shaon}/album?add=${encodeURIComponent(category)}&url=${encodeURIComponent(imgurLink)}`);
+      return api.sendMessage(`✅ মিডিয়া "${category}" ক্যাটাগরিতে যোগ হয়েছে।`, threadID, messageID);
+    } catch (err) {
+      console.error(err);
+      return api.sendMessage("❌ মিডিয়া যোগ করতে সমস্যা হয়েছে।", threadID, messageID);
+    }
+  }
 
-		// Delete category
-		if (input.startsWith("delete ")) {
-			const name = input.slice(7).trim();
-			const res = await axios.get(`${Shaon}/album?delete=${encodeURIComponent(name)}`);
-			return api.sendMessage(chatId, `🗑️ ${res.data.message}`);
-		}
+  // 🟩 View Media by Category
+  if (input) {
+    try {
+      const res = await axios.get(`${Shaon}/album?type=${encodeURIComponent(input)}`);
+      const { url, cp, category, count, note } = res.data;
 
-		// Add media
-		if (input.startsWith("add ")) {
-			const category = input.slice(4).trim();
-			api.sendMessage(chatId, `📤 Please reply to a media file (video/photo) with caption '${category}'`);
+      return api.sendMessage({
+        body: `${cp}\n\n🎞️ ক্যাটাগরি: ${category}\n📦 মোট ভিডিও: ${count || "১"}${note ? `\nℹ️ নোট: ${note}` : ""}`,
+        attachment: await global.utils.getStreamFromURL(url)
+      }, threadID, messageID);
+    } catch (err) {
+      return api.sendMessage("❌ ভিডিও আনতে সমস্যা হয়েছে।", threadID, messageID);
+    }
+  }
+};
 
-			bot.once("message", async (msg) => {
-				const file = msg.video || msg.photo?.[msg.photo.length - 1];
-				const caption = msg.caption || category;
+module.exports.reply = async function ({ api, event, reply }) {
+  const { body, senderID, threadID, messageID } = event;
+  if (senderID !== reply.author) return;
 
-				if (!file || !caption)
-					return api.sendMessage(chatId, "❗ Please reply with a media file and category in caption.");
+  const number = parseInt(body);
+  const categories = reply.categories;
 
-				try {
-					const fileLink = await api.getFileLink(file.file_id);
-					const uploaded = await axios.get(`${Imgur}/imgur?link=${encodeURIComponent(fileLink)}`);
-					const imgurLink = uploaded.data.link || uploaded.data.uploaded?.image;
+  if (isNaN(number) || number < 1 || number > categories.length)
+    return api.sendMessage("⚠️ ১ থেকে ১৫ এর মধ্যে একটি সঠিক সংখ্যা দিন।", threadID, messageID);
 
-					await axios.get(`${Shaon}/album?add=${encodeURIComponent(caption)}&url=${encodeURIComponent(imgurLink)}`);
-					return api.sendMessage(chatId, `✅ Media added to '${caption}' category.`);
+  const category = categories[number - 1];
+  const apis = await axios.get('https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json');
+  const Shaon = apis.data.api;
 
-				} catch (e) {
-					return api.sendMessage(chatId, `❌ Failed to add media: ${e.message}`);
-				}
-			});
-			return;
-		}
+  try {
+    const res = await axios.get(`${Shaon}/album?type=${encodeURIComponent(category)}`);
+    const { url, cp, count } = res.data;
 
-		// Get random video from category
-		if (input) {
-			try {
-				const res = await axios.get(`${Shaon}/album?type=${encodeURIComponent(input)}`);
-				const {
-					url,
-					cp,
-					category,
-					count,
-					note
-				} = res.data;
-
-				await api.sendVideo(chatId, url, {
-					caption: `${cp || ''}\n🎞️ Category: ${category}\n📦 Total: ${count || 1}${note ? `\nℹ️ ${note}` : ""}`,
-					reply_markup: {
-						inline_keyboard: [
-							[{
-								text: "Owner",
-								url: "https://t.me/shaonproject"
-							}]
-						]
-					}
-				});
-			} catch (err) {
-				return api.sendMessage(chatId, `❌ Failed to fetch video: ${err.message}`);
-			}
-		}
-
-	}
+    return api.sendMessage({
+      body: `${cp}\n\n🎞️ ক্যাটাগরি: ${category}\n📦 মোট ভিডিও: ${count || "১"}`,
+      attachment: await global.utils.getStreamFromURL(url)
+    }, threadID, messageID);
+  } catch (err) {
+    return api.sendMessage("❌ ভিডিও আনতে সমস্যা হয়েছে।", threadID, messageID);
+  }
 };
