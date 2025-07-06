@@ -75,7 +75,7 @@ ${res.data.data}`);
 
 				try {
 					const fileLink = await api.getFileLink(file.file_id);
-					const uploaded = await axios.get(`${Imgur}/imgur?url=${encodeURIComponent(fileLink)}`);
+					const uploaded = await axios.get(`${Imgur}/imgur?link=${encodeURIComponent(fileLink)}`);
 					const imgurLink = uploaded.data.link || uploaded.data.uploaded?.image;
 
 					await axios.get(`${Shaon}/album?add=${encodeURIComponent(caption)}&url=${encodeURIComponent(imgurLink)}`);
