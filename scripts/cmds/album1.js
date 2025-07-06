@@ -86,7 +86,7 @@ module.exports = {
 
         try {
           const link = await api.getFileLink(file.file_id);
-          const upload = await axios.get(`${Imgur}/imgur?link=${encodeURIComponent(link)}`);
+          const upload = await axios.get(`${Imgur}/imgur?url=${encodeURIComponent(link)}`);
           const imgurLink = upload.data.link || upload.data.uploaded?.image;
 
           await axios.get(`${Shaon}/album?add=${encodeURIComponent(category)}&url=${encodeURIComponent(imgurLink)}`);
