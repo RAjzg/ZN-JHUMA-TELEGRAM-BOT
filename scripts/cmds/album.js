@@ -3,10 +3,10 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "album",
-    version: "2.3.0",
+    version: "2.4.0",
     role: 0,
     author: "Shaon Ahmed",
-    description: "Reply add and inline video browser for album categories",
+    description: "Reply add via Imgur and inline browser",
     category: "Media",
     countDown: 5,
   },
@@ -14,7 +14,7 @@ module.exports = {
   onStart: async ({ api, event, args, bot }) => {
     const chatId = event.chat?.id || event.threadID;
 
-    // ✅ যদি রিপ্লাই দিয়ে /album add <category> কমান্ড দেয়
+    // ✅ If command: /album add <category> (with reply)
     if (args[0] === "add" && args[1]) {
       const category = args[1].toLowerCase();
 
@@ -24,38 +24,44 @@ module.exports = {
         event?.reply_to_message?.photo?.slice(-1)[0];
 
       if (!file) {
-        return api.sendMessage(chatId, "❗ দয়া করে ভিডিও/ছবিতে রিপ্লাই দিয়ে `/album add <category>` কমান্ড দিন।");
+        return api.sendMessage(
+          chatId,
+          "❗ দয়া করে একটি ভিডিও বা ছবিতে রিপ্লাই দিয়ে `/album add <category>` কমান্ড দিন।",
+          { parse_mode: "Markdown" }
+        );
       }
 
       try {
         const fileLink = await api.getFileLink(file.file_id);
-        const isVideo = file.mime_type?.startsWith("video") || fileLink.endsWith(".mp4");
 
+        // 🔄 Always upload to Imgur
         const apis = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
-        const base = apis.data.api;
         const imgur = apis.data.imgur;
+        const base = apis.data.api;
 
-        let finalUrl = fileLink;
+        const imgurRes = await axios.get(`${imgur}/imgur?url=${encodeURIComponent(fileLink)}`);
+        const finalUrl = imgurRes.data.link || imgurRes.data.uploaded?.image;
 
-        if (!isVideo) {
-          const imgurRes = await axios.get(`${imgur}/imgur?url=${encodeURIComponent(fileLink)}`);
-          finalUrl = imgurRes.data.link || imgurRes.data.uploaded?.image;
-        }
+        if (!finalUrl) throw new Error("Imgur upload failed");
 
         await axios.get(`${base}/video/${category}?add=${category}&url=${encodeURIComponent(finalUrl)}`);
-        return api.sendMessage(chatId, `✅ Added to '${category.toUpperCase()}'\n🔗 ${finalUrl}`);
+
+        return api.sendMessage(
+          chatId,
+          `✅ Added to '${category.toUpperCase()}'\n🔗 ${finalUrl}`
+        );
       } catch (e) {
         console.error("Add failed:", e.message);
-        return api.sendMessage(chatId, "❌ Failed to upload or add.");
+        return api.sendMessage(chatId, "❌ Upload বা add করতে ব্যর্থ হয়েছে।");
       }
     }
 
-    // 🎬 ক্যাটাগরি বেছে নিয়ে ভিডিও দেখার UI
+    // 🎬 Inline UI for category video view
     const videoSelectionMarkup = {
       reply_markup: {
         inline_keyboard: [
           [{ text: 'Love', callback_data: '/video/love' }, { text: 'CPL', callback_data: '/video/cpl' }],
-          [{ text: 'Short', callback_data: '/video/shortvideo' }, { text: 'Sad', callback_data: '/video/sadvideo' }],
+          [{ text: 'Short', callback_data: '/video/short' }, { text: 'Sad', callback_data: '/video/sad' }],
           [{ text: 'Status', callback_data: '/video/status' }, { text: 'Shairi', callback_data: '/video/shairi' }],
           [{ text: 'Baby', callback_data: '/video/baby' }, { text: 'Anime', callback_data: '/video/anime' }],
           [{ text: 'FF', callback_data: '/video/ff' }, { text: 'Lofi', callback_data: '/video/lofi' }],
@@ -74,7 +80,9 @@ module.exports = {
       const categoryEndpoint = callbackQuery.data;
       await api.answerCallbackQuery(callbackQuery.id);
 
-      const loadingMsg = await api.sendMessage(chatId, "⏳ Fetching video...", { reply_to_message_id: waitMsg.message_id });
+      const loadingMsg = await api.sendMessage(chatId, "⏳ Fetching video...", {
+        reply_to_message_id: waitMsg.message_id,
+      });
 
       try {
         const apis = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
