@@ -22,7 +22,7 @@ module.exports = {
         `📥 Reply to this message with a video or image to add to '${category.toUpperCase()}'`,
         {},
         (err, info) => {
-          global.client.handleReply.push({
+          global.client.reply.push({
             name: module.exports.config.name,
             type: "add",
             author: event.senderID,
