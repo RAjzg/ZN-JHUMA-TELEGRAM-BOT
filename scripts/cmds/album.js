@@ -36,7 +36,7 @@ module.exports = {
 
         // 🔄 Always upload to Imgur
         const apis = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
-        const imgur = apis.data.imgur;
+        const imgur = apis.data.allapi;
         const base = apis.data.api;
 
         const imgurRes = await axios.get(`${imgur}/imgur?url=${encodeURIComponent(fileLink)}`);
