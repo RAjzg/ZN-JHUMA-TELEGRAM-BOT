@@ -3,37 +3,54 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "album",
-    version: "2.2.0",
+    version: "2.3.0",
     role: 0,
     author: "Shaon Ahmed",
-    description: "Reply to add media to category + inline video browser",
-    category: "media",
+    description: "Reply add and inline video browser for album categories",
+    category: "Media",
     countDown: 5,
   },
 
   onStart: async ({ api, event, args, bot }) => {
     const chatId = event.chat?.id || event.threadID;
 
-    // ➕ Add via reply
+    // ✅ যদি রিপ্লাই দিয়ে /album add <category> কমান্ড দেয়
     if (args[0] === "add" && args[1]) {
       const category = args[1].toLowerCase();
-      return api.sendMessage(
-        chatId,
-        `📥 Reply to this message with a *video* or *image* to add to '${category.toUpperCase()}'`,
-        { parse_mode: "Markdown" },
-        (err, info) => {
-          global.client.reply.push({
-            name: module.exports.config.name,
-            type: "add",
-            author: event.senderID,
-            category,
-            messageID: info.messageID,
-          });
+
+      const file =
+        event?.reply_to_message?.video ||
+        event?.reply_to_message?.document ||
+        event?.reply_to_message?.photo?.slice(-1)[0];
+
+      if (!file) {
+        return api.sendMessage(chatId, "❗ দয়া করে ভিডিও/ছবিতে রিপ্লাই দিয়ে `/album add <category>` কমান্ড দিন।");
+      }
+
+      try {
+        const fileLink = await api.getFileLink(file.file_id);
+        const isVideo = file.mime_type?.startsWith("video") || fileLink.endsWith(".mp4");
+
+        const apis = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
+        const base = apis.data.api;
+        const imgur = apis.data.imgur;
+
+        let finalUrl = fileLink;
+
+        if (!isVideo) {
+          const imgurRes = await axios.get(`${imgur}/imgur?url=${encodeURIComponent(fileLink)}`);
+          finalUrl = imgurRes.data.link || imgurRes.data.uploaded?.image;
         }
-      );
+
+        await axios.get(`${base}/video/${category}?add=${category}&url=${encodeURIComponent(finalUrl)}`);
+        return api.sendMessage(chatId, `✅ Added to '${category.toUpperCase()}'\n🔗 ${finalUrl}`);
+      } catch (e) {
+        console.error("Add failed:", e.message);
+        return api.sendMessage(chatId, "❌ Failed to upload or add.");
+      }
     }
 
-    // 🎬 Inline category list
+    // 🎬 ক্যাটাগরি বেছে নিয়ে ভিডিও দেখার UI
     const videoSelectionMarkup = {
       reply_markup: {
         inline_keyboard: [
@@ -85,42 +102,5 @@ module.exports = {
         await api.sendMessage(chatId, `❌ Error: ${err.message}`, { reply_to_message_id: waitMsg.message_id });
       }
     });
-  },
-
-  // 🔁 Reply Handler (for /album add <category>)
-  reply: async ({ api, event, reply }) => {
-    if (event.senderID !== reply.author) return;
-
-    const file =
-      event?.message?.video ||
-      event?.message?.document ||
-      event?.message?.photo?.[event.message.photo.length - 1];
-
-    if (!file) {
-      return api.sendMessage(event.threadID, "❗ Please reply with a valid video or image.");
-    }
-
-    try {
-      const fileLink = await api.getFileLink(file.file_id);
-
-      const isVideo = file.mime_type?.startsWith("video") || fileLink.endsWith(".mp4");
-
-      const apis = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
-      const base = apis.data.api;
-      const imgur = apis.data.imgur;
-
-      let finalUrl = fileLink;
-
-      if (!isVideo) {
-        const imgurRes = await axios.get(`${imgur}/imgur?url=${encodeURIComponent(fileLink)}`);
-        finalUrl = imgurRes.data.link || imgurRes.data.uploaded?.image;
-      }
-
-      await axios.get(`${base}/video/${reply.category}?add=${reply.category}&url=${encodeURIComponent(finalUrl)}`);
-      return api.sendMessage(event.threadID, `✅ Added to '${reply.category.toUpperCase()}'\n🔗 ${finalUrl}`);
-    } catch (err) {
-      console.error("Upload error:", err.message);
-      return api.sendMessage(event.threadID, "❌ Failed to upload or add.");
-    }
   }
 };
