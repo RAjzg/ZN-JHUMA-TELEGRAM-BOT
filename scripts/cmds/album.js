@@ -6,7 +6,7 @@ module.exports = {
     version: "2.4.0",
     role: 0,
     author: "Shaon Ahmed",
-    description: "Reply add via Imgur and inline browser",
+    description: "Reply to add media to album and browse video categories",
     category: "Media",
     countDown: 5,
   },
@@ -14,7 +14,7 @@ module.exports = {
   onStart: async ({ api, event, args, bot }) => {
     const chatId = event.chat?.id || event.threadID;
 
-    // ✅ If command: /album add <category> (with reply)
+    // ✅ If replied and add command
     if (args[0] === "add" && args[1]) {
       const category = args[1].toLowerCase();
 
@@ -24,44 +24,46 @@ module.exports = {
         event?.reply_to_message?.photo?.slice(-1)[0];
 
       if (!file) {
-        return api.sendMessage(
-          chatId,
-          "❗ দয়া করে একটি ভিডিও বা ছবিতে রিপ্লাই দিয়ে `/album add <category>` কমান্ড দিন।",
-          { parse_mode: "Markdown" }
-        );
+        return api.sendMessage(chatId, "❗ ভিডিও/ছবিতে রিপ্লাই দিয়ে `/album add <category>` লিখুন।");
       }
 
       try {
         const fileLink = await api.getFileLink(file.file_id);
+        const isVideo = file.mime_type?.startsWith("video") || fileLink.endsWith(".mp4");
 
-        // 🔄 Always upload to Imgur
         const apis = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
-        const imgur = apis.data.imgur;
         const base = apis.data.api;
+        const imgur = apis.data.imgur;
 
-        const imgurRes = await axios.get(`${imgur}/imgur?url=${encodeURIComponent(fileLink)}`);
-        const finalUrl = imgurRes.data.link || imgurRes.data.uploaded?.image;
+        let finalUrl = fileLink;
 
-        if (!finalUrl) throw new Error("Imgur upload failed");
+        // 📤 If not video, upload to Imgur
+        if (!isVideo) {
+          const imgurRes = await axios.get(`${imgur}/imgur?url=${encodeURIComponent(fileLink)}`);
+          console.log("Imgur response:", imgurRes.data);
 
+          finalUrl = imgurRes.data.link || imgurRes.data.uploaded?.image;
+          if (!finalUrl) {
+            return api.sendMessage(chatId, "❌ Imgur upload থেকে লিংক পাওয়া যায়নি।");
+          }
+        }
+
+        // 🎯 Send to your API
         await axios.get(`${base}/video/${category}?add=${category}&url=${encodeURIComponent(finalUrl)}`);
 
-        return api.sendMessage(
-          chatId,
-          `✅ Added to '${category.toUpperCase()}'\n🔗 ${finalUrl}`
-        );
+        return api.sendMessage(chatId, `✅ Added to '${category.toUpperCase()}'\n🔗 ${finalUrl}`);
       } catch (e) {
-        console.error("Add failed:", e.message);
+        console.error("Upload/Add Error:", e.message);
         return api.sendMessage(chatId, "❌ Upload বা add করতে ব্যর্থ হয়েছে।");
       }
     }
 
-    // 🎬 Inline UI for category video view
+    // 🎬 Inline category video view
     const videoSelectionMarkup = {
       reply_markup: {
         inline_keyboard: [
           [{ text: 'Love', callback_data: '/video/love' }, { text: 'CPL', callback_data: '/video/cpl' }],
-          [{ text: 'Short', callback_data: '/video/short' }, { text: 'Sad', callback_data: '/video/sad' }],
+          [{ text: 'Short', callback_data: '/video/shortvideo' }, { text: 'Sad', callback_data: '/video/sadvideo' }],
           [{ text: 'Status', callback_data: '/video/status' }, { text: 'Shairi', callback_data: '/video/shairi' }],
           [{ text: 'Baby', callback_data: '/video/baby' }, { text: 'Anime', callback_data: '/video/anime' }],
           [{ text: 'FF', callback_data: '/video/ff' }, { text: 'Lofi', callback_data: '/video/lofi' }],
@@ -80,9 +82,7 @@ module.exports = {
       const categoryEndpoint = callbackQuery.data;
       await api.answerCallbackQuery(callbackQuery.id);
 
-      const loadingMsg = await api.sendMessage(chatId, "⏳ Fetching video...", {
-        reply_to_message_id: waitMsg.message_id,
-      });
+      const loadingMsg = await api.sendMessage(chatId, "⏳ Fetching video...", { reply_to_message_id: waitMsg.message_id });
 
       try {
         const apis = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
