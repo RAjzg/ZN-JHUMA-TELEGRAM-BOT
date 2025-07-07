@@ -38,7 +38,7 @@ module.exports = {
       reply_markup: {
         inline_keyboard: [
           [{ text: 'Love', callback_data: '/video/love' }, { text: 'CPL', callback_data: '/video/cpl' }],
-          [{ text: 'Short Video', callback_data: '/video/shortvideo' }, { text: 'Sad Video', callback_data: '/video/sadvideo' }],
+          [{ text: 'Short Video', callback_data: '/video/short' }, { text: 'Sad Video', callback_data: '/video/sad' }],
           [{ text: 'Status', callback_data: '/video/status' }, { text: 'Shairi', callback_data: '/video/shairi' }],
           [{ text: 'Baby', callback_data: '/video/baby' }, { text: 'Anime', callback_data: '/video/anime' }],
           [{ text: 'FF', callback_data: '/video/ff' }, { text: 'Lofi', callback_data: '/video/lofi' }],
