@@ -6,7 +6,7 @@ const FormData = require("form-data");
 
 module.exports.config = {
   name: "catbox",
-  version: "1.1.3",
+  version: "1.1.4",
   role: 0,
   credits: "Shaon Ahmed Fix by ChatGPT",
   usePrefix: true,
@@ -53,14 +53,14 @@ async function downloadFile(url, destPath) {
   });
 }
 
-// ⬆️ Upload to Catbox
+// ⬆️ Upload to Catbox (✅ filename fixed)
 async function uploadFileToCatbox(filePath) {
-  const CATBOX_USER_HASH = '8e68fd8d6375763e3ec135499'; // ✅ তোমার ইউজার হ্যাশ
+  const CATBOX_USER_HASH = '8e68fd8d6375763e3ec135499'; // তোমার Catbox userhash
 
   const form = new FormData();
   form.append("reqtype", "fileupload");
   form.append("userhash", CATBOX_USER_HASH);
-  form.append("fileToUpload", fs.createReadStream(filePath));
+  form.append("fileToUpload", fs.createReadStream(filePath), path.basename(filePath)); // ✅ filename added here
 
   const response = await axios.post("https://catbox.moe/user/api.php", form, {
     headers: form.getHeaders(),
