@@ -48,7 +48,9 @@ module.exports.run = async function ({ api, message }) {
       `${baseUrl}/video/sex2`,
       `${baseUrl}/video/sex3`,
       `${baseUrl}/video/horny`,
-      `${baseUrl}/video/status2`
+      `${baseUrl}/video/status2`,
+      `${baseUrl}/video/status3`,
+      `${baseUrl}/video/status4`
     ];
 
     // র‍্যান্ডম একটি API বেছে নেওয়া
