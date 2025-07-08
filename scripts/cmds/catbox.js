@@ -6,9 +6,9 @@ const FormData = require("form-data");
 
 module.exports.config = {
   name: "catbox",
-  version: "1.0.2",
+  version: "1.0.3",
   role: 0,
-  credits: "Mirai Style by Shaon + ChatGPT",
+  credits: "Shaon + ChatGPT",
   usePrefix: true,
   description: "Upload media to Catbox like Mirai",
   category: "media",
@@ -16,29 +16,25 @@ module.exports.config = {
   cooldowns: 5,
 };
 
-function getExtFromMime(type) {
-  const map = {
-    "image/jpeg": "jpg",
-    "image/png": "png",
-    "image/gif": "gif",
-    "video/mp4": "mp4",
-    "video/x-matroska": "mkv",
-    "audio/mpeg": "mp3",
-    "audio/ogg": "ogg",
-    "audio/wav": "wav",
-    "application/pdf": "pdf",
+function getExtensionFromType(type) {
+  const extMap = {
+    photo: "jpg",
+    video: "mp4",
+    audio: "mp3",
+    document: "pdf",
+    animated_image: "gif",
   };
-  return map[type] || null;
+  return extMap[type] || "dat";
 }
 
-async function downloadFile(url, dest) {
+async function downloadFile(url, destPath) {
   const res = await axios({
     url,
     method: "GET",
     responseType: "stream",
     headers: { "User-Agent": "TelegramBot" },
   });
-  const stream = fs.createWriteStream(dest);
+  const stream = fs.createWriteStream(destPath);
   res.data.pipe(stream);
   return new Promise((resolve, reject) => {
     stream.on("finish", resolve);
@@ -50,14 +46,12 @@ async function uploadToCatbox(filePath) {
   const form = new FormData();
   form.append("reqtype", "fileupload");
   form.append("fileToUpload", fs.createReadStream(filePath), path.basename(filePath));
-
   const res = await axios.post("https://catbox.moe/user/api.php", form, {
     headers: form.getHeaders(),
     timeout: 60000,
     maxContentLength: Infinity,
     maxBodyLength: Infinity,
   });
-
   const url = res.data.trim();
   if (!url.startsWith("https://")) throw new Error("Upload failed: " + url);
   return url;
@@ -80,24 +74,37 @@ module.exports.onStart = async ({ api, event, message }) => {
 
     const fileUrl = await api.getFileLink(fileId);
 
-    // Guess extension
-    let ext;
+    // fallback extension from Telegram type
+    let fallbackExt = getExtensionFromType(
+      reply.photo ? "photo" :
+      reply.video ? "video" :
+      reply.audio ? "audio" :
+      reply.document ? "document" : "dat"
+    );
+
+    let ext = fallbackExt;
     try {
       const head = await axios.head(fileUrl);
       const mime = head.headers["content-type"];
-      ext = getExtFromMime(mime);
-      if (!ext) throw new Error("Unknown mime: " + mime);
-    } catch (e) {
-      return message.reply("❌ Failed to detect file type. Upload aborted.");
+      if (mime.includes("jpeg")) ext = "jpg";
+      else if (mime.includes("png")) ext = "png";
+      else if (mime.includes("gif")) ext = "gif";
+      else if (mime.includes("mp4")) ext = "mp4";
+      else if (mime.includes("mp3")) ext = "mp3";
+      else if (mime.includes("ogg")) ext = "ogg";
+      else if (mime.includes("wav")) ext = "wav";
+      else if (mime.includes("pdf")) ext = "pdf";
+    } catch {
+      // use fallbackExt silently
     }
 
-    const tmpFile = path.join(os.tmpdir(), `catbox_${Date.now()}.${ext}`);
-    await downloadFile(fileUrl, tmpFile);
+    const tmpPath = path.join(os.tmpdir(), `catbox_${Date.now()}.${ext}`);
+    await downloadFile(fileUrl, tmpPath);
 
-    const resultUrl = await uploadToCatbox(tmpFile);
-    fs.unlinkSync(tmpFile);
+    const result = await uploadToCatbox(tmpPath);
+    fs.unlinkSync(tmpPath);
 
-    return message.reply(`✅ Uploaded successfully:\n${resultUrl}`);
+    return message.reply(`✅ Uploaded successfully:\n${result}`);
   } catch (err) {
     console.error("Catbox error:", err);
     return message.reply(`❌ Upload failed: ${err.message}`);
