@@ -6,7 +6,7 @@ const FormData = require("form-data");
 
 module.exports.config = {
   name: "catbox",
-  version: "1.1.1",
+  version: "1.1.2",
   role: 0,
   credits: "Shaon Ahmed Fix by ChatGPT",
   usePrefix: true,
@@ -16,13 +16,14 @@ module.exports.config = {
   cooldowns: 10,
 };
 
-// 🧠 Extension detect function
+// ✅ Detect file extension from content-type
 function getExtension(contentType) {
   const map = {
     'image/jpeg': 'jpg',
     'image/png': 'png',
     'image/gif': 'gif',
     'video/mp4': 'mp4',
+    'video/x-matroska': 'mkv',
     'audio/mpeg': 'mp3',
     'audio/ogg': 'ogg',
     'audio/wav': 'wav',
@@ -30,16 +31,16 @@ function getExtension(contentType) {
     'application/pdf': 'pdf',
     'application/octet-stream': 'bin'
   };
-  return map[contentType] || 'dat';
+  return map[contentType] || 'mp4'; // fallback to mp4
 }
 
-// 🧲 Download file
+// ✅ Download media file from Telegram
 async function downloadFile(url, destPath) {
   const response = await axios({
     url,
     method: "GET",
     responseType: "stream",
-    timeout: 10000, // 🔧 Add timeout to avoid hang
+    timeout: 10000,
     headers: { 'User-Agent': 'Mozilla/5.0' }
   });
 
@@ -52,10 +53,9 @@ async function downloadFile(url, destPath) {
   });
 }
 
-// 🚀 Upload to Catbox
+// ✅ Upload to Catbox
 async function uploadFileToCatbox(filePath) {
-  const CATBOX_USER_HASH = '8e68fd8d6375763e3ec135499'; // ✅ Use your real userhash
-
+  const CATBOX_USER_HASH = '8e68fd8d6375763e3ec135499'; // তোমার userhash
   const form = new FormData();
   form.append("reqtype", "fileupload");
   form.append("userhash", CATBOX_USER_HASH);
@@ -63,7 +63,7 @@ async function uploadFileToCatbox(filePath) {
 
   const response = await axios.post("https://catbox.moe/user/api.php", form, {
     headers: form.getHeaders(),
-    timeout: 15000, // ⏱️ prevent long waits
+    timeout: 20000,
     maxContentLength: Infinity,
     maxBodyLength: Infinity,
   });
@@ -76,7 +76,7 @@ async function uploadFileToCatbox(filePath) {
   return url;
 }
 
-// 🎯 Main Command
+// ✅ Main command logic
 module.exports.onStart = async ({ api, event, message }) => {
   try {
     const replied = event.reply_to_message;
@@ -96,15 +96,15 @@ module.exports.onStart = async ({ api, event, message }) => {
 
     const fileUrl = await api.getFileLink(fileId);
 
-    // Get content-type to determine extension
-    let ext = 'dat';
+    // Guess extension
+    let ext = 'mp4'; // fallback
     try {
       const head = await axios.head(fileUrl);
       const contentType = head.headers['content-type'];
       ext = getExtension(contentType);
     } catch (e) {
       const guessed = path.extname(new URL(fileUrl).pathname).replace('.', '');
-      if (guessed) ext = guessed;
+      if (guessed && guessed.length <= 5) ext = guessed;
     }
 
     const tempFilePath = path.join(os.tmpdir(), `catbox_${Date.now()}.${ext}`);
