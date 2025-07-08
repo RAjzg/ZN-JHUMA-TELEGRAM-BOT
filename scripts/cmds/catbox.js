@@ -6,10 +6,10 @@ const FormData = require("form-data");
 
 module.exports.config = {
   name: "catbox",
-  version: "1.1.0",
+  version: "2.0.0",
   role: 0,
-  credits: "Shaon + ChatGPT",
-  description: "Upload media to Catbox without .bin issue",
+  credits: "Shaon x ChatGPT",
+  description: "Upload media to Catbox (no .bin, no timeout)",
   category: "media",
   usePrefix: true,
   cooldowns: 5,
@@ -51,7 +51,7 @@ async function uploadToCatbox(filePath, originalFilename) {
 
   const res = await axios.post("https://catbox.moe/user/api.php", form, {
     headers: form.getHeaders(),
-    timeout: 60000,
+    timeout: 180000, // 3 minutes timeout!
     maxContentLength: Infinity,
     maxBodyLength: Infinity,
   });
@@ -85,7 +85,6 @@ module.exports.onStart = async ({ api, event, message }) => {
       reply.document ? "document" : "dat"
     );
 
-    // fallback filename from fileId
     const filename = `file_${Date.now()}.${ext}`;
     const tmpPath = path.join(os.tmpdir(), filename);
 
