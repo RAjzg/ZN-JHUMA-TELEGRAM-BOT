@@ -2,80 +2,72 @@ const axios = require('axios');
 
 module.exports = {
   config: {
-    name: "up", // 🔥 কমান্ডের নাম এখন "up"
+    name: "up",
     version: "1.0.2",
     role: 0,
     credits: "Shaon Ahmed",
     description: "Uptime monitor (create, delete, status, list)",
     category: "system",
-    usages: "/up [name] [url] | /up delete [id] | /up status [id] | /up list",
+    usages: "/up [name] [url] | /up delete [id/name] | /up status [id/name] | /up list",
     cooldowns: 5,
   },
 
   onStart: async ({ message, args }) => {
-    const apiLink = "https://web-api-delta.vercel.app/upt"; // 🔥 এখানে তোমার API URL বসাও
+    const apiLink = "https://web-api-delta.vercel.app/upt";
 
     if (!args.length) {
       return message.reply(
         `📍 Usage:\n\n` +
-          `✅ Create: /up [name] [url]\n` +
-          `🗑️ Delete: /up delete [id]\n` +
-          `📊 Status: /up status [id]\n` +
-          `📜 List: /up list\n\n` +
-          `Example:\n` +
-          `/up Shaon https://example.com\n` +
-          `/up delete 123456\n` +
-          `/up status 123456\n` +
-          `/up list`
+        `✅ Create: /up [name] [url]\n` +
+        `🗑️ Delete: /up delete [id or name]\n` +
+        `📊 Status: /up status [id or name]\n` +
+        `📜 List: /up list\n\n` +
+        `Example:\n` +
+        `/up Shaon https://example.com\n` +
+        `/up delete 123456\n` +
+        `/up delete Shaon\n` +
+        `/up status Shaon\n` +
+        `/up list`
       );
     }
 
     const command = args[0].toLowerCase();
 
-    // ✅ Delete Command
+    // ✅ Delete Command (id or name)
     if (command === "delete") {
-      const id = args[1];
-      if (!id)
-        return message.reply("❌ Please provide the monitor ID.\nUsage: /up delete <id>");
+      const target = args[1];
+      if (!target)
+        return message.reply("❌ Please provide monitor ID or name.\nUsage: /up delete <id|name>");
 
       try {
-        const res = await axios.get(`${apiLink}?delete=true&id=${id}`);
+        const res = await axios.get(`${apiLink}?delete=true&${isNaN(target) ? `name=${encodeURIComponent(target)}` : `id=${target}`}`);
         const result = res.data;
-        if (result.success) {
-          return message.reply(result.message);
-        } else {
-          return message.reply(`❌ Error:\n${result.message}`);
-        }
+
+        return message.reply(result.success ? result.message : `❌ Error:\n${result.message}`);
       } catch (e) {
         return message.reply(`🚫 API Error: ${e.message}`);
       }
     }
 
-    // ✅ Status Command
+    // ✅ Status Command (id or name)
     if (command === "status") {
-      const id = args[1];
-      if (!id)
-        return message.reply("❌ Please provide the monitor ID.\nUsage: /up status <id>");
+      const target = args[1];
+      if (!target)
+        return message.reply("❌ Please provide monitor ID or name.\nUsage: /up status <id|name>");
 
       try {
-        const res = await axios.get(`${apiLink}?status=true&id=${id}`);
+        const res = await axios.get(`${apiLink}?status=true&${isNaN(target) ? `name=${encodeURIComponent(target)}` : `id=${target}`}`);
         const result = res.data;
 
         if (result.success) {
           const data = result.data;
           return message.reply(
             `📊 Monitor Status:\n` +
-              `🆔 ID: ${data.id}\n` +
-              `📛 Name: ${data.name}\n` +
-              `🔗 URL: ${data.url}\n` +
-              `⏰ Interval: ${data.interval} minutes\n` +
-              `📶 Status: ${
-                data.status == 2
-                  ? "🟢 Up"
-                  : data.status == 9
-                  ? "🔴 Down"
-                  : "⚪️ Paused"
-              }`
+            `🆔 ID: ${data.id}\n` +
+            `📛 Name: ${data.name}\n` +
+            `🔗 URL: ${data.url}\n` +
+            `⏰ Interval: ${data.interval} minutes\n` +
+            `📶 Status: ${data.status == 2 ? "🟢 Up" : data.status == 9 ? "🔴 Down" : "⚪️ Paused"}`
           );
         } else {
           return message.reply(`❌ Error:\n${result.message}`);
@@ -97,21 +89,13 @@ module.exports = {
             return message.reply(`❌ No monitor found.`);
           }
 
-          const msg = list
-            .map(
-              (item, index) =>
-                `${index + 1}. 🌐 ${item.name}\n` +
-                `🔗 ${item.url}\n` +
-                `🆔 ID: ${item.id}\n` +
-                `📶 Status: ${
-                  item.status == 2
-                    ? "🟢 Up"
-                    : item.status == 9
-                    ? "🔴 Down"
-                    : "⚪️ Paused"
-                }\n`
-            )
-            .join("\n");
+          const msg = list.map(
+            (item, index) =>
+              `${index + 1}. 🌐 ${item.name}\n` +
+              `🔗 ${item.url}\n` +
+              `🆔 ID: ${item.id}\n` +
+              `📶 Status: ${item.status == 2 ? "🟢 Up" : item.status == 9 ? "🔴 Down" : "⚪️ Paused"}\n`
+          ).join("\n");
 
           return message.reply(`📜 Monitor List:\n\n${msg}`);
         } else {
@@ -127,9 +111,7 @@ module.exports = {
     const url = args[1];
 
     if (!url || !url.startsWith("http")) {
-      return message.reply(
-        "❌ Please provide name and valid URL.\nUsage: /up [name] [url]"
-      );
+      return message.reply("❌ Please provide name and valid URL.\nUsage: /up [name] [url]");
     }
 
     try {
@@ -140,17 +122,11 @@ module.exports = {
         const data = result.data;
         return message.reply(
           `✅ Monitor Created!\n──────────────\n` +
-            `🆔 ID: ${data.id}\n` +
-            `📛 Name: ${data.name}\n` +
-            `🔗 URL: ${data.url}\n` +
-            `⏰ Interval: ${data.interval} minutes\n` +
-            `📶 Status: ${
-              data.status == 2
-                ? "🟢 Up"
-                : data.status == 9
-                ? "🔴 Down"
-                : "⚪️ Paused"
-            }`
+          `🆔 ID: ${data.id}\n` +
+          `📛 Name: ${data.name}\n` +
+          `🔗 URL: ${data.url}\n` +
+          `⏰ Interval: ${data.interval} minutes\n` +
+          `📶 Status: ${data.status == 2 ? "🟢 Up" : data.status == 9 ? "🔴 Down" : "⚪️ Paused"}`
         );
       } else {
         return message.reply(`❌ Error:\n${result.message}`);
