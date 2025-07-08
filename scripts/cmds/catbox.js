@@ -6,19 +6,18 @@ const FormData = require("form-data");
 
 module.exports.config = {
   name: "catbox",
-  version: "1.3.2",
+  version: "1.0.2",
   role: 0,
-  credits: "Shaon Ahmed Fix by ChatGPT",
+  credits: "Mirai Style by Shaon + ChatGPT",
   usePrefix: true,
-  description: "Upload replied media to Catbox",
+  description: "Upload media to Catbox like Mirai",
   category: "media",
-  usages: "[reply to photo/video/audio/document]",
-  cooldowns: 10,
+  usages: "[reply to image/video/audio]",
+  cooldowns: 5,
 };
 
-// 🧠 Extension by content-type
-function getExtension(contentType) {
-  const types = {
+function getExtFromMime(type) {
+  const map = {
     "image/jpeg": "jpg",
     "image/png": "png",
     "image/gif": "gif",
@@ -28,82 +27,79 @@ function getExtension(contentType) {
     "audio/ogg": "ogg",
     "audio/wav": "wav",
     "application/pdf": "pdf",
-    "application/zip": "zip",
-    "application/x-rar-compressed": "rar",
   };
-  return types[contentType] || null; // ❌ no fallback like "bin"
+  return map[type] || null;
 }
 
-// ⬇️ Download file
-async function downloadFile(url, destPath) {
+async function downloadFile(url, dest) {
   const res = await axios({
     url,
     method: "GET",
     responseType: "stream",
     headers: { "User-Agent": "TelegramBot" },
   });
-  const writer = fs.createWriteStream(destPath);
-  res.data.pipe(writer);
+  const stream = fs.createWriteStream(dest);
+  res.data.pipe(stream);
   return new Promise((resolve, reject) => {
-    writer.on("finish", resolve);
-    writer.on("error", reject);
+    stream.on("finish", resolve);
+    stream.on("error", reject);
   });
 }
 
-// ⬆️ Upload to Catbox
-async function uploadFileToCatbox(filePath) {
+async function uploadToCatbox(filePath) {
   const form = new FormData();
   form.append("reqtype", "fileupload");
   form.append("fileToUpload", fs.createReadStream(filePath), path.basename(filePath));
 
   const res = await axios.post("https://catbox.moe/user/api.php", form, {
     headers: form.getHeaders(),
+    timeout: 60000,
     maxContentLength: Infinity,
     maxBodyLength: Infinity,
-    timeout: 60000, // ⏱️ Optional extended timeout
   });
 
   const url = res.data.trim();
-  if (!url.startsWith("https://")) throw new Error("Catbox response error: " + url);
+  if (!url.startsWith("https://")) throw new Error("Upload failed: " + url);
   return url;
 }
 
-// 🧠 Main logic
 module.exports.onStart = async ({ api, event, message }) => {
   try {
-    const replied = event.reply_to_message;
-    if (!replied) return message.reply("❐ Please reply to a media file.");
-
-    const fileId =
-      replied?.photo?.[replied.photo.length - 1]?.file_id ||
-      replied?.video?.file_id ||
-      replied?.audio?.file_id ||
-      replied?.document?.file_id;
-
-    if (!fileId) return message.reply("❐ No supported file found.");
-
-    const fileUrl = await api.getFileLink(fileId);
-    let ext;
-
-    // ✅ Try content-type
-    try {
-      const head = await axios.head(fileUrl);
-      const type = head.headers["content-type"];
-      ext = getExtension(type);
-      if (!ext) throw new Error("Unsupported content-type: " + type);
-    } catch (e) {
-      return message.reply("❌ Could not determine file type. Upload aborted.");
+    const reply = event.reply_to_message;
+    if (!reply || !(
+      reply.photo || reply.video || reply.audio || reply.document
+    )) {
+      return message.reply("❌ Please reply to a valid photo/video/audio/document.");
     }
 
-    const tempPath = path.join(os.tmpdir(), `catbox_${Date.now()}.${ext}`);
-    await downloadFile(fileUrl, tempPath);
+    const fileId =
+      reply?.photo?.[reply.photo.length - 1]?.file_id ||
+      reply?.video?.file_id ||
+      reply?.audio?.file_id ||
+      reply?.document?.file_id;
 
-    const uploadedUrl = await uploadFileToCatbox(tempPath);
-    fs.unlinkSync(tempPath);
+    const fileUrl = await api.getFileLink(fileId);
 
-    return message.reply(`✅ Uploaded successfully:\n${uploadedUrl}`);
-  } catch (e) {
-    console.error("Upload Error:", e);
-    return message.reply(`❌ Upload failed: ${e.message}`);
+    // Guess extension
+    let ext;
+    try {
+      const head = await axios.head(fileUrl);
+      const mime = head.headers["content-type"];
+      ext = getExtFromMime(mime);
+      if (!ext) throw new Error("Unknown mime: " + mime);
+    } catch (e) {
+      return message.reply("❌ Failed to detect file type. Upload aborted.");
+    }
+
+    const tmpFile = path.join(os.tmpdir(), `catbox_${Date.now()}.${ext}`);
+    await downloadFile(fileUrl, tmpFile);
+
+    const resultUrl = await uploadToCatbox(tmpFile);
+    fs.unlinkSync(tmpFile);
+
+    return message.reply(`✅ Uploaded successfully:\n${resultUrl}`);
+  } catch (err) {
+    console.error("Catbox error:", err);
+    return message.reply(`❌ Upload failed: ${err.message}`);
   }
 };
