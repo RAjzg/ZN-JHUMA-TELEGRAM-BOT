@@ -6,13 +6,12 @@ const FormData = require("form-data");
 
 module.exports.config = {
   name: "catbox",
-  version: "1.0.3",
+  version: "1.1.0",
   role: 0,
   credits: "Shaon + ChatGPT",
-  usePrefix: true,
-  description: "Upload media to Catbox like Mirai",
+  description: "Upload media to Catbox without .bin issue",
   category: "media",
-  usages: "[reply to image/video/audio]",
+  usePrefix: true,
   cooldowns: 5,
 };
 
@@ -42,16 +41,21 @@ async function downloadFile(url, destPath) {
   });
 }
 
-async function uploadToCatbox(filePath) {
+async function uploadToCatbox(filePath, originalFilename) {
   const form = new FormData();
   form.append("reqtype", "fileupload");
-  form.append("fileToUpload", fs.createReadStream(filePath), path.basename(filePath));
+  form.append("fileToUpload", fs.createReadStream(filePath), {
+    filename: originalFilename,
+    contentType: "application/octet-stream"
+  });
+
   const res = await axios.post("https://catbox.moe/user/api.php", form, {
     headers: form.getHeaders(),
     timeout: 60000,
     maxContentLength: Infinity,
     maxBodyLength: Infinity,
   });
+
   const url = res.data.trim();
   if (!url.startsWith("https://")) throw new Error("Upload failed: " + url);
   return url;
@@ -63,7 +67,7 @@ module.exports.onStart = async ({ api, event, message }) => {
     if (!reply || !(
       reply.photo || reply.video || reply.audio || reply.document
     )) {
-      return message.reply("❌ Please reply to a valid photo/video/audio/document.");
+      return message.reply("❌ Please reply to a photo, video, audio or document.");
     }
 
     const fileId =
@@ -74,34 +78,19 @@ module.exports.onStart = async ({ api, event, message }) => {
 
     const fileUrl = await api.getFileLink(fileId);
 
-    // fallback extension from Telegram type
-    let fallbackExt = getExtensionFromType(
+    let ext = getExtensionFromType(
       reply.photo ? "photo" :
       reply.video ? "video" :
       reply.audio ? "audio" :
       reply.document ? "document" : "dat"
     );
 
-    let ext = fallbackExt;
-    try {
-      const head = await axios.head(fileUrl);
-      const mime = head.headers["content-type"];
-      if (mime.includes("jpeg")) ext = "jpg";
-      else if (mime.includes("png")) ext = "png";
-      else if (mime.includes("gif")) ext = "gif";
-      else if (mime.includes("mp4")) ext = "mp4";
-      else if (mime.includes("mp3")) ext = "mp3";
-      else if (mime.includes("ogg")) ext = "ogg";
-      else if (mime.includes("wav")) ext = "wav";
-      else if (mime.includes("pdf")) ext = "pdf";
-    } catch {
-      // use fallbackExt silently
-    }
+    // fallback filename from fileId
+    const filename = `file_${Date.now()}.${ext}`;
+    const tmpPath = path.join(os.tmpdir(), filename);
 
-    const tmpPath = path.join(os.tmpdir(), `catbox_${Date.now()}.${ext}`);
     await downloadFile(fileUrl, tmpPath);
-
-    const result = await uploadToCatbox(tmpPath);
+    const result = await uploadToCatbox(tmpPath, filename);
     fs.unlinkSync(tmpPath);
 
     return message.reply(`✅ Uploaded successfully:\n${result}`);
