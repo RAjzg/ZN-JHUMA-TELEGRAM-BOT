@@ -6,7 +6,7 @@ const FormData = require("form-data");
 
 module.exports.config = {
   name: "catbox",
-  version: "1.1.4",
+  version: "1.2.0",
   role: 0,
   credits: "Shaon Ahmed Fix by ChatGPT",
   usePrefix: true,
@@ -34,13 +34,12 @@ function getExtension(contentType) {
   return map[contentType] || 'mp4'; // fallback to mp4
 }
 
-// ⬇️ Download file
+// ⬇️ Download file from Telegram
 async function downloadFile(url, destPath) {
   const response = await axios({
     url,
     method: "GET",
     responseType: "stream",
-    timeout: 15000,
     headers: { 'User-Agent': 'Mozilla/5.0' }
   });
 
@@ -53,18 +52,18 @@ async function downloadFile(url, destPath) {
   });
 }
 
-// ⬆️ Upload to Catbox (✅ filename fixed)
+// ⬆️ Upload to Catbox without timeout ✅
 async function uploadFileToCatbox(filePath) {
-  const CATBOX_USER_HASH = '8e68fd8d6375763e3ec135499'; // তোমার Catbox userhash
+  const CATBOX_USER_HASH = '8e68fd8d6375763e3ec135499'; // ✅ Your Catbox userhash
 
   const form = new FormData();
   form.append("reqtype", "fileupload");
   form.append("userhash", CATBOX_USER_HASH);
-  form.append("fileToUpload", fs.createReadStream(filePath), path.basename(filePath)); // ✅ filename added here
+  form.append("fileToUpload", fs.createReadStream(filePath), path.basename(filePath)); // ✅ include filename
 
   const response = await axios.post("https://catbox.moe/user/api.php", form, {
     headers: form.getHeaders(),
-    timeout: 20000,
+    // ❌ timeout removed
     maxContentLength: Infinity,
     maxBodyLength: Infinity,
   });
@@ -77,7 +76,7 @@ async function uploadFileToCatbox(filePath) {
   return url;
 }
 
-// 🧠 Main command logic
+// 🧠 Main Command
 module.exports.onStart = async ({ api, event, message }) => {
   try {
     const replied = event.reply_to_message;
@@ -97,10 +96,10 @@ module.exports.onStart = async ({ api, event, message }) => {
 
     const fileUrl = await api.getFileLink(fileId);
 
-    // ✅ Guess extension reliably
-    let ext = 'mp4'; // default fallback
+    // ✅ Determine extension
+    let ext = 'mp4';
     try {
-      const head = await axios.head(fileUrl, { timeout: 5000 });
+      const head = await axios.head(fileUrl);
       const contentType = head.headers['content-type'];
       const guessed = getExtension(contentType);
       if (guessed && guessed.length <= 5) ext = guessed;
@@ -109,7 +108,7 @@ module.exports.onStart = async ({ api, event, message }) => {
       if (pathExt && pathExt.length <= 5) {
         ext = pathExt;
       } else {
-        ext = 'mp4'; // final fallback
+        ext = 'mp4';
       }
     }
 
