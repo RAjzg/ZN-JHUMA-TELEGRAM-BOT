@@ -11,56 +11,87 @@ module.exports.config = {
 };
 
 module.exports.run = async function ({ api, message }) {
-try{
-  const axios = require("axios");
-  const fs = require("fs");
-  const { data } = await axios.get(
-    "https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json",
-  );
-  const video = data.api;
-  var shaon = [
-`${video}/video/status`,
-`${video}/video/sad`,
-`${video}/video/baby`,
-`${video}/video/love`,
-`${video}/video/ff`,
-`${video}/video/shairi`,
-`${video}/video/humaiyun`,
-`${video}/video/kosto`,
-`${video}/video/anime`,
-`${video}/video/short`,
-`${video}/video/event`,
-`${video}/video/prefix`,
-`${video}/video/cpl`,
-`${video}/video/time`,
-`${video}/video/lofi`,
-`${video}/video/happy`,
-`${video}/video/football`,               
-`${video}/video/funny`,
-`${video}/video/sex`,
-`${video}/video/hot`,
-`${video}/video/item`,
-`${video}/video/capcut`,
-`${video}/video/sex2`,
-`${video}/video/sex3`,
-`${video}/video/horny`
-               ];
-  var shaon1 = shaon[Math.floor(Math.random() * shaon.length)];
-  const res = await axios.get(shaon1);
-  const vidUrl = res.data.data;
-  const vid = await axios.get(vidUrl, {
-    responseType: "arraybuffer",
-    headers: { "User-Agent": "Mozila/5.0" },
-  });
-  const filep = __dirname + "/caches/video.mp4";
-  fs.writeFileSync(filep, Buffer.from(vid.data,"utf-8"));
-  message.stream({
-    url: fs.createReadStream(filep),
-    caption: `𝐒𝐏𝐀𝐘𝐒𝐇𝐄𝐀𝐋 𝐑𝐀𝐍𝐃𝐎𝐌 𝐌𝐈𝐗 
-${res.data.shaon}\n𝚃𝙾𝚃𝙰𝙻 𝚅𝙸𝙳𝙴𝙾:${res.data.count}...🎬\n\n｢𝐒𝐇𝐀𝐎𝐍 𝐏𝐑𝐎𝐉𝐄𝐂𝐓｣`,
-  });
-  //fs.unlinkSync(filep);
-} catch(e){
-message.reply(e.message)
-}
+  try {
+    const axios = require("axios");
+    const fs = require("fs");
+    
+    // মূল API লিংক
+    const { data } = await axios.get(
+      "https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json"
+    );
+    const baseUrl = data.api;
+
+    // ভিডিও ক্যাটাগরি API লিংক লিস্ট
+    const apiList = [
+      `${baseUrl}/video/status`,
+      `${baseUrl}/video/sad`,
+      `${baseUrl}/video/baby`,
+      `${baseUrl}/video/love`,
+      `${baseUrl}/video/ff`,
+      `${baseUrl}/video/shairi`,
+      `${baseUrl}/video/humaiyun`,
+      `${baseUrl}/video/kosto`,
+      `${baseUrl}/video/anime`,
+      `${baseUrl}/video/short`,
+      `${baseUrl}/video/event`,
+      `${baseUrl}/video/prefix`,
+      `${baseUrl}/video/cpl`,
+      `${baseUrl}/video/time`,
+      `${baseUrl}/video/lofi`,
+      `${baseUrl}/video/happy`,
+      `${baseUrl}/video/football`,
+      `${baseUrl}/video/funny`,
+      `${baseUrl}/video/sex`,
+      `${baseUrl}/video/hot`,
+      `${baseUrl}/video/item`,
+      `${baseUrl}/video/capcut`,
+      `${baseUrl}/video/sex2`,
+      `${baseUrl}/video/sex3`,
+      `${baseUrl}/video/horny`,
+      `${baseUrl}/video/status2`
+    ];
+
+    // র‍্যান্ডম একটি API বেছে নেওয়া
+    const apiUrl = apiList[Math.floor(Math.random() * apiList.length)];
+    const res = await axios.get(apiUrl);
+    
+    // ভিডিও লিংক ঠিকভাবে পাওয়া যাচ্ছে কিনা চেক
+    let videoUrl;
+
+    if (typeof res.data.data === "string") {
+      videoUrl = res.data.data; // যদি সরাসরি URL হয়
+    } else if (typeof res.data.data === "object") {
+      // যদি object থাকে এবং সেখানে url থাকে
+      if (res.data.data.url) {
+        videoUrl = res.data.data.url;
+      } else if (res.data.url && res.data.url.url) {
+        // কিছু ক্ষেত্রে data.url.url ফর্ম্যাটে থাকতে পারে
+        videoUrl = res.data.url.url;
+      } else {
+        throw new Error("❌ ভিডিও URL খুঁজে পাওয়া যায়নি!");
+      }
+    } else {
+      throw new Error("❌ অজানা response format!");
+    }
+
+    // ভিডিও ডাউনলোড
+    const vid = await axios.get(videoUrl, {
+      responseType: "arraybuffer",
+      headers: { "User-Agent": "Mozilla/5.0" },
+    });
+
+    const filePath = __dirname + "/caches/video.mp4";
+    fs.writeFileSync(filePath, Buffer.from(vid.data, "utf-8"));
+
+    message.stream({
+      url: fs.createReadStream(filePath),
+      caption: `𝐒𝐏𝐀𝐘𝐒𝐇𝐄𝐀𝐋 𝐑𝐀𝐍𝐃𝐎𝐌 𝐌𝐈𝐗\n${res.data.shaon || ''}\n𝚃𝙾𝚃𝙰𝙻 𝚅𝙸𝙳𝙴𝙾: ${res.data.count || '❓'} 🎬\n\n｢𝐒𝐇𝐀𝐎𝐍 𝐏𝐑𝐎𝐉𝐄𝐂𝐓｣`,
+    });
+
+    // অপশনালি: ভিডিও ফাইল ডিলিট করতে চাইলে নিচের লাইন আনকমেন্ট করো
+    // fs.unlinkSync(filePath);
+
+  } catch (e) {
+    message.reply("⚠️ Error: " + e.message);
+  }
 };
