@@ -6,17 +6,17 @@ const FormData = require("form-data");
 
 module.exports.config = {
   name: "catbox",
-  version: "1.1.0",
+  version: "1.1.1",
   role: 0,
   credits: "Shaon Ahmed Fix by ChatGPT",
   usePrefix: true,
   description: "Upload replied media to Catbox",
   category: "media",
   usages: "[reply to photo/video/audio/document]",
-  cooldowns: 10
+  cooldowns: 10,
 };
 
-// Extension detect function
+// 🧠 Extension detect function
 function getExtension(contentType) {
   const map = {
     'image/jpeg': 'jpg',
@@ -33,28 +33,28 @@ function getExtension(contentType) {
   return map[contentType] || 'dat';
 }
 
-// Download file
+// 🧲 Download file
 async function downloadFile(url, destPath) {
   const response = await axios({
     url,
     method: "GET",
     responseType: "stream",
-    headers: {
-      'User-Agent': 'Mozilla/5.0'
-    }
+    timeout: 10000, // 🔧 Add timeout to avoid hang
+    headers: { 'User-Agent': 'Mozilla/5.0' }
   });
 
   const writer = fs.createWriteStream(destPath);
   response.data.pipe(writer);
+
   return new Promise((resolve, reject) => {
     writer.on("finish", resolve);
     writer.on("error", reject);
   });
 }
 
-// Upload to Catbox
+// 🚀 Upload to Catbox
 async function uploadFileToCatbox(filePath) {
-  const CATBOX_USER_HASH = '8e68fd8d6375763e3ec135499'; // ✅ Userhash বসাও
+  const CATBOX_USER_HASH = '8e68fd8d6375763e3ec135499'; // ✅ Use your real userhash
 
   const form = new FormData();
   form.append("reqtype", "fileupload");
@@ -63,6 +63,7 @@ async function uploadFileToCatbox(filePath) {
 
   const response = await axios.post("https://catbox.moe/user/api.php", form, {
     headers: form.getHeaders(),
+    timeout: 15000, // ⏱️ prevent long waits
     maxContentLength: Infinity,
     maxBodyLength: Infinity,
   });
@@ -71,14 +72,13 @@ async function uploadFileToCatbox(filePath) {
   if (!url.startsWith("https://")) {
     throw new Error("Upload failed: " + url);
   }
+
   return url;
 }
 
-// Main Command
+// 🎯 Main Command
 module.exports.onStart = async ({ api, event, message }) => {
   try {
-    if (!event) return message.reply("❌ Event data missing.");
-
     const replied = event.reply_to_message;
     if (!replied) {
       return message.reply("❐ Please reply to a photo/video/audio/document.");
@@ -108,15 +108,12 @@ module.exports.onStart = async ({ api, event, message }) => {
     }
 
     const tempFilePath = path.join(os.tmpdir(), `catbox_${Date.now()}.${ext}`);
-
     await downloadFile(fileUrl, tempFilePath);
 
     const uploadedUrl = await uploadFileToCatbox(tempFilePath);
-
     fs.unlinkSync(tempFilePath);
 
     return message.reply(`✅ Uploaded successfully:\n${uploadedUrl}`);
-
   } catch (error) {
     console.error("Catbox Upload Error:", error);
     return message.reply(`❌ Upload failed: ${error.message || error}`);
