@@ -6,7 +6,7 @@ const FormData = require("form-data");
 
 module.exports.config = {
   name: "catbox",
-  version: "1.1.2",
+  version: "1.1.3",
   role: 0,
   credits: "Shaon Ahmed Fix by ChatGPT",
   usePrefix: true,
@@ -16,7 +16,7 @@ module.exports.config = {
   cooldowns: 10,
 };
 
-// ✅ Detect file extension from content-type
+// 🔎 Detect extension from content-type
 function getExtension(contentType) {
   const map = {
     'image/jpeg': 'jpg',
@@ -34,13 +34,13 @@ function getExtension(contentType) {
   return map[contentType] || 'mp4'; // fallback to mp4
 }
 
-// ✅ Download media file from Telegram
+// ⬇️ Download file
 async function downloadFile(url, destPath) {
   const response = await axios({
     url,
     method: "GET",
     responseType: "stream",
-    timeout: 10000,
+    timeout: 15000,
     headers: { 'User-Agent': 'Mozilla/5.0' }
   });
 
@@ -53,9 +53,10 @@ async function downloadFile(url, destPath) {
   });
 }
 
-// ✅ Upload to Catbox
+// ⬆️ Upload to Catbox
 async function uploadFileToCatbox(filePath) {
-  const CATBOX_USER_HASH = '8e68fd8d6375763e3ec135499'; // তোমার userhash
+  const CATBOX_USER_HASH = '8e68fd8d6375763e3ec135499'; // ✅ তোমার ইউজার হ্যাশ
+
   const form = new FormData();
   form.append("reqtype", "fileupload");
   form.append("userhash", CATBOX_USER_HASH);
@@ -76,7 +77,7 @@ async function uploadFileToCatbox(filePath) {
   return url;
 }
 
-// ✅ Main command logic
+// 🧠 Main command logic
 module.exports.onStart = async ({ api, event, message }) => {
   try {
     const replied = event.reply_to_message;
@@ -96,15 +97,20 @@ module.exports.onStart = async ({ api, event, message }) => {
 
     const fileUrl = await api.getFileLink(fileId);
 
-    // Guess extension
-    let ext = 'mp4'; // fallback
+    // ✅ Guess extension reliably
+    let ext = 'mp4'; // default fallback
     try {
-      const head = await axios.head(fileUrl);
+      const head = await axios.head(fileUrl, { timeout: 5000 });
       const contentType = head.headers['content-type'];
-      ext = getExtension(contentType);
-    } catch (e) {
-      const guessed = path.extname(new URL(fileUrl).pathname).replace('.', '');
+      const guessed = getExtension(contentType);
       if (guessed && guessed.length <= 5) ext = guessed;
+    } catch (e) {
+      const pathExt = path.extname(new URL(fileUrl).pathname).replace('.', '');
+      if (pathExt && pathExt.length <= 5) {
+        ext = pathExt;
+      } else {
+        ext = 'mp4'; // final fallback
+      }
     }
 
     const tempFilePath = path.join(os.tmpdir(), `catbox_${Date.now()}.${ext}`);
