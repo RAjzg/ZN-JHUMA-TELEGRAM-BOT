@@ -19,12 +19,11 @@ module.exports.config = {
 };
 
 module.exports.run = async function ({ bot, message, msg, args }) {
-  const apiKey = "itzaryan";
   let type = "video";
   let videoId, topResult;
 
   if (!args.length) {
-    return message.reply("❗ Please enter a YouTube URL or song name.\n\nExample:\n/video tum hi ho\n/video -v https://youtu.be/abc123");
+    return message.reply("❗ Please enter a YouTube URL or song name.\n\nExample:\n/video tum hi ho");
   }
 
   const loading = await message.reply("📥 Fetching your media, please wait...");
@@ -33,10 +32,9 @@ module.exports.run = async function ({ bot, message, msg, args }) {
     const mode = args[0];
     const inputArg = args[1];
 
-    // Mode: URL based
+    // URL mode
     if ((mode === "-v" || mode === "-a") && inputArg) {
       type = mode === "-a" ? "audio" : "video";
-
       let urlObj;
       try {
         urlObj = new URL(inputArg);
@@ -54,9 +52,8 @@ module.exports.run = async function ({ bot, message, msg, args }) {
       const results = await ytSearch(videoId);
       if (!results?.videos?.length) throw new Error("❌ Couldn't fetch video details.");
       topResult = results.videos[0];
-
     } else {
-      // Mode: Search by name
+      // Search by name
       const query = args.join(" ");
       const results = await ytSearch(query);
       if (!results?.videos?.length) throw new Error("❌ No results found.");
@@ -80,10 +77,10 @@ module.exports.run = async function ({ bot, message, msg, args }) {
   }
 };
 
-// REPLY handler
 module.exports.reply = async function ({ bot, message, msg }) {
   const selected = parseInt(msg.text);
   const cached = cache.get(msg.chat.id);
+
   if (!cached || !cached.list || isNaN(selected) || selected < 1 || selected > cached.list.length) {
     return;
   }
@@ -101,7 +98,6 @@ module.exports.reply = async function ({ bot, message, msg }) {
   }
 };
 
-// Utility to send download
 async function sendDownload(bot, msg, topResult, type, loadingId) {
   const videoId = topResult.videoId;
   const timestamp = topResult.timestamp || "0:00";
