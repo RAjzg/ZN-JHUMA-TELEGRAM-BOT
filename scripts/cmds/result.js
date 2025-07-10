@@ -15,7 +15,11 @@ module.exports = {
   run: async ({ bot, msg }) => {
     try {
       const res = await axios.get("https://shaon-ssc-result.vercel.app/options");
-      const exams = res.data.examinations;
+      const exams = res.data?.examinations;
+
+      if (!exams || exams.length === 0) {
+        return bot.sendMessage(msg.chat.id, "❌ Could not fetch exam list. Please try again later.");
+      }
 
       let text = "📚 Select Exam:\n";
       exams.forEach((e, i) => {
@@ -24,6 +28,9 @@ module.exports = {
 
       const sent = await bot.sendMessage(msg.chat.id, text, { reply_markup: { force_reply: true } });
 
+      global.client = global.client || {};
+      global.client.onReply = global.client.onReply || [];
+
       global.client.onReply.push({
         name: this.config.name,
         messageID: sent.message_id,
@@ -31,7 +38,8 @@ module.exports = {
         step: "exam",
         exams,
       });
-    } catch {
+    } catch (e) {
+      console.error("[result] Exam list fetch error:", e.message);
       bot.sendMessage(msg.chat.id, "❌ Failed to fetch exam list.");
     }
   },
@@ -55,7 +63,10 @@ module.exports = {
 
           const selectedExam = exams[i].value;
           const res = await axios.get("https://shaon-ssc-result.vercel.app/options");
-          const boardList = res.data.boards;
+          const boardList = res.data?.boards;
+
+          if (!boardList || boardList.length === 0)
+            return bot.sendMessage(chatId, "❌ Could not fetch board list.");
 
           let msgText = "🏫 Select Board:\n";
           boardList.forEach((b, i) => {
@@ -142,6 +153,7 @@ module.exports = {
             return bot.sendMessage(chatId, "❌ Invalid registration number.");
 
           bot.sendMessage(chatId, "⏳ Fetching result...");
+
           const url = `https://shaon-ssc-result.vercel.app/result?exam=${exam}&board=${board}&year=${year}&roll=${roll}&reg=${input}`;
 
           try {
@@ -162,13 +174,14 @@ module.exports = {
             });
 
             return bot.sendMessage(chatId, text);
-          } catch {
+          } catch (err) {
+            console.error("[result] Fetch error:", err.message);
             return bot.sendMessage(chatId, "❌ Error while fetching result.");
           }
         }
       }
     } catch (err) {
-      console.log(err);
+      console.error("[result] Runtime error:", err.message);
       bot.sendMessage(chatId, "❌ Something went wrong.");
     }
   },
