@@ -11,12 +11,12 @@ module.exports.config = {
   cooldowns: 5,
 };
 
-module.exports.run = async ({ message, event }) => {
+module.exports.run = async ({ message }) => {
   try {
     const res = await axios.get("https://shaon-ssc-result.vercel.app/options");
     const exams = res.data.examinations;
 
-    if (!exams || exams.length === 0) return message.reply("❌ No exam found!");
+    if (!exams || exams.length === 0) return message.reply("❌ No exams found.");
 
     let text = "📚 Select Exam:\n";
     exams.forEach((e, i) => {
@@ -25,42 +25,46 @@ module.exports.run = async ({ message, event }) => {
 
     const info = await message.reply(text);
 
-    global.functions.onReply.set(info.message_id, {
+    global.functions.reply.set(info.message_id, {
       commandName: module.exports.config.name,
       type: "exam",
-      author: event.senderID || event.from.id,
+      author: message.senderID,
       exams,
     });
-  } catch {
+  } catch (e) {
+    console.log(e);
     message.reply("❌ Failed to fetch exam list.");
   }
 };
 
-module.exports.onReply = async function ({ message, event, Reply }) {
+module.exports.reply = async ({ message, event, Reply }) => {
+  const input = message.body.trim();
   const { type, exams, boards, exam, board, year, roll } = Reply;
-  const input = event.body?.trim();
+
+  const replyID = event.messageReply.message_id;
+  const sender = message.senderID;
 
   try {
     switch (type) {
       case "exam": {
-        const index = parseInt(input) - 1;
-        if (isNaN(index) || index < 0 || index >= exams.length)
-          return message.reply("❌ Invalid exam number.");
+        const i = parseInt(input) - 1;
+        if (isNaN(i) || i < 0 || i >= exams.length) return message.reply("❌ Invalid exam number.");
 
-        const selectedExam = exams[index].value;
+        const selectedExam = exams[i].value;
         const res = await axios.get("https://shaon-ssc-result.vercel.app/options");
         const boardList = res.data.boards;
 
-        let msg = "🏫 Select Board:\n";
+        let text = "🏫 Select Board:\n";
         boardList.forEach((b, i) => {
-          msg += `${i + 1}. ${b.name}\n`;
+          text += `${i + 1}. ${b.name}\n`;
         });
 
-        const info = await message.reply(msg);
-        global.functions.onReply.set(info.message_id, {
-          commandName: "result",
+        const info = await message.reply(text);
+
+        global.functions.reply.set(info.message_id, {
+          commandName: module.exports.config.name,
           type: "board",
-          author: event.senderID || event.from.id,
+          author: sender,
           exam: selectedExam,
           boards: boardList,
         });
@@ -68,17 +72,17 @@ module.exports.onReply = async function ({ message, event, Reply }) {
       }
 
       case "board": {
-        const index = parseInt(input) - 1;
-        if (isNaN(index) || index < 0 || index >= boards.length)
-          return message.reply("❌ Invalid board number.");
+        const i = parseInt(input) - 1;
+        if (isNaN(i) || i < 0 || i >= boards.length) return message.reply("❌ Invalid board number.");
 
-        const selectedBoard = boards[index].value;
+        const selectedBoard = boards[i].value;
+
         const info = await message.reply("📅 Enter Exam Year (e.g. 2024):");
 
-        global.functions.onReply.set(info.message_id, {
-          commandName: "result",
+        global.functions.reply.set(info.message_id, {
+          commandName: module.exports.config.name,
           type: "year",
-          author: event.senderID || event.from.id,
+          author: sender,
           exam,
           board: selectedBoard,
         });
@@ -86,13 +90,14 @@ module.exports.onReply = async function ({ message, event, Reply }) {
       }
 
       case "year": {
-        if (!/^20\d{2}$/.test(input)) return message.reply("❌ Invalid year format (e.g. 2024).");
+        if (!/^20\d{2}$/.test(input)) return message.reply("❌ Invalid year (e.g. 2024)");
 
         const info = await message.reply("🧾 Enter Roll Number:");
-        global.functions.onReply.set(info.message_id, {
-          commandName: "result",
+
+        global.functions.reply.set(info.message_id, {
+          commandName: module.exports.config.name,
           type: "roll",
-          author: event.senderID || event.from.id,
+          author: sender,
           exam,
           board,
           year: input,
@@ -104,10 +109,11 @@ module.exports.onReply = async function ({ message, event, Reply }) {
         if (!/^\d{3,10}$/.test(input)) return message.reply("❌ Invalid roll number.");
 
         const info = await message.reply("📝 Enter Registration Number:");
-        global.functions.onReply.set(info.message_id, {
-          commandName: "result",
+
+        global.functions.reply.set(info.message_id, {
+          commandName: module.exports.config.name,
           type: "reg",
-          author: event.senderID || event.from.id,
+          author: sender,
           exam,
           board,
           year,
@@ -127,28 +133,29 @@ module.exports.onReply = async function ({ message, event, Reply }) {
           const res = await axios.get(url);
           const data = res.data;
 
-          if (!data.student) return message.reply("❌ No result found for given info.");
+          if (!data.student) return message.reply("❌ Result not found.");
 
-          let replyText = "🎓 𝗦𝘁𝘂𝗱𝗲𝗻𝘁 𝗜𝗻𝗳𝗼:\n";
+          let text = `🎓 𝗦𝘁𝘂𝗱𝗲𝗻𝘁 𝗜𝗻𝗳𝗼:\n`;
           for (const [k, v] of Object.entries(data.student)) {
-            replyText += `${k}: ${v}\n`;
+            text += `${k}: ${v}\n`;
           }
 
-          replyText += "\n📖 𝗚𝗿𝗮𝗱𝗲 𝗦𝗵𝗲𝗲𝘁:\n";
+          text += "\n📖 𝗚𝗿𝗮𝗱𝗲 𝗦𝗵𝗲𝗲𝘁:\n";
           data.grades.forEach((g) => {
-            if (g.subject && g.code && g.grade) {
-              replyText += `${g.subject} (${g.code}): ${g.grade}\n`;
+            if (g.subject && g.code) {
+              text += `${g.subject} (${g.code}): ${g.grade}\n`;
             }
           });
 
-          return message.reply(replyText);
-        } catch {
-          return message.reply("❌ Error while fetching result.");
+          return message.reply(text);
+        } catch (err) {
+          console.error(err);
+          return message.reply("❌ Error fetching result.");
         }
       }
     }
-  } catch (e) {
-    console.log(e);
+  } catch (err) {
+    console.log(err);
     return message.reply("❌ Something went wrong.");
   }
 };
