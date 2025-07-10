@@ -99,32 +99,28 @@ module.exports = {
     }
   },
 
-  onReply: async ({ event, message, Reply }) => {
-  const base = await baseApiUrl();
-  const link = `${base}/sim`;
-  const text = event.body?.trim();
-  const uid = event.senderID;
+  onReply: async function ({ api, event, message, Reply }) {
+  const link = `${await baseApiUrl()}/sim`;
+  const uid = event.senderID || event.from?.id; // ✅ uid define করা
+  const replyText = event.body?.toLowerCase().trim();
 
-  if (!text) return;
+  if (!replyText) return;
 
   try {
-    // senderName fallback (if missing in Reply)
-    const senderName = Reply?.senderName || "Unknown";
-
-    const res = await axios.get(`${link}?text=${encodeURIComponent(text)}&senderName=${encodeURIComponent(senderName)}`);
-    const reply = res.data.response?.[0] || "❌ No response.";
-    const info = await message.reply(reply);
+    const res = await axios.get(`${link}?text=${encodeURIComponent(replyText)}&senderID=${uid}`);
+    const data = res.data.response || "❌ No response.";
+    const info = await message.reply(data);
 
     global.functions.onReply.set(info.message_id, {
-      commandName: "baby",
+      commandName: 'baby',
       type: "reply",
       messageID: info.message_id,
       author: uid,
-      senderName // ❗ Save it again to maintain reply chain
+      link: data,
     });
   } catch (e) {
     console.error("BABY Reply Error:", e);
-    return message.reply("❌ Error in reply handling.");
+    return message.reply("❌ Reply error.");
   }
 }
 };
