@@ -4,6 +4,7 @@ module.exports.config = {
   name: "result",
   version: "1.0.0",
   credits: "Shaon Ahmed",
+  role: 0,
   description: "Check SSC/Dakhil results",
   commandCategory: "education",
   usages: "/result",
