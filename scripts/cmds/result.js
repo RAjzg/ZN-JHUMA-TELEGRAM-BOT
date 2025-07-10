@@ -26,23 +26,21 @@ module.exports.run = async ({ message }) => {
     const info = await message.reply(text);
 
     global.functions.reply.set(info.message_id, {
-      commandName: module.exports.config.name,
+      commandName: this.config.name,
       type: "exam",
       author: message.senderID,
       exams,
     });
   } catch (e) {
-    console.log(e);
-    message.reply("❌ Failed to fetch exam list.");
+    console.error(e);
+    return message.reply("❌ Failed to fetch exam list.");
   }
 };
 
 module.exports.reply = async ({ message, event, Reply }) => {
   const input = message.body.trim();
   const { type, exams, boards, exam, board, year, roll } = Reply;
-
-  const replyID = event.messageReply.message_id;
-  const sender = message.senderID;
+  const author = message.senderID;
 
   try {
     switch (type) {
@@ -54,17 +52,16 @@ module.exports.reply = async ({ message, event, Reply }) => {
         const res = await axios.get("https://shaon-ssc-result.vercel.app/options");
         const boardList = res.data.boards;
 
-        let text = "🏫 Select Board:\n";
+        let msg = "🏫 Select Board:\n";
         boardList.forEach((b, i) => {
-          text += `${i + 1}. ${b.name}\n`;
+          msg += `${i + 1}. ${b.name}\n`;
         });
 
-        const info = await message.reply(text);
-
+        const info = await message.reply(msg);
         global.functions.reply.set(info.message_id, {
           commandName: module.exports.config.name,
           type: "board",
-          author: sender,
+          author,
           exam: selectedExam,
           boards: boardList,
         });
@@ -76,13 +73,11 @@ module.exports.reply = async ({ message, event, Reply }) => {
         if (isNaN(i) || i < 0 || i >= boards.length) return message.reply("❌ Invalid board number.");
 
         const selectedBoard = boards[i].value;
-
         const info = await message.reply("📅 Enter Exam Year (e.g. 2024):");
-
         global.functions.reply.set(info.message_id, {
           commandName: module.exports.config.name,
           type: "year",
-          author: sender,
+          author,
           exam,
           board: selectedBoard,
         });
@@ -91,13 +86,11 @@ module.exports.reply = async ({ message, event, Reply }) => {
 
       case "year": {
         if (!/^20\d{2}$/.test(input)) return message.reply("❌ Invalid year (e.g. 2024)");
-
         const info = await message.reply("🧾 Enter Roll Number:");
-
         global.functions.reply.set(info.message_id, {
           commandName: module.exports.config.name,
           type: "roll",
-          author: sender,
+          author,
           exam,
           board,
           year: input,
@@ -107,13 +100,11 @@ module.exports.reply = async ({ message, event, Reply }) => {
 
       case "roll": {
         if (!/^\d{3,10}$/.test(input)) return message.reply("❌ Invalid roll number.");
-
         const info = await message.reply("📝 Enter Registration Number:");
-
         global.functions.reply.set(info.message_id, {
           commandName: module.exports.config.name,
           type: "reg",
-          author: sender,
+          author,
           exam,
           board,
           year,
@@ -124,7 +115,6 @@ module.exports.reply = async ({ message, event, Reply }) => {
 
       case "reg": {
         if (!/^\d{3,15}$/.test(input)) return message.reply("❌ Invalid registration number.");
-
         message.reply("⏳ Fetching result...");
 
         const url = `https://shaon-ssc-result.vercel.app/result?exam=${exam}&board=${board}&year=${year}&roll=${roll}&reg=${input}`;
@@ -133,7 +123,7 @@ module.exports.reply = async ({ message, event, Reply }) => {
           const res = await axios.get(url);
           const data = res.data;
 
-          if (!data.student) return message.reply("❌ Result not found.");
+          if (!data.student) return message.reply("❌ No result found.");
 
           let text = `🎓 𝗦𝘁𝘂𝗱𝗲𝗻𝘁 𝗜𝗻𝗳𝗼:\n`;
           for (const [k, v] of Object.entries(data.student)) {
@@ -150,12 +140,12 @@ module.exports.reply = async ({ message, event, Reply }) => {
           return message.reply(text);
         } catch (err) {
           console.error(err);
-          return message.reply("❌ Error fetching result.");
+          return message.reply("❌ Error while fetching result.");
         }
       }
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return message.reply("❌ Something went wrong.");
   }
 };
