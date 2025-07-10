@@ -12,29 +12,24 @@ module.exports = {
     cooldowns: 5,
   },
 
-  run: async ({ bot, msg }) => {
-    // 🔒 Block if user tries to run /result by replying to a message
-    if (msg.reply_to_message) return;
+  run: async ({ message, msg, bot }) => {
+    if (msg.reply_to_message) return; // reply দিয়ে rerun বন্ধ
 
     try {
       const res = await axios.get("https://shaon-ssc-result.vercel.app/options");
       const exams = res.data?.examinations;
 
-      if (!exams || exams.length === 0) {
-        return bot.sendMessage(msg.chat.id, "❌ Could not fetch exam list. Please try again later.");
-      }
+      if (!exams || exams.length === 0)
+        return message.reply("❌ Could not fetch exam list.");
 
       let text = "📚 Select Exam:\n";
       exams.forEach((e, i) => {
         text += `${i + 1}. ${e.name}\n`;
       });
 
-      const sent = await bot.sendMessage(msg.chat.id, text, {
+      const sent = await message.reply(text, {
         reply_markup: { force_reply: true },
       });
-
-      global.client = global.client || {};
-      global.client.onReply = global.client.onReply || [];
 
       global.client.onReply.push({
         name: this.config.name,
@@ -44,12 +39,12 @@ module.exports = {
         exams,
       });
     } catch (e) {
-      console.error("[result] Error fetching exams:", e.message);
-      bot.sendMessage(msg.chat.id, "❌ Failed to fetch exam list.");
+      console.error("Fetch exam list error:", e.message);
+      message.reply("❌ Failed to fetch exam list.");
     }
   },
 
-  onReply: async ({ bot, msg }) => {
+  onReply: async ({ message, msg, bot }) => {
     const data = global.client?.onReply?.find(
       (item) => item.messageID === msg.reply_to_message?.message_id && item.author === msg.from.id
     );
@@ -65,21 +60,21 @@ module.exports = {
         case "exam": {
           const i = parseInt(input) - 1;
           if (isNaN(i) || i < 0 || i >= exams.length)
-            return bot.sendMessage(chatId, "❌ Invalid exam number.");
+            return message.reply("❌ Invalid exam number.");
 
           const selectedExam = exams[i].value;
           const res = await axios.get("https://shaon-ssc-result.vercel.app/options");
           const boardList = res.data?.boards;
 
           if (!boardList || boardList.length === 0)
-            return bot.sendMessage(chatId, "❌ Could not fetch board list.");
+            return message.reply("❌ Could not fetch board list.");
 
           let text = "🏫 Select Board:\n";
           boardList.forEach((b, i) => {
             text += `${i + 1}. ${b.name}\n`;
           });
 
-          const sent = await bot.sendMessage(chatId, text, {
+          const sent = await message.reply(text, {
             reply_markup: { force_reply: true },
           });
 
@@ -97,10 +92,10 @@ module.exports = {
         case "board": {
           const i = parseInt(input) - 1;
           if (isNaN(i) || i < 0 || i >= boards.length)
-            return bot.sendMessage(chatId, "❌ Invalid board number.");
+            return message.reply("❌ Invalid board number.");
 
           const selectedBoard = boards[i].value;
-          const sent = await bot.sendMessage(chatId, "📅 Enter Exam Year (e.g. 2024):", {
+          const sent = await message.reply("📅 Enter Exam Year (e.g. 2024):", {
             reply_markup: { force_reply: true },
           });
 
@@ -117,9 +112,9 @@ module.exports = {
 
         case "year": {
           if (!/^20\d{2}$/.test(input))
-            return bot.sendMessage(chatId, "❌ Invalid year format (e.g. 2024).");
+            return message.reply("❌ Invalid year format (e.g. 2024).");
 
-          const sent = await bot.sendMessage(chatId, "🧾 Enter Roll Number:", {
+          const sent = await message.reply("🧾 Enter Roll Number:", {
             reply_markup: { force_reply: true },
           });
 
@@ -137,9 +132,9 @@ module.exports = {
 
         case "roll": {
           if (!/^\d{3,10}$/.test(input))
-            return bot.sendMessage(chatId, "❌ Invalid roll number.");
+            return message.reply("❌ Invalid roll number.");
 
-          const sent = await bot.sendMessage(chatId, "📝 Enter Registration Number:", {
+          const sent = await message.reply("📝 Enter Registration Number:", {
             reply_markup: { force_reply: true },
           });
 
@@ -158,9 +153,9 @@ module.exports = {
 
         case "reg": {
           if (!/^\d{3,15}$/.test(input))
-            return bot.sendMessage(chatId, "❌ Invalid registration number.");
+            return message.reply("❌ Invalid registration number.");
 
-          bot.sendMessage(chatId, "⏳ Fetching result...");
+          await message.reply("⏳ Fetching result...");
 
           const url = `https://shaon-ssc-result.vercel.app/result?exam=${exam}&board=${board}&year=${year}&roll=${roll}&reg=${input}`;
 
@@ -169,7 +164,7 @@ module.exports = {
             const data = res.data;
 
             if (!data.student)
-              return bot.sendMessage(chatId, "❌ No result found for the given information.");
+              return message.reply("❌ No result found for the given information.");
 
             let text = "🎓 𝗦𝘁𝘂𝗱𝗲𝗻𝘁 𝗜𝗻𝗳𝗼:\n";
             for (const [k, v] of Object.entries(data.student)) {
@@ -181,16 +176,16 @@ module.exports = {
               text += `${g.subject} (${g.code}): ${g.grade}\n`;
             });
 
-            return bot.sendMessage(chatId, text);
+            return message.reply(text);
           } catch (err) {
-            console.error("[result] Fetch error:", err.message);
-            return bot.sendMessage(chatId, "❌ Error while fetching result.");
+            console.error("Fetch result error:", err.message);
+            return message.reply("❌ Error while fetching result.");
           }
         }
       }
     } catch (err) {
-      console.error("[result] Runtime error:", err.message);
-      bot.sendMessage(chatId, "❌ Something went wrong.");
+      console.error("Runtime error:", err.message);
+      message.reply("❌ Something went wrong.");
     }
   },
 };
