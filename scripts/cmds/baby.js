@@ -100,28 +100,31 @@ module.exports = {
   },
 
   onReply: async ({ event, message, Reply }) => {
-    const base = await baseApiUrl();
-    const link = `${base}/sim`;
-    const text = event.body?.trim();
-    const uid = event.senderID;
+  const base = await baseApiUrl();
+  const link = `${base}/sim`;
+  const text = event.body?.trim();
+  const uid = event.senderID;
 
-    if (!text) return;
+  if (!text) return;
 
-    try {
-      const res = await axios.get(`${link}?text=${encodeURIComponent(text)}&senderName=${encodeURIComponent(Reply.senderName || uid)}`);
-      const reply = res.data.response?.[0] || "❌ No response.";
-      const info = await message.reply(reply);
+  try {
+    // senderName fallback (if missing in Reply)
+    const senderName = Reply?.senderName || "Unknown";
 
-      global.functions.onReply.set(info.message_id, {
-        commandName: "baby",
-        type: "reply",
-        messageID: info.message_id,
-        author: uid,
-        senderName: Reply.senderName || uid
-      });
-    } catch (e) {
-      console.error("BABY Reply Error:", e);
-      return message.reply("❌ Error in reply handling.");
-    }
+    const res = await axios.get(`${link}?text=${encodeURIComponent(text)}&senderName=${encodeURIComponent(senderName)}`);
+    const reply = res.data.response?.[0] || "❌ No response.";
+    const info = await message.reply(reply);
+
+    global.functions.onReply.set(info.message_id, {
+      commandName: "baby",
+      type: "reply",
+      messageID: info.message_id,
+      author: uid,
+      senderName // ❗ Save it again to maintain reply chain
+    });
+  } catch (e) {
+    console.error("BABY Reply Error:", e);
+    return message.reply("❌ Error in reply handling.");
   }
+}
 };
