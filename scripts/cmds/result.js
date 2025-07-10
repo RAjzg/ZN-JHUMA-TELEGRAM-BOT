@@ -39,7 +39,7 @@ module.exports.run = async ({ api, event }) => {
   );
 };
 
-module.exports.reply = async ({ api, event, Reply }) => {
+module.exports.onReply = async ({ api, event, Reply }) => {
   const input = event.body.trim();
   const { step, board, year, roll } = Reply;
 
