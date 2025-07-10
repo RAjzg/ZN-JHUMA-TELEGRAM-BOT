@@ -31,9 +31,9 @@ module.exports.run = async ({ api, event }) => {
     event.threadID,
     (err, info) => {
       global.functions.onReply.set(info.messageID, {
-        name: module.exports.config.name,
+        commandName: this.config.name,
         step: 1,
-        author: event.senderID,
+        author: event.from.id,
       });
     }
   );
@@ -50,9 +50,9 @@ module.exports.onReply = async ({ api, event, Reply }) => {
     const list = boards.map((b, i) => `${i + 1}. 🏛️ ${b.name}`).join("\n");
     return api.sendMessage(`🏛️ Select Board:\n${list}`, event.threadID, (err, info) => {
       global.functions.onReply.set(info.messageID, {
-        name: module.exports.config.name,
+        commandName: this.config.name,
         step: 2,
-        author: event.senderID,
+        author: event.from.id,
       });
     });
   }
@@ -66,9 +66,9 @@ module.exports.onReply = async ({ api, event, Reply }) => {
     const yearList = Array.from({ length: 27 }, (_, i) => `${i + 1}. 📅 ${2000 + i}`).join("\n");
     return api.sendMessage(`📆 Select Year:\n${yearList}`, event.threadID, (err, info) => {
       global.functions.onReply.set(info.messageID, {
-        name: module.exports.config.name,
+        commandName: this.config.name,
         step: 3,
-        author: event.senderID,
+        author: event.from.id,
         board: selectedBoard,
       });
     });
@@ -83,9 +83,9 @@ module.exports.onReply = async ({ api, event, Reply }) => {
     const selectedYear = years[index];
     return api.sendMessage("🔢 Enter your Roll Number:", event.threadID, (err, info) => {
       global.functions.onReply.set(info.messageID, {
-        name: module.exports.config.name,
+        commandName: this.config.name,
         step: 4,
-        author: event.senderID,
+        author: event.from.id,
         board,
         year: selectedYear,
       });
@@ -98,9 +98,9 @@ module.exports.onReply = async ({ api, event, Reply }) => {
 
     return api.sendMessage("📄 Enter Registration Number:", event.threadID, (err, info) => {
       global.functions.onReply.set(info.messageID, {
-        name: module.exports.config.name,
+        commandName: this.config.name,
         step: 5,
-        author: event.senderID,
+        author: event.from.id,
         board,
         year,
         roll: input,
