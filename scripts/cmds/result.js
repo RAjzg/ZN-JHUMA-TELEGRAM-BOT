@@ -2,12 +2,12 @@ const axios = require("axios");
 
 module.exports.config = {
   name: "result",
-  version: "1.0.0",
+  version: "1.0.2",
   author: "Shaon Ahmed",
   role: 0,
-  description: "SSC result checker using inline button",
+  description: "Check SSC Result",
   commandCategory: "utility",
-  cooldowns: 5,
+  cooldowns: 3
 };
 
 const boards = [
@@ -21,118 +21,91 @@ const boards = [
   { name: "Rajshahi", value: "rajshahi" },
   { name: "Sylhet", value: "sylhet" },
   { name: "Madrasah", value: "madrasah" },
-  { name: "Technical", value: "tec" },
+  { name: "Technical", value: "tec" }
 ];
 
-const years = Array.from({ length: 27 }, (_, i) => 2000 + i);
-const sessions = new Map();
+module.exports.onStart = async function ({ message, event, api }) {
+  const examText = "📘 Select Exam:\n1. SSC/Dakhil/Equivalent";
+  const msg = await message.reply(examText);
 
-module.exports.run = async ({ api, event }) => {
-  const examType = [
-    [{ text: "🧪 SSC", callback_data: "exam_ssc" }],
-  ];
-  api.sendMessage(
-    {
-      body: "📘 Select Exam Type:",
-      attachment: null,
-      mentions: [],
-      messageID: event.messageID,
-    },
-    event.threadID,
-    (_, info) => {
-      global.functions.reply.set(info.messageID, {
-        commandName: "result",
-        type: "callback",
-        step: 1,
-        session: {},
-        author: event.senderID,
-      });
-    }
-  );
+  global.functions.onReply.set(msg.messageID, {
+    command: module.exports.config.name,
+    step: 1
+  });
 };
 
-module.exports.onReply = async ({ api, event, onReply }) => {
-  const { step, session, author } = onReply;
-
-  if (event.senderID != author) return;
-
+module.exports.onReply = async function ({ message, event, Reply }) {
   const text = event.body.trim();
+  const { step, board, year, roll } = Reply;
 
   if (step === 1) {
-    const boardList = boards.map((b, i) => `${i + 1}. ${b.name}`).join("\n");
-    api.sendMessage(`🏛️ Select Board:\n\n${boardList}`, event.threadID, (_, info) => {
-      global.functions.reply.set(info.messageID, {
-        commandName: "result",
-        type: "callback",
-        step: 2,
-        session,
-        author,
-      });
+    const boardList = boards.map((b, i) => `${i + 1}. 🏛️ ${b.name}`).join("\n");
+    const msg = await message.reply(`🏛️ Select Board:\n${boardList}`);
+    global.functions.onReply.set(msg.messageID, {
+      command: module.exports.config.name,
+      step: 2
     });
   }
 
   if (step === 2) {
     const index = parseInt(text) - 1;
-    if (isNaN(index) || index < 0 || index >= boards.length)
-      return api.sendMessage("🚫 Invalid board number.", event.threadID);
+    if (isNaN(index) || index < 0 || index >= boards.length) {
+      return message.reply("❌ Invalid board number.");
+    }
 
-    session.board = boards[index].value;
+    const selectedBoard = boards[index].value;
+    const years = Array.from({ length: 27 }, (_, i) => 2000 + i);
+    const yearList = years.map((y, i) => `${i + 1}. 📅 ${y}`).join("\n");
+    const msg = await message.reply(`📆 Select Year:\n${yearList}`);
 
-    const yearList = years.map((y, i) => `${i + 1}. ${y}`).join("\n");
-    api.sendMessage(`📆 Select Year:\n\n${yearList}`, event.threadID, (_, info) => {
-      global.functions.reply.set(info.messageID, {
-        commandName: "result",
-        type: "callback",
-        step: 3,
-        session,
-        author,
-      });
+    global.functions.onReply.set(msg.messageID, {
+      command: module.exports.config.name,
+      step: 3,
+      board: selectedBoard
     });
   }
 
   if (step === 3) {
+    const years = Array.from({ length: 27 }, (_, i) => 2000 + i);
     const index = parseInt(text) - 1;
-    if (isNaN(index) || index < 0 || index >= years.length)
-      return api.sendMessage("🚫 Invalid year.", event.threadID);
+    if (isNaN(index) || index < 0 || index >= years.length) {
+      return message.reply("❌ Invalid year.");
+    }
 
-    session.year = years[index];
-    api.sendMessage("🔢 Enter Roll Number:", event.threadID, (_, info) => {
-      global.functions.reply.set(info.messageID, {
-        commandName: "result",
-        type: "callback",
-        step: 4,
-        session,
-        author,
-      });
+    const selectedYear = years[index];
+    const msg = await message.reply("🔢 Enter Roll Number:");
+
+    global.functions.onReply.set(msg.messageID, {
+      command: module.exports.config.name,
+      step: 4,
+      board,
+      year: selectedYear
     });
   }
 
   if (step === 4) {
-    if (!/^\d+$/.test(text)) return api.sendMessage("❌ Digits only.", event.threadID);
-    session.roll = text;
+    if (!/^\d+$/.test(text)) return message.reply("❌ Roll must be numeric.");
 
-    api.sendMessage("📄 Enter Registration Number:", event.threadID, (_, info) => {
-      global.functions.reply.set(info.messageID, {
-        commandName: "result",
-        type: "callback",
-        step: 5,
-        session,
-        author,
-      });
+    const msg = await message.reply("📝 Enter Registration Number:");
+    global.functions.onReply.set(msg.messageID, {
+      command: module.exports.config.name,
+      step: 5,
+      board,
+      year,
+      roll: text
     });
   }
 
   if (step === 5) {
-    if (!/^\d+$/.test(text)) return api.sendMessage("❌ Digits only.", event.threadID);
-    session.reg = text;
+    if (!/^\d+$/.test(text)) return message.reply("❌ Registration must be numeric.");
 
-    const { board, year, roll, reg } = session;
+    const reg = text;
     const url = `https://shaon-ssc-result.vercel.app/result?exam=ssc&board=${board}&year=${year}&roll=${roll}&reg=${reg}`;
 
     try {
       const res = await axios.get(url);
       if (res.data.status !== "success")
-        return api.sendMessage("❌ Result not found.", event.threadID);
+        return message.reply("❌ Result not found.");
 
       const s = res.data.student;
       const grades = res.data.grades
@@ -147,10 +120,10 @@ module.exports.onReply = async ({ api, event, onReply }) => {
 👨‍👩‍👧‍👦 Father: ${s["Fathers Name"]}
 👩 Mother: ${s["Mothers Name"]}
 🏫 Institute: ${s.Institute}
+📚 Group: ${s.Group}
 🏛️ Board: ${s.Board}
 🆔 Roll: ${s["Roll No"]}
 📆 DOB: ${s["Date of Birth"]}
-📚 Group: ${s.Group}
 📋 Type: ${s.Type}
 🎯 Result: ${s.Result}
 
@@ -158,9 +131,10 @@ module.exports.onReply = async ({ api, event, onReply }) => {
 ${grades}
 ━━━━━━━━━━━━━━━
 `;
-      api.sendMessage(result, event.threadID);
+      message.reply(result);
     } catch (e) {
-      api.sendMessage("⚠️ Could not fetch result.", event.threadID);
+      console.error(e.message);
+      message.reply("⚠️ Could not fetch result. Try again later.");
     }
   }
 };
