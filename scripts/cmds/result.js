@@ -3,18 +3,16 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "result",
-    version: "1.0.0",
+    version: "1.0.1",
     author: "Shaon Ahmed",
     role: 0,
-    description: "Check SSC/HSC/JSC Result",
+    description: "Check SSC/HSC/JSC Result from official source",
     commandCategory: "utility",
     usages: "/result",
     cooldowns: 5,
   },
 
-  run: async ({ message, msg, bot }) => {
-    if (msg.reply_to_message) return; // reply দিয়ে rerun বন্ধ
-
+  run: async ({ message, msg }) => {
     try {
       const res = await axios.get("https://shaon-ssc-result.vercel.app/options");
       const exams = res.data?.examinations;
@@ -27,9 +25,7 @@ module.exports = {
         text += `${i + 1}. ${e.name}\n`;
       });
 
-      const sent = await message.reply(text, {
-        reply_markup: { force_reply: true },
-      });
+      const sent = await message.reply(text, { reply_markup: { force_reply: true } });
 
       global.client.onReply.push({
         name: this.config.name,
@@ -39,21 +35,24 @@ module.exports = {
         exams,
       });
     } catch (e) {
-      console.error("Fetch exam list error:", e.message);
+      console.error("Exam list fetch error:", e);
       message.reply("❌ Failed to fetch exam list.");
     }
   },
 
-  onReply: async ({ message, msg, bot }) => {
-    const data = global.client?.onReply?.find(
-      (item) => item.messageID === msg.reply_to_message?.message_id && item.author === msg.from.id
+  onReply: async ({ message, msg }) => {
+    const index = global.client.onReply.findIndex(
+      (item) =>
+        item.messageID === msg.reply_to_message?.message_id &&
+        item.author === msg.from.id &&
+        item.name === "result"
     );
-
-    if (!data) return;
+    if (index === -1) return;
+    const data = global.client.onReply[index];
+    global.client.onReply.splice(index, 1); // Remove after handling
 
     const { step, exams, boards, exam, board, year, roll } = data;
     const input = msg.text.trim();
-    const chatId = msg.chat.id;
 
     try {
       switch (step) {
@@ -163,8 +162,8 @@ module.exports = {
             const res = await axios.get(url);
             const data = res.data;
 
-            if (!data.student)
-              return message.reply("❌ No result found for the given information.");
+            if (!data?.student)
+              return message.reply("❌ No result found for the provided information.");
 
             let text = "🎓 𝗦𝘁𝘂𝗱𝗲𝗻𝘁 𝗜𝗻𝗳𝗼:\n";
             for (const [k, v] of Object.entries(data.student)) {
@@ -172,19 +171,21 @@ module.exports = {
             }
 
             text += "\n📖 𝗚𝗿𝗮𝗱𝗲 𝗦𝗵𝗲𝗲𝘁:\n";
-            data.grades.forEach((g) => {
-              text += `${g.subject} (${g.code}): ${g.grade}\n`;
+            (data.grades || []).forEach((g) => {
+              if (g.subject && g.code && g.grade) {
+                text += `${g.subject} (${g.code}): ${g.grade}\n`;
+              }
             });
 
             return message.reply(text);
           } catch (err) {
-            console.error("Fetch result error:", err.message);
+            console.error("Result fetch error:", err.message);
             return message.reply("❌ Error while fetching result.");
           }
         }
       }
     } catch (err) {
-      console.error("Runtime error:", err.message);
+      console.error("Error:", err.message);
       message.reply("❌ Something went wrong.");
     }
   },
