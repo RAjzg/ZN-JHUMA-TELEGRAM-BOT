@@ -17,7 +17,7 @@ module.exports = {
     description: "Better than Simsimi",
     category: "chat",
     guide: {
-      en: "{pn} [text]\n{pn} teach প্রশ্ন - উত্তর[,উত্তর২...]\n{pn} edit প্রশ্ন - পুরাতন - নতুন\n{pn} delete প্রশ্ন - উত্তর\n{pn} list\n{pn} msg প্রশ্ন"
+      en: "{pn} [text]\n{pn} teach প্রশ্ন - উত্তর[,উত্তর২...]\n{pn} edit প্রশ্ন - পুরাতন - নতুন\n{pn} delete প্রশ্ন - উত্তর\n{pn} list"
     }
   },
 
@@ -72,21 +72,11 @@ module.exports = {
         return message.reply(`🧠 Total Questions: ${res.data.totalQuestions}\n💬 Total Replies: ${res.data.totalReplies}`);
       }
 
-      // 📩 MSG
-      if (text.startsWith("msg ")) {
-        const q = text.slice(4).trim();
-        const res = await axios.get(`${link}?list=${encodeURIComponent(q)}`);
-        const entry = res.data.data?.find(i => i.ask.toLowerCase() === q.toLowerCase());
-        if (!entry) return message.reply("❌ Question not found.");
-        return message.reply(`📩 Replies for "${entry.ask}":\n${entry.ans.map((a, i) => `${i + 1}. ${a}`).join("\n")}`);
-      }
-
       // 🤖 DEFAULT CHAT
       const res = await axios.get(`${link}?text=${encodeURIComponent(text)}&senderName=${encodeURIComponent(senderName)}`);
       const response = res.data.response?.[0] || "🤖 আমি কিছুই বুঝতে পারছি না!";
       const info = await message.reply(response);
 
-      // ⏬ Save for reply chain
       global.functions.onReply.set(info.message_id, {
         commandName: "baby",
         type: "reply",
