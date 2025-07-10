@@ -13,6 +13,9 @@ module.exports = {
   },
 
   run: async ({ bot, msg }) => {
+    // 🔒 Block if user tries to run /result by replying to a message
+    if (msg.reply_to_message) return;
+
     try {
       const res = await axios.get("https://shaon-ssc-result.vercel.app/options");
       const exams = res.data?.examinations;
@@ -26,7 +29,9 @@ module.exports = {
         text += `${i + 1}. ${e.name}\n`;
       });
 
-      const sent = await bot.sendMessage(msg.chat.id, text, { reply_markup: { force_reply: true } });
+      const sent = await bot.sendMessage(msg.chat.id, text, {
+        reply_markup: { force_reply: true },
+      });
 
       global.client = global.client || {};
       global.client.onReply = global.client.onReply || [];
@@ -39,17 +44,18 @@ module.exports = {
         exams,
       });
     } catch (e) {
-      console.error("[result] Exam list fetch error:", e.message);
+      console.error("[result] Error fetching exams:", e.message);
       bot.sendMessage(msg.chat.id, "❌ Failed to fetch exam list.");
     }
   },
 
   onReply: async ({ bot, msg }) => {
-    const data = global.client.onReply.find(
+    const data = global.client?.onReply?.find(
       (item) => item.messageID === msg.reply_to_message?.message_id && item.author === msg.from.id
     );
 
     if (!data) return;
+
     const { step, exams, boards, exam, board, year, roll } = data;
     const input = msg.text.trim();
     const chatId = msg.chat.id;
@@ -68,12 +74,14 @@ module.exports = {
           if (!boardList || boardList.length === 0)
             return bot.sendMessage(chatId, "❌ Could not fetch board list.");
 
-          let msgText = "🏫 Select Board:\n";
+          let text = "🏫 Select Board:\n";
           boardList.forEach((b, i) => {
-            msgText += `${i + 1}. ${b.name}\n`;
+            text += `${i + 1}. ${b.name}\n`;
           });
 
-          const sent = await bot.sendMessage(chatId, msgText, { reply_markup: { force_reply: true } });
+          const sent = await bot.sendMessage(chatId, text, {
+            reply_markup: { force_reply: true },
+          });
 
           global.client.onReply.push({
             name: "result",
