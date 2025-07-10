@@ -21,6 +21,7 @@ module.exports = {
     }
   },
 
+  // ⏩ START
   onStart: async ({ api, event, args, usersData, message }) => {
     const base = await baseApiUrl();
     const link = `${base}/sim`;
@@ -85,6 +86,7 @@ module.exports = {
       const response = res.data.response?.[0] || "🤖 আমি কিছুই বুঝতে পারছি না!";
       const info = await message.reply(response);
 
+      // ⏬ Save for reply chain
       global.functions.onReply.set(info.message_id, {
         commandName: "baby",
         type: "reply",
@@ -99,32 +101,30 @@ module.exports = {
     }
   },
 
-  onReply: async function ({ api, event,message }) {
-    const link = `${await baseApiUrl()}/sim`;
-   // if (event.type == "message_reply") {
-      const reply = event.text.toLowerCase();
-      if (isNaN(reply)) {
-const response = await axios.get(`${link}/sim?text=${encodeURIComponent(reply)}&senderID=${uid}`,
-        );
-        const ok = response.data.response;
-       /* if (response.data.react) {
-          api.setMessageReaction(
-            response.data.react,
-            event.messageID,
-            (err) => {},
-            true,
-          );
-        }*/
- const info = await message.reply(ok)
-        
-global.functions.onReply.set(info.message_id, {
-              commandName: 'baby',
-              type: "reply",
-              messageID: info.message_id,
-              author: event.from.id,
-              link: ok,
-            });
-      }
-   // }
+  // 🔁 REPLY HANDLER
+  onReply: async function ({ api, event, message }) {
+    try {
+      const base = await baseApiUrl();
+      const link = `${base}/sim`;
+      const reply = event.body?.trim();
+      const uid = event.senderID;
+
+      if (!reply || !isNaN(reply)) return;
+
+      const res = await axios.get(`${link}?text=${encodeURIComponent(reply)}&senderName=${encodeURIComponent(uid)}`);
+      const responseText = res.data.response?.[0] || "🤖 আমি কিছুই বুঝতে পারছি না!";
+      const info = await message.reply(responseText);
+
+      global.functions.onReply.set(info.message_id, {
+        commandName: "baby",
+        type: "reply",
+        messageID: info.message_id,
+        author: uid
+      });
+
+    } catch (err) {
+      console.error("Reply Error:", err);
+      message.reply("❌ রিপ্লাই দিতে সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।");
+    }
   }
 };
