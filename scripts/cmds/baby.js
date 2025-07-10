@@ -104,7 +104,7 @@ module.exports = {
    // if (event.type == "message_reply") {
       const reply = event.text.toLowerCase();
       if (isNaN(reply)) {
-const response = await axios.get(`${link}?text=${encodeURIComponent(reply)}&senderID=${uid}`,
+const response = await axios.get(`${link}/sim?text=${encodeURIComponent(reply)}&senderID=${uid}`,
         );
         const ok = response.data.response;
        /* if (response.data.react) {
