@@ -1,192 +1,154 @@
 const axios = require("axios");
 
-module.exports = {
-  config: {
-    name: "result",
-    version: "1.0.1",
-    author: "Shaon Ahmed",
-    role: 0,
-    description: "Check SSC/HSC/JSC Result from official source",
-    commandCategory: "utility",
-    usages: "/result",
-    cooldowns: 5,
-  },
+module.exports.config = {
+  name: "result",
+  version: "1.0.0",
+  author: "Shaon Ahmed",
+  role: 0,
+  description: "Check SSC/HSC/JSC Result",
+  commandCategory: "utility",
+  usages: "/result",
+  cooldowns: 5,
+};
 
-  run: async ({ message, msg }) => {
-    try {
-      const res = await axios.get("https://shaon-ssc-result.vercel.app/options");
-      const exams = res.data?.examinations;
+module.exports.run = async ({ message, event }) => {
+  try {
+    const res = await axios.get("https://shaon-ssc-result.vercel.app/options");
+    const exams = res.data.examinations;
 
-      if (!exams || exams.length === 0)
-        return message.reply("❌ Could not fetch exam list.");
+    if (!exams || exams.length === 0) return message.reply("❌ No exam found!");
 
-      let text = "📚 Select Exam:\n";
-      exams.forEach((e, i) => {
-        text += `${i + 1}. ${e.name}\n`;
-      });
+    let text = "📚 Select Exam:\n";
+    exams.forEach((e, i) => {
+      text += `${i + 1}. ${e.name}\n`;
+    });
 
-      const sent = await message.reply(text, { reply_markup: { force_reply: true } });
+    const info = await message.reply(text);
 
-      global.client.onReply.push({
-        name: this.config.name,
-        messageID: sent.message_id,
-        author: msg.from.id,
-        step: "exam",
-        exams,
-      });
-    } catch (e) {
-      console.error("Exam list fetch error:", e);
-      message.reply("❌ Failed to fetch exam list.");
-    }
-  },
+    global.functions.onReply.set(info.message_id, {
+      commandName: module.exports.config.name,
+      type: "exam",
+      author: event.senderID || event.from.id,
+      exams,
+    });
+  } catch {
+    message.reply("❌ Failed to fetch exam list.");
+  }
+};
 
-  onReply: async ({ message, msg }) => {
-    const index = global.client.onReply.findIndex(
-      (item) =>
-        item.messageID === msg.reply_to_message?.message_id &&
-        item.author === msg.from.id &&
-        item.name === "result"
-    );
-    if (index === -1) return;
-    const data = global.client.onReply[index];
-    global.client.onReply.splice(index, 1); // Remove after handling
+module.exports.onReply = async function ({ message, event, Reply }) {
+  const { type, exams, boards, exam, board, year, roll } = Reply;
+  const input = event.body?.trim();
 
-    const { step, exams, boards, exam, board, year, roll } = data;
-    const input = msg.text.trim();
+  try {
+    switch (type) {
+      case "exam": {
+        const index = parseInt(input) - 1;
+        if (isNaN(index) || index < 0 || index >= exams.length)
+          return message.reply("❌ Invalid exam number.");
 
-    try {
-      switch (step) {
-        case "exam": {
-          const i = parseInt(input) - 1;
-          if (isNaN(i) || i < 0 || i >= exams.length)
-            return message.reply("❌ Invalid exam number.");
+        const selectedExam = exams[index].value;
+        const res = await axios.get("https://shaon-ssc-result.vercel.app/options");
+        const boardList = res.data.boards;
 
-          const selectedExam = exams[i].value;
-          const res = await axios.get("https://shaon-ssc-result.vercel.app/options");
-          const boardList = res.data?.boards;
+        let msg = "🏫 Select Board:\n";
+        boardList.forEach((b, i) => {
+          msg += `${i + 1}. ${b.name}\n`;
+        });
 
-          if (!boardList || boardList.length === 0)
-            return message.reply("❌ Could not fetch board list.");
+        const info = await message.reply(msg);
+        global.functions.onReply.set(info.message_id, {
+          commandName: "result",
+          type: "board",
+          author: event.senderID || event.from.id,
+          exam: selectedExam,
+          boards: boardList,
+        });
+        break;
+      }
 
-          let text = "🏫 Select Board:\n";
-          boardList.forEach((b, i) => {
-            text += `${i + 1}. ${b.name}\n`;
-          });
+      case "board": {
+        const index = parseInt(input) - 1;
+        if (isNaN(index) || index < 0 || index >= boards.length)
+          return message.reply("❌ Invalid board number.");
 
-          const sent = await message.reply(text, {
-            reply_markup: { force_reply: true },
-          });
+        const selectedBoard = boards[index].value;
+        const info = await message.reply("📅 Enter Exam Year (e.g. 2024):");
 
-          global.client.onReply.push({
-            name: "result",
-            messageID: sent.message_id,
-            author: msg.from.id,
-            step: "board",
-            exam: selectedExam,
-            boards: boardList,
-          });
-          break;
-        }
+        global.functions.onReply.set(info.message_id, {
+          commandName: "result",
+          type: "year",
+          author: event.senderID || event.from.id,
+          exam,
+          board: selectedBoard,
+        });
+        break;
+      }
 
-        case "board": {
-          const i = parseInt(input) - 1;
-          if (isNaN(i) || i < 0 || i >= boards.length)
-            return message.reply("❌ Invalid board number.");
+      case "year": {
+        if (!/^20\d{2}$/.test(input)) return message.reply("❌ Invalid year format (e.g. 2024).");
 
-          const selectedBoard = boards[i].value;
-          const sent = await message.reply("📅 Enter Exam Year (e.g. 2024):", {
-            reply_markup: { force_reply: true },
-          });
+        const info = await message.reply("🧾 Enter Roll Number:");
+        global.functions.onReply.set(info.message_id, {
+          commandName: "result",
+          type: "roll",
+          author: event.senderID || event.from.id,
+          exam,
+          board,
+          year: input,
+        });
+        break;
+      }
 
-          global.client.onReply.push({
-            name: "result",
-            messageID: sent.message_id,
-            author: msg.from.id,
-            step: "year",
-            exam,
-            board: selectedBoard,
-          });
-          break;
-        }
+      case "roll": {
+        if (!/^\d{3,10}$/.test(input)) return message.reply("❌ Invalid roll number.");
 
-        case "year": {
-          if (!/^20\d{2}$/.test(input))
-            return message.reply("❌ Invalid year format (e.g. 2024).");
+        const info = await message.reply("📝 Enter Registration Number:");
+        global.functions.onReply.set(info.message_id, {
+          commandName: "result",
+          type: "reg",
+          author: event.senderID || event.from.id,
+          exam,
+          board,
+          year,
+          roll: input,
+        });
+        break;
+      }
 
-          const sent = await message.reply("🧾 Enter Roll Number:", {
-            reply_markup: { force_reply: true },
-          });
+      case "reg": {
+        if (!/^\d{3,15}$/.test(input)) return message.reply("❌ Invalid registration number.");
 
-          global.client.onReply.push({
-            name: "result",
-            messageID: sent.message_id,
-            author: msg.from.id,
-            step: "roll",
-            exam,
-            board,
-            year: input,
-          });
-          break;
-        }
+        message.reply("⏳ Fetching result...");
 
-        case "roll": {
-          if (!/^\d{3,10}$/.test(input))
-            return message.reply("❌ Invalid roll number.");
+        const url = `https://shaon-ssc-result.vercel.app/result?exam=${exam}&board=${board}&year=${year}&roll=${roll}&reg=${input}`;
 
-          const sent = await message.reply("📝 Enter Registration Number:", {
-            reply_markup: { force_reply: true },
-          });
+        try {
+          const res = await axios.get(url);
+          const data = res.data;
 
-          global.client.onReply.push({
-            name: "result",
-            messageID: sent.message_id,
-            author: msg.from.id,
-            step: "reg",
-            exam,
-            board,
-            year,
-            roll: input,
-          });
-          break;
-        }
+          if (!data.student) return message.reply("❌ No result found for given info.");
 
-        case "reg": {
-          if (!/^\d{3,15}$/.test(input))
-            return message.reply("❌ Invalid registration number.");
-
-          await message.reply("⏳ Fetching result...");
-
-          const url = `https://shaon-ssc-result.vercel.app/result?exam=${exam}&board=${board}&year=${year}&roll=${roll}&reg=${input}`;
-
-          try {
-            const res = await axios.get(url);
-            const data = res.data;
-
-            if (!data?.student)
-              return message.reply("❌ No result found for the provided information.");
-
-            let text = "🎓 𝗦𝘁𝘂𝗱𝗲𝗻𝘁 𝗜𝗻𝗳𝗼:\n";
-            for (const [k, v] of Object.entries(data.student)) {
-              text += `${k}: ${v}\n`;
-            }
-
-            text += "\n📖 𝗚𝗿𝗮𝗱𝗲 𝗦𝗵𝗲𝗲𝘁:\n";
-            (data.grades || []).forEach((g) => {
-              if (g.subject && g.code && g.grade) {
-                text += `${g.subject} (${g.code}): ${g.grade}\n`;
-              }
-            });
-
-            return message.reply(text);
-          } catch (err) {
-            console.error("Result fetch error:", err.message);
-            return message.reply("❌ Error while fetching result.");
+          let replyText = "🎓 𝗦𝘁𝘂𝗱𝗲𝗻𝘁 𝗜𝗻𝗳𝗼:\n";
+          for (const [k, v] of Object.entries(data.student)) {
+            replyText += `${k}: ${v}\n`;
           }
+
+          replyText += "\n📖 𝗚𝗿𝗮𝗱𝗲 𝗦𝗵𝗲𝗲𝘁:\n";
+          data.grades.forEach((g) => {
+            if (g.subject && g.code && g.grade) {
+              replyText += `${g.subject} (${g.code}): ${g.grade}\n`;
+            }
+          });
+
+          return message.reply(replyText);
+        } catch {
+          return message.reply("❌ Error while fetching result.");
         }
       }
-    } catch (err) {
-      console.error("Error:", err.message);
-      message.reply("❌ Something went wrong.");
     }
-  },
+  } catch (e) {
+    console.log(e);
+    return message.reply("❌ Something went wrong.");
+  }
 };
