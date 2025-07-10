@@ -99,28 +99,32 @@ module.exports = {
     }
   },
 
-  onReply: async function ({ api, event, message, Reply }) {
-  const link = `${await baseApiUrl()}/sim`;
-  const uid = event.senderID || event.from?.id; // ✅ uid define করা
-  const replyText = event.body?.toLowerCase().trim();
-
-  if (!replyText) return;
-
-  try {
-    const res = await axios.get(`${link}?text=${encodeURIComponent(replyText)}&senderID=${uid}`);
-    const data = res.data.response || "❌ No response.";
-    const info = await message.reply(data);
-
-    global.functions.onReply.set(info.message_id, {
-      commandName: 'baby',
-      type: "reply",
-      messageID: info.message_id,
-      author: uid,
-      link: data,
-    });
-  } catch (e) {
-    console.error("BABY Reply Error:", e);
-    return message.reply("❌ Reply error.");
+  onReply: async function ({ api, event,message }) {
+    const link = `${await baseApiUrl()}/sim`;
+   // if (event.type == "message_reply") {
+      const reply = event.text.toLowerCase();
+      if (isNaN(reply)) {
+const response = await axios.get(`${link}?text=${encodeURIComponent(reply)}&senderID=${uid}`,
+        );
+        const ok = response.data.response;
+       /* if (response.data.react) {
+          api.setMessageReaction(
+            response.data.react,
+            event.messageID,
+            (err) => {},
+            true,
+          );
+        }*/
+ const info = await message.reply(ok)
+        
+global.functions.onReply.set(info.message_id, {
+              commandName: 'baby',
+              type: "reply",
+              messageID: info.message_id,
+              author: event.from.id,
+              link: ok,
+            });
+      }
+   // }
   }
-}
 };
