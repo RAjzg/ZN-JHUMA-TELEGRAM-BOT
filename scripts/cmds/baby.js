@@ -43,7 +43,7 @@ module.exports = {
         const q = match[1].trim();
         const a = match[2].trim();
 
-        const res = await axios.get(`${link}?teach=${encodeURIComponent(q)}&ans=${encodeURIComponent(a)}&senderName=${encodeURIComponent(senderName)}`);
+        const res = await axios.get(`${link}?teach&ask=${encodeURIComponent(q)}&ans=${encodeURIComponent(a)}&senderName=${encodeURIComponent(senderName)}`);
         return message.reply(`✅ ${res.data.message}\n👤 Teacher: ${res.data.author}\n💬 Replies: ${res.data.replies?.join(", ") || "None"}`);
       }
 
