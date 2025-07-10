@@ -9,14 +9,14 @@ module.exports = {
   config: {
     name: "baby",
     aliases: ["baby", "bbe", "babe", "bby"],
-    version: "7.0.0",
+    version: "7.1.0",
     author: "dipto & fixed by Shaon",
     countDown: 0,
     role: 0,
     description: "Better than Simsimi",
     category: "chat",
     guide: {
-      en: "{pn} [any message]\n{pn} teach [question] - [reply1], [reply2]...\n{pn} edit [question] - [old] - [new]\n{pn} delete [question] - [answer]\n{pn} list\n{pn} msg [question]"
+      en: "{pn} [text]\n{pn} teach প্রশ্ন - উত্তর[,উত্তর২...]\n{pn} edit প্রশ্ন - পুরাতন - নতুন\n{pn} delete প্রশ্ন - উত্তর\n{pn} list\n{pn} msg প্রশ্ন"
     }
   },
 
@@ -34,61 +34,71 @@ module.exports = {
     try {
       const senderName = await usersData.getName(uid) || "Unknown";
 
+      // ➕ TEACH
       if (text.startsWith("teach ")) {
-        const [q, a] = text.slice(6).split(/\s*-\s*/);
-        if (!q || !a) return message.reply("❌ Use: teach [question] - [reply1], [reply2]...");
+        const match = text.match(/^teach\s+(.+?)\s*-\s*(.+)$/);
+        if (!match) return message.reply("❌ Use: teach প্রশ্ন - উত্তর[,উত্তর২...]");
+
+        const q = match[1].trim();
+        const a = match[2].trim();
+
         const res = await axios.get(`${link}?teach=${encodeURIComponent(q)}&ans=${encodeURIComponent(a)}&senderName=${encodeURIComponent(senderName)}`);
-        return message.reply(`✅ ${res.data.message}\n👤 Teacher: ${res.data.author}\n💬 Replies: ${res.data.replies?.join(", ")}`);
+        return message.reply(`✅ ${res.data.message}\n👤 Teacher: ${res.data.author}\n💬 Replies: ${res.data.replies?.join(", ") || "None"}`);
       }
 
+      // ✏️ EDIT
       if (text.startsWith("edit ")) {
         const parts = text.slice(5).split(/\s*-\s*/);
-        if (parts.length !== 3) return message.reply("❌ Use: edit [question] - [old reply] - [new reply]");
+        if (parts.length !== 3) return message.reply("❌ Use: edit প্রশ্ন - পুরাতন - নতুন");
         const [q, oldR, newR] = parts;
         const res = await axios.get(`${link}?edit=${encodeURIComponent(q)}&old=${encodeURIComponent(oldR)}&new=${encodeURIComponent(newR)}`);
         return message.reply(`✏️ ${res.data.message}`);
       }
 
+      // 🗑️ DELETE
       if (text.startsWith("delete ")) {
-        const [q, a] = text.slice(7).split(/\s*-\s*/);
-        if (!q || !a) return message.reply("❌ Use: delete [question] - [answer]");
+        const parts = text.slice(7).split(/\s*-\s*/);
+        if (parts.length !== 2) return message.reply("❌ Use: delete প্রশ্ন - উত্তর");
+        const [q, a] = parts;
         const res = await axios.get(`${link}?delete=${encodeURIComponent(q)}&ans=${encodeURIComponent(a)}`);
         return message.reply(`🗑️ ${res.data.message}`);
       }
 
+      // 📋 LIST
       if (text === "list") {
         const res = await axios.get(`${link}?list=all`);
-        return message.reply(`🧠 Total: ${res.data.totalQuestions} questions\n💬 Total Replies: ${res.data.totalReplies}`);
+        return message.reply(`🧠 Total Questions: ${res.data.totalQuestions}\n💬 Total Replies: ${res.data.totalReplies}`);
       }
 
+      // 📩 MSG
       if (text.startsWith("msg ")) {
         const q = text.slice(4).trim();
         const res = await axios.get(`${link}?list=${encodeURIComponent(q)}`);
-        if (!res.data || !res.data.data?.length) return message.reply("❌ No replies found.");
-        const entry = res.data.data.find(i => i.ask.toLowerCase() === q.toLowerCase());
+        const entry = res.data.data?.find(i => i.ask.toLowerCase() === q.toLowerCase());
         if (!entry) return message.reply("❌ Question not found.");
         return message.reply(`📩 Replies for "${entry.ask}":\n${entry.ans.map((a, i) => `${i + 1}. ${a}`).join("\n")}`);
       }
 
-      // Default: chat
+      // 🤖 DEFAULT CHAT
       const res = await axios.get(`${link}?text=${encodeURIComponent(text)}&senderName=${encodeURIComponent(senderName)}`);
-      const response = res.data.response?.[0] || "❌ No response.";
+      const response = res.data.response?.[0] || "🤖 আমি কিছুই বুঝতে পারছি না!";
       const info = await message.reply(response);
 
       global.functions.onReply.set(info.message_id, {
-        commandName: 'baby',
+        commandName: "baby",
         type: "reply",
         messageID: info.message_id,
-        author: uid
+        author: uid,
+        senderName
       });
 
     } catch (e) {
       console.error("BABY Error:", e);
-      message.reply("❌ Error occurred. Please try again.");
+      return message.reply("❌ Error occurred. Please try again later.");
     }
   },
 
-  onReply: async ({ event, message }) => {
+  onReply: async ({ event, message, Reply }) => {
     const base = await baseApiUrl();
     const link = `${base}/sim`;
     const text = event.body?.trim();
@@ -97,19 +107,20 @@ module.exports = {
     if (!text) return;
 
     try {
-      const res = await axios.get(`${link}?text=${encodeURIComponent(text)}&senderName=${uid}`);
+      const res = await axios.get(`${link}?text=${encodeURIComponent(text)}&senderName=${encodeURIComponent(Reply.senderName || uid)}`);
       const reply = res.data.response?.[0] || "❌ No response.";
       const info = await message.reply(reply);
 
       global.functions.onReply.set(info.message_id, {
-        commandName: 'baby',
+        commandName: "baby",
         type: "reply",
         messageID: info.message_id,
-        author: uid
+        author: uid,
+        senderName: Reply.senderName || uid
       });
     } catch (e) {
       console.error("BABY Reply Error:", e);
-      message.reply("❌ Error in reply handling.");
+      return message.reply("❌ Error in reply handling.");
     }
   }
 };
