@@ -1,5 +1,6 @@
 const axios = require("axios");
 
+// 🔗 Base API URL fetcher
 const baseApiUrl = async () => {
   const base = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
   return base.data.api;
@@ -9,8 +10,8 @@ module.exports = {
   config: {
     name: "baby",
     aliases: ["baby", "bbe", "babe", "bby"],
-    version: "7.1.1",
-    author: "dipto & fixed by Shaon",
+    version: "7.2.0",
+    author: "Dipto & fixed by Shaon",
     countDown: 0,
     role: 0,
     description: "Better than Simsimi",
@@ -20,12 +21,12 @@ module.exports = {
     }
   },
 
-  // ⏩ START
-  onStart: async ({ api, event, args, usersData, message }) => {
+  onStart: async ({ api, event, args, usersData, bot, message }) => {
     const base = await baseApiUrl();
     const link = `${base}/sim`;
     const text = args.join(" ").trim();
     const uid = event.senderID;
+    const chatId = event.chat?.id || event.threadID;
 
     if (!text) {
       const ran = ["Bolo baby", "hum", "type help baby", "type !baby hi", "yes baby", "hey baby😃"];
@@ -74,47 +75,33 @@ module.exports = {
       // 🤖 DEFAULT CHAT
       const res = await axios.get(`${link}?text=${encodeURIComponent(text)}&senderName=${encodeURIComponent(senderName)}`);
       const response = res.data.response?.[0] || "🤖 আমি কিছুই বুঝতে পারছি না!";
-      const info = await message.reply(response);
+      await message.reply(response);
 
-      // Save for reply-to-reply chain
-      global.functions.onReply.set(info.message_id, {
-        commandName: "baby",
-        type: "chat",
-        author: uid,
-        senderName
-      });
+      // 🔁 Reply loop using bot.once
+      const waitReply = () => {
+        bot.once("message", async (replyEvent) => {
+          const replyText = replyEvent.text?.trim();
+          const replySender = replyEvent.sender?.id || replyEvent.senderID;
+
+          if (!replyText || replySender !== uid) return waitReply(); // Ignore empty or wrong user
+
+          try {
+            const res2 = await axios.get(`${link}?text=${encodeURIComponent(replyText)}&senderName=${encodeURIComponent(senderName)}`);
+            const responseText = res2.data.response?.[0] || "🤖 আমি কিছুই বুঝতে পারছি না!";
+            await api.sendMessage(chatId, responseText);
+            waitReply(); // Wait for next reply
+          } catch (err) {
+            console.error("Reply Error:", err);
+            api.sendMessage(chatId, "❌ রিপ্লাই দিতে সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।");
+          }
+        });
+      };
+
+      waitReply();
 
     } catch (e) {
       console.error("BABY Error:", e);
       return message.reply("❌ Error occurred. Please try again later.");
-    }
-  },
-
-  // 🔁 REPLY HANDLER
-  onReply: async function ({ api, event, message, Reply }) {
-    try {
-      const base = await baseApiUrl();
-      const link = `${base}/sim`;
-      const replyText = event.body?.trim();
-      const uid = event.senderID;
-
-      if (!replyText || !isNaN(replyText)) return;
-
-      const res = await axios.get(`${link}?text=${encodeURIComponent(replyText)}&senderName=${encodeURIComponent(Reply.senderName || uid)}`);
-      const responseText = res.data.response?.[0] || "🤖 আমি কিছুই বুঝতে পারছি না!";
-      const info = await message.reply(responseText);
-
-      // Set again for chaining reply-to-reply
-      global.functions.onReply.set(info.message_id, {
-        commandName: "baby",
-        type: "chat",
-        author: uid,
-        senderName: Reply.senderName || uid
-      });
-
-    } catch (err) {
-      console.error("Reply Error:", err);
-      message.reply("❌ রিপ্লাই দিতে সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।");
     }
   }
 };
