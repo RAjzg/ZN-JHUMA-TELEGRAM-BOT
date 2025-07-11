@@ -28,23 +28,35 @@ const boards = [
 module.exports.run = async function ({ bot, message, chatId }) {
   const list = `📘 *Select Exam Type:*\n\n1️⃣ 🧪 *SSC*`;
   const sent = await bot.sendMessage(chatId, list, { parse_mode: "Markdown" });
-  global.ownersv2.reply.set(sent.message_id, { meta: { name: meta.name }, step: 1, deleteMsgId: sent.message_id });
-}
+  global.ownersv2.reply.set(sent.message_id, {
+    meta: { name: this.config.name },
+    step: 1,
+    deleteMsgId: sent.message_id,
+  });
+};
 
 module.exports.onReply = async function ({ bot, msg, chatId, data }) {
   const text = msg.text.trim();
   const step = data.step || 1;
 
   if (data.deleteMsgId) {
-    try { await bot.deleteMessage(chatId, data.deleteMsgId); } catch {}
+    try {
+      await bot.deleteMessage(chatId, data.deleteMsgId);
+    } catch {}
   }
 
   if (step === 1) {
     const boardList = boards.map((b, i) => `${i + 1}. 🏛️ *${b.name}*`).join("\n");
-    const sent = await bot.sendMessage(chatId, `🏛️ *Select Your Education Board:*\n\n${boardList}\n\n🔢 *Reply with number (e.g., 4 for Dhaka)*`, { parse_mode: "Markdown" });
-    global.functions.onReply.set(sent.message_id, 
-    { commandName: this.config.name,
-    step: 2, deleteMsgId: sent.message_id });
+    const sent = await bot.sendMessage(
+      chatId,
+      `🏛️ *Select Your Education Board:*\n\n${boardList}\n\n🔢 *Reply with number (e.g., 4 for Dhaka)*`,
+      { parse_mode: "Markdown" }
+    );
+    global.functions.onReply.set(sent.message_id, {
+      commandName: this.config.name,
+      step: 2,
+      deleteMsgId: sent.message_id,
+    });
   }
 
   if (step === 2) {
@@ -55,9 +67,17 @@ module.exports.onReply = async function ({ bot, msg, chatId, data }) {
     const board = boards[index].value;
     const years = Array.from({ length: 27 }, (_, i) => 2000 + i);
     const yearList = years.map((y, i) => `${i + 1}. 📅 *${y}*`).join("\n");
-    const sent = await bot.sendMessage(chatId, `📆 *Select Exam Year:*\n\n${yearList}\n\n🔢 *Reply with number (e.g., 24 for 2023)*`, { parse_mode: "Markdown" });
+    const sent = await bot.sendMessage(
+      chatId,
+      `📆 *Select Exam Year:*\n\n${yearList}\n\n🔢 *Reply with number (e.g., 24 for 2023)*`,
+      { parse_mode: "Markdown" }
+    );
     global.functions.onReply.set(sent.message_id, {
-    commandName: this.config.name, step: 3, board, deleteMsgId: sent.message_id });
+      commandName: this.config.name,
+      step: 3,
+      board,
+      deleteMsgId: sent.message_id,
+    });
   }
 
   if (step === 3) {
@@ -73,7 +93,7 @@ module.exports.onReply = async function ({ bot, msg, chatId, data }) {
       step: 4,
       board: data.board,
       year,
-      deleteMsgId: sent.message_id
+      deleteMsgId: sent.message_id,
     });
   }
 
@@ -88,7 +108,7 @@ module.exports.onReply = async function ({ bot, msg, chatId, data }) {
       board: data.board,
       year: data.year,
       roll: text,
-      deleteMsgId: sent.message_id
+      deleteMsgId: sent.message_id,
     });
   }
 
@@ -96,57 +116,48 @@ module.exports.onReply = async function ({ bot, msg, chatId, data }) {
     if (!/^\d+$/.test(text)) {
       return bot.sendMessage(chatId, "🚫 *Invalid registration number.* Please enter digits only.", { parse_mode: "Markdown" });
     }
+
     const reg = text;
     const { board, year, roll } = data;
     const url = `https://shaon-ssc-result.vercel.app/result?exam=ssc&board=${board}&year=${year}&roll=${roll}&reg=${reg}`;
+
     try {
       const res = await axios.get(url);
+
       if (res.data.status !== "success") {
         return bot.sendMessage(chatId, "❌ *Result not found. Please check your info and try again.*", { parse_mode: "Markdown" });
       }
 
       const s = res.data.student;
       const g = res.data.grades.filter(x => x.subject);
-      const grades = g.map(
-        sub => `📚 *${sub.subject}* ➝ 🎯 Grade: *${sub.grade}*`
-      ).join("\n\n");
+      const grades = g.map(sub => `📚 *${sub.subject}* ➝ 🎯 Grade: *${sub.grade}*`).join("\n\n");
 
       const result = `
 🎓 *SSC Exam Result* 📊
 ━━━━━━━━━━━━━━━━━━━━━━
 
 👤 *Student Name:* \`${s.Name}\`
-
 👨‍👩‍👧‍👦 *Father's Name:* \`${s["Fathers Name"]}\`
-
 👩 *Mother's Name:* \`${s["Mothers Name"]}\`
-
 🏫 *Institute:* \`${s.Institute}\`
-
 📚 *Group:* \`${s.Group}\`
-
 🏛️ *Board:* \`${s.Board}\`
-
 🆔 *Roll No:* \`${s["Roll No"]}\`
-
 📆 *Date of Birth:* \`${s["Date of Birth"]}\`
-
 📋 *Exam Type:* \`${s.Type}\`
-
 🎯 *Final Result:* *${s.Result}*
 
 ━━━━━━━━━━━━━━━━━━━━━━
-
 📖 *Subject-wise Grades:*
 
 ${grades}
+━━━━━━━━━━━━━━━━━━━━━━`;
 
-━━━━━━━━━━━━━━━━━━━━━━
-`;
+      await bot.sendMessage(chatId, result, { parse_mode: "Markdown" });
 
-      await bot.sendMessage(chat, result, { parse_mode: "Markdown" });
-    } catch {
-      await bot.sendMessage(chatId, "Could not fetch result. Please try again later.*", { parse_mode: "Markdown" });
+    } catch (err) {
+      console.error("Result fetch error:", err.message || err);
+      await bot.sendMessage(chatId, "❌ *Could not fetch result. Please try again later.*", { parse_mode: "Markdown" });
     }
   }
-}
+};
