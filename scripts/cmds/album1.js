@@ -3,24 +3,23 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "album1",
-    version: "4.0.0",
+    version: "5.0.0",
     author: "Shaon Ahmed",
     role: 0,
-    description: "Reply add like /album, with category-based video",
+    description: "Reply add with bot.once handler (like album)",
     category: "media",
     countDown: 5
   },
 
-  onStart: async ({ api, event, args }) => {
+  onStart: async ({ api, event, args, bot }) => {
     const chatId = event.chat?.id || event.threadID;
     const input = args.join(" ").trim();
 
-    // ⬇️ Base API fetch
     const apis = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
     const baseApi = apis.data.api;
     const imgur = apis.data.imgur;
 
-    // ✅ ADD by reply (like album)
+    // ✅ ADD by reply (same as before)
     if (args[0] === "add" && args[1]) {
       const category = args[1].toLowerCase();
 
@@ -50,7 +49,7 @@ module.exports = {
       }
     }
 
-    // 📄 LIST (category view)
+    // 📄 Category list
     if (input === "list" || input === "") {
       const res = await axios.get(`${baseApi}/album?list=true`);
       const lines = res.data.data.split("\n");
@@ -70,30 +69,47 @@ module.exports = {
 
       const sent = await api.sendMessage(chatId, msg, { parse_mode: "Markdown" });
 
-      global.functions.onReply.set(sent.message_id, {
-        command: "album1",
-        type: "selectCategory",
-        categories,
+      // 🧠 Wait for reply using bot.once
+      bot.once("message", async (replyEvent) => {
+        const num = parseInt(replyEvent.text);
+        if (isNaN(num) || num < 1 || num > categories.length) {
+          return api.sendMessage(chatId, `⚠️ Valid number: 1 to ${categories.length}`);
+        }
+
+        const category = categories[num - 1];
+        try {
+          const r = await axios.get(`${baseApi}/album?type=${encodeURIComponent(category)}`);
+          const { url, cp, count } = r.data;
+
+          await api.sendVideo(chatId, url, {
+            caption: `🎞️ Category: ${category}\n📦 Total: ${count || 1}\n\n${cp || ""}`,
+            reply_markup: {
+              inline_keyboard: [[{ text: "Owner", url: "https://t.me/shaonproject" }]]
+            }
+          });
+        } catch (err) {
+          return api.sendMessage(chatId, "❌ ভিডিও লোড করা যায়নি।");
+        }
       });
 
       return;
     }
 
-    // ➕ CREATE
+    // ➕ CREATE category
     if (input.startsWith("create ")) {
       const name = input.slice(7).trim();
       const res = await axios.get(`${baseApi}/album?create=${encodeURIComponent(name)}`);
       return api.sendMessage(chatId, `✅ ${res.data.message}`);
     }
 
-    // ➖ DELETE
+    // ➖ DELETE category
     if (input.startsWith("delete ")) {
       const name = input.slice(7).trim();
       const res = await axios.get(`${baseApi}/album?delete=${encodeURIComponent(name)}`);
       return api.sendMessage(chatId, `🗑️ ${res.data.message}`);
     }
 
-    // ▶️ RANDOM VIEW
+    // ▶️ RANDOM category
     if (input) {
       try {
         const res = await axios.get(`${baseApi}/album?type=${encodeURIComponent(input)}`);
@@ -109,29 +125,5 @@ module.exports = {
         api.sendMessage(chatId, "❌ ভিডিও লোড করা যায়নি।");
       }
     }
-  },
-
-  reply: async ({ api, event, Reply }) => {
-    const { categories } = Reply;
-    const chatId = event.chat?.id || event.threadID;
-    const num = parseInt(event.text);
-
-    if (isNaN(num) || num < 1 || num > categories.length) {
-      return api.sendMessage(chatId, `⚠️ Valid number: 1 to ${categories.length}`);
-    }
-
-    const apis = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
-    const baseApi = apis.data.api;
-
-    const category = categories[num - 1];
-    const res = await axios.get(`${baseApi}/album?type=${encodeURIComponent(category)}`);
-    const { url, cp, count } = res.data;
-
-    await api.sendVideo(chatId, url, {
-      caption: `🎞️ Category: ${category}\n📦 Total: ${count || 1}\n\n${cp || ""}`,
-      reply_markup: {
-        inline_keyboard: [[{ text: "Owner", url: "https://t.me/shaonproject" }]]
-      }
-    });
   }
 };
