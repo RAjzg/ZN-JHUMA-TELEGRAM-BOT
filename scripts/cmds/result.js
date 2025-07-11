@@ -28,8 +28,8 @@ const boards = [
 module.exports.run = async function ({ bot, message, chatId }) {
   const list = `📘 *Select Exam Type:*\n\n1️⃣ 🧪 *SSC*`;
   const sent = await bot.sendMessage(chatId, list, { parse_mode: "Markdown" });
-  global.ownersv2.reply.set(sent.message_id, {
-    meta: { name: this.config.name },
+  global.functions.onReply.set(sent.message_id, {
+    commandName: this.config.name,
     step: 1,
     deleteMsgId: sent.message_id,
   });
@@ -156,7 +156,7 @@ ${grades}
       await bot.sendMessage(chatId, result, { parse_mode: "Markdown" });
 
     } catch (err) {
-      console.error("Result fetch error:", err.message || err);
+      console.error("Result fetch error:", err);
       await bot.sendMessage(chatId, "❌ *Could not fetch result. Please try again later.*", { parse_mode: "Markdown" });
     }
   }
