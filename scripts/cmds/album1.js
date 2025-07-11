@@ -41,7 +41,7 @@ module.exports = {
 
         if (!finalUrl) throw new Error("Imgur upload failed");
 
-        await axios.get(`${baseApi}/video/${category}?add=${category}&url=${encodeURIComponent(finalUrl)}`);
+        await axios.get(`${baseApi}/album?add=${category}&url=${encodeURIComponent(finalUrl)}`);
         return api.sendMessage(chatId, `✅ Added to '${category.toUpperCase()}'\n🔗 ${finalUrl}`);
       } catch (err) {
         console.error("Add failed:", err.message);
