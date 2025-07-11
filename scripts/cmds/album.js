@@ -78,8 +78,6 @@ module.exports = {
 
     const waitMsg = await api.sendMessage(chatId, "🎬 Select a video category:", videoSelectionMarkup);
 
-    // এই অংশ replace করুন আপনার bot.once(callback_query) এর ভিতরে থেকে ↓
-
 bot.once("callback_query", async (callbackQuery) => {
   const categoryEndpoint = callbackQuery.data;
   await api.answerCallbackQuery(callbackQuery.id);
@@ -93,18 +91,18 @@ bot.once("callback_query", async (callbackQuery) => {
 
     const res = await axios.get(`${base}${categoryEndpoint}`);
     const caption = res.data.shaon || res.data.cp || "🎬 Here's your video:";
-
+    
     let videoUrl;
 
+    // 🧠 Handle different API structures
     if (typeof res.data.data === "string") {
-      // Case: data is a direct URL string
       videoUrl = res.data.data;
     } else if (Array.isArray(res.data.data)) {
-      // Case: data is an array of objects
       const random = res.data.data[Math.floor(Math.random() * res.data.data.length)];
       videoUrl = random?.url;
+    } else if (typeof res.data.data === "object" && res.data.data.url) {
+      videoUrl = res.data.data.url;
     } else if (res.data.url) {
-      // Case: Imgur style or single object
       videoUrl = res.data.url;
     } else {
       throw new Error("❌ Invalid response format");
@@ -112,10 +110,21 @@ bot.once("callback_query", async (callbackQuery) => {
 
     if (!videoUrl || typeof videoUrl !== "string") throw new Error("❌ Invalid video URL");
 
+    // 🧠 Detect file type
+    const isDrive = videoUrl.includes("drive.google.com");
+    const isImage = videoUrl.match(/\.(jpg|jpeg|png|gif)(\?.*)?$/i);
     const isVideo = videoUrl.match(/\.(mp4|mov|m4v|webm)(\?.*)?$/i);
 
-    if (isVideo) {
+    if (isVideo || isDrive) {
       await api.sendVideo(chatId, videoUrl, {
+        caption,
+        reply_to_message_id: loading.message_id,
+        reply_markup: {
+          inline_keyboard: [[{ text: "🧑‍💻 Owner", url: "https://t.me/shaonproject" }]],
+        },
+      });
+    } else if (isImage) {
+      await api.sendPhoto(chatId, videoUrl, {
         caption,
         reply_to_message_id: loading.message_id,
         reply_markup: {
@@ -133,7 +142,6 @@ bot.once("callback_query", async (callbackQuery) => {
     }
 
     await api.deleteMessage(chatId, loading.message_id);
-
   } catch (err) {
     console.error(err.message);
     await api.editMessageText(chatId, loading.message_id, `❌ Error: ${err.message}`);
