@@ -78,59 +78,66 @@ module.exports = {
 
     const waitMsg = await api.sendMessage(chatId, "🎬 Select a video category:", videoSelectionMarkup);
 
-    bot.once("callback_query", async (callbackQuery) => {
-      const categoryEndpoint = callbackQuery.data;
-      await api.answerCallbackQuery(callbackQuery.id);
+    // এই অংশ replace করুন আপনার bot.once(callback_query) এর ভিতরে থেকে ↓
 
-      const loadingMsg = await api.sendMessage(chatId, "⏳ Fetching video...", {
-        reply_to_message_id: waitMsg.message_id,
+bot.once("callback_query", async (callbackQuery) => {
+  const categoryEndpoint = callbackQuery.data;
+  await api.answerCallbackQuery(callbackQuery.id);
+  const chatId = event.chat?.id || event.threadID;
+
+  const loading = await api.sendMessage(chatId, "⏳ Fetching video...");
+
+  try {
+    const apis = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
+    const base = apis.data.api;
+
+    const res = await axios.get(`${base}${categoryEndpoint}`);
+    const caption = res.data.shaon || res.data.cp || "🎬 Here's your video:";
+
+    let videoUrl;
+
+    if (typeof res.data.data === "string") {
+      // Case: data is a direct URL string
+      videoUrl = res.data.data;
+    } else if (Array.isArray(res.data.data)) {
+      // Case: data is an array of objects
+      const random = res.data.data[Math.floor(Math.random() * res.data.data.length)];
+      videoUrl = random?.url;
+    } else if (res.data.url) {
+      // Case: Imgur style or single object
+      videoUrl = res.data.url;
+    } else {
+      throw new Error("❌ Invalid response format");
+    }
+
+    if (!videoUrl || typeof videoUrl !== "string") throw new Error("❌ Invalid video URL");
+
+    const isVideo = videoUrl.match(/\.(mp4|mov|m4v|webm)(\?.*)?$/i);
+
+    if (isVideo) {
+      await api.sendVideo(chatId, videoUrl, {
+        caption,
+        reply_to_message_id: loading.message_id,
+        reply_markup: {
+          inline_keyboard: [[{ text: "🧑‍💻 Owner", url: "https://t.me/shaonproject" }]],
+        },
       });
+    } else {
+      await api.sendDocument(chatId, videoUrl, {
+        caption,
+        reply_to_message_id: loading.message_id,
+        reply_markup: {
+          inline_keyboard: [[{ text: "🧑‍💻 Owner", url: "https://t.me/shaonproject" }]],
+        },
+      });
+    }
 
-      try {
-        const apis = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
-        const base = apis.data.api;
+    await api.deleteMessage(chatId, loading.message_id);
 
-        const res = await axios.get(`${base}${categoryEndpoint}`);
-
-        const videoItem = Array.isArray(res.data.data)
-          ? res.data.data[Math.floor(Math.random() * res.data.data.length)]
-          : res.data.data;
-
-        const videoUrl = videoItem?.url;
-        const caption = res.data.shaon || "🎥 Here's your video:";
-
-        if (!videoUrl || typeof videoUrl !== "string") {
-          throw new Error("Invalid video URL");
-        }
-
-        const isVideo = videoUrl.match(/\.(mp4|mov|m4v|webm)(\?.*)?$/i);
-
-        if (isVideo) {
-          await api.sendVideo(chatId, videoUrl, {
-            caption,
-            reply_to_message_id: waitMsg.message_id,
-            reply_markup: {
-              inline_keyboard: [[{ text: "🧑‍💻 Owner", url: "https://t.me/shaonproject" }]]
-            }
-          });
-        } else {
-          await api.sendDocument(chatId, videoUrl, {
-            caption,
-            reply_to_message_id: waitMsg.message_id,
-            reply_markup: {
-              inline_keyboard: [[{ text: "🧑‍💻 Owner", url: "https://t.me/shaonproject" }]]
-            }
-          });
-        }
-
-        await api.deleteMessage(chatId, loadingMsg.message_id);
-        await api.deleteMessage(chatId, waitMsg.message_id);
-
-      } catch (err) {
-        console.error("Fetch Error:", err.message);
-        await api.deleteMessage(chatId, loadingMsg.message_id);
-        await api.sendMessage(chatId, `❌ Error: ${err.message}`, { reply_to_message_id: waitMsg.message_id });
-      }
-    });
+  } catch (err) {
+    console.error(err.message);
+    await api.editMessageText(chatId, loading.message_id, `❌ Error: ${err.message}`);
+  }
+});
   }
 };
