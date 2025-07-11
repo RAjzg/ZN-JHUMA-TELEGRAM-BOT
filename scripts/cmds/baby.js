@@ -11,7 +11,7 @@ module.exports = {
     name: "baby",
     aliases: ["baby", "bbe", "babe", "bby"],
     version: "7.2.0",
-    author: "Dipto & fixed by Shaon",
+    author: "dipto & fixed by Shaon",
     countDown: 0,
     role: 0,
     description: "Better than Simsimi",
@@ -21,12 +21,13 @@ module.exports = {
     }
   },
 
-  onStart: async ({ api, event, args, usersData, bot, message }) => {
+  // ⏩ START
+  onStart: async ({ api, event, args, usersData, message, bot }) => {
     const base = await baseApiUrl();
     const link = `${base}/sim`;
     const text = args.join(" ").trim();
     const uid = event.senderID;
-    const chatId = event.chat?.id || event.threadID;
+    const senderName = await usersData.getName(uid) || "Unknown";
 
     if (!text) {
       const ran = ["Bolo baby", "hum", "type help baby", "type !baby hi", "yes baby", "hey baby😃"];
@@ -34,8 +35,6 @@ module.exports = {
     }
 
     try {
-      const senderName = await usersData.getName(uid) || "Unknown";
-
       // ➕ TEACH
       if (text.startsWith("teach ")) {
         const match = text.match(/^teach\s+(.+?)\s*-\s*(.+)$/);
@@ -75,29 +74,10 @@ module.exports = {
       // 🤖 DEFAULT CHAT
       const res = await axios.get(`${link}?text=${encodeURIComponent(text)}&senderName=${encodeURIComponent(senderName)}`);
       const response = res.data.response?.[0] || "🤖 আমি কিছুই বুঝতে পারছি না!";
-      await message.reply(response);
+      const info = await message.reply(response);
 
-      // 🔁 Reply loop using bot.once
-      const waitReply = () => {
-        bot.once("message", async (replyEvent) => {
-          const replyText = replyEvent.text?.trim();
-          const replySender = replyEvent.sender?.id || replyEvent.senderID;
-
-          if (!replyText || replySender !== uid) return waitReply(); // Ignore empty or wrong user
-
-          try {
-            const res2 = await axios.get(`${link}?text=${encodeURIComponent(replyText)}&senderName=${encodeURIComponent(senderName)}`);
-            const responseText = res2.data.response?.[0] || "🤖 আমি কিছুই বুঝতে পারছি না!";
-            await api.sendMessage(chatId, responseText);
-            waitReply(); // Wait for next reply
-          } catch (err) {
-            console.error("Reply Error:", err);
-            api.sendMessage(chatId, "❌ রিপ্লাই দিতে সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।");
-          }
-        });
-      };
-
-      waitReply();
+      // 🔁 Setup reply-to-reply system
+      waitReply(bot, api, info.message_id, uid, senderName, link);
 
     } catch (e) {
       console.error("BABY Error:", e);
@@ -105,3 +85,26 @@ module.exports = {
     }
   }
 };
+
+// 🔁 Function to wait for reply only on bot's message
+async function waitReply(bot, api, messageId, uid, senderName, link) {
+  bot.once("message", async (msg) => {
+    try {
+      // Only process replies to bot's previous message
+      if (!msg.reply_to_message || msg.reply_to_message.message_id !== messageId) return;
+
+      const text = msg.text?.trim();
+      if (!text || !isNaN(text)) return;
+
+      const res = await axios.get(`${link}?text=${encodeURIComponent(text)}&senderName=${encodeURIComponent(senderName)}`);
+      const response = res.data.response?.[0] || "🤖 আমি কিছুই বুঝতে পারছি না!";
+      const sent = await api.sendMessage(msg.chat.id, response, { reply_to_message_id: msg.message_id });
+
+      // Continue the reply loop
+      waitReply(bot, api, sent.message_id, uid, senderName, link);
+    } catch (err) {
+      console.error("Reply Error:", err);
+      api.sendMessage(msg.chat.id, "❌ রিপ্লাই দিতে সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।");
+    }
+  });
+}
