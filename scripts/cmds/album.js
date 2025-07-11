@@ -14,7 +14,7 @@ module.exports = {
   onStart: async ({ api, event, args, bot }) => {
     const chatId = event.chat?.id || event.threadID;
 
-    // ✅ /album add <category>
+    // ✅ /album add <category> (with media reply)
     if (args[0] === "add" && args[1]) {
       const category = args[1].toLowerCase();
 
@@ -34,6 +34,7 @@ module.exports = {
       try {
         const fileLink = await api.getFileLink(file.file_id);
 
+        // 🔄 Imgur + API Config
         const apis = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
         const imgur = apis.data.allapi;
         const base = apis.data.api;
@@ -41,7 +42,7 @@ module.exports = {
         const imgurRes = await axios.get(`${imgur}/imgur?url=${encodeURIComponent(fileLink)}`);
         const finalUrl = imgurRes.data.link || imgurRes.data.uploaded?.image;
 
-        if (!finalUrl || typeof finalUrl !== "string") throw new Error("Imgur upload failed");
+        if (!finalUrl) throw new Error("Imgur upload failed");
 
         await axios.get(`${base}/video/${category}?add=${category}&url=${encodeURIComponent(finalUrl)}`);
 
@@ -55,7 +56,7 @@ module.exports = {
       }
     }
 
-    // ✅ Show category buttons
+    // 🎬 Inline UI for viewing category videos
     const videoSelectionMarkup = {
       reply_markup: {
         inline_keyboard: [
@@ -90,8 +91,13 @@ module.exports = {
         const base = apis.data.api;
 
         const res = await axios.get(`${base}${categoryEndpoint}`);
-        let videoUrl = res.data.url || res.data.data || res.data.data?.url;
-        const caption = res.data.cp || res.data.shaon || "🎥 Here's your video:";
+
+        const videoItem = Array.isArray(res.data.data)
+          ? res.data.data[Math.floor(Math.random() * res.data.data.length)]
+          : res.data.data;
+
+        const videoUrl = videoItem?.url;
+        const caption = res.data.shaon || "🎥 Here's your video:";
 
         if (!videoUrl || typeof videoUrl !== "string") {
           throw new Error("Invalid video URL");
