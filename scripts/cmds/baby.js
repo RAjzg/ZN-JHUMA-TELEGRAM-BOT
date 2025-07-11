@@ -1,6 +1,5 @@
 const axios = require("axios");
 
-// 🔗 Base API URL fetcher
 const baseApiUrl = async () => {
   const base = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
   return base.data.api;
@@ -10,7 +9,7 @@ module.exports = {
   config: {
     name: "baby",
     aliases: ["baby", "bbe", "babe", "bby"],
-    version: "7.1.0",
+    version: "7.1.1",
     author: "dipto & fixed by Shaon",
     countDown: 0,
     role: 0,
@@ -77,10 +76,10 @@ module.exports = {
       const response = res.data.response?.[0] || "🤖 আমি কিছুই বুঝতে পারছি না!";
       const info = await message.reply(response);
 
+      // Save for reply-to-reply chain
       global.functions.onReply.set(info.message_id, {
         commandName: "baby",
-        type: "reply",
-        messageID: info.message_id,
+        type: "chat",
         author: uid,
         senderName
       });
@@ -92,24 +91,25 @@ module.exports = {
   },
 
   // 🔁 REPLY HANDLER
-  onReply: async function ({ api, event, message }) {
+  onReply: async function ({ api, event, message, Reply }) {
     try {
       const base = await baseApiUrl();
       const link = `${base}/sim`;
-      const reply = event.body?.trim();
+      const replyText = event.body?.trim();
       const uid = event.senderID;
 
-      if (!reply || !isNaN(reply)) return;
+      if (!replyText || !isNaN(replyText)) return;
 
-      const res = await axios.get(`${link}?text=${encodeURIComponent(reply)}&senderName=${encodeURIComponent(uid)}`);
+      const res = await axios.get(`${link}?text=${encodeURIComponent(replyText)}&senderName=${encodeURIComponent(Reply.senderName || uid)}`);
       const responseText = res.data.response?.[0] || "🤖 আমি কিছুই বুঝতে পারছি না!";
       const info = await message.reply(responseText);
 
+      // Set again for chaining reply-to-reply
       global.functions.onReply.set(info.message_id, {
         commandName: "baby",
-        type: "reply",
-        messageID: info.message_id,
-        author: uid
+        type: "chat",
+        author: uid,
+        senderName: Reply.senderName || uid
       });
 
     } catch (err) {
