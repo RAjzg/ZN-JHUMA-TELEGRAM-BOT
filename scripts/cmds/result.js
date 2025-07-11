@@ -42,7 +42,9 @@ module.exports.onReply = async function ({ bot, msg, chatId, data }) {
   if (step === 1) {
     const boardList = boards.map((b, i) => `${i + 1}. 🏛️ *${b.name}*`).join("\n");
     const sent = await bot.sendMessage(chatId, `🏛️ *Select Your Education Board:*\n\n${boardList}\n\n🔢 *Reply with number (e.g., 4 for Dhaka)*`, { parse_mode: "Markdown" });
-    global.ownersv2.onReply.set(sent.message_id, { meta: { name: meta.name }, step: 2, deleteMsgId: sent.message_id });
+    global.functions.onReply.set(sent.message_id, 
+    { commandName: this.config.name,
+    step: 2, deleteMsgId: sent.message_id });
   }
 
   if (step === 2) {
@@ -54,7 +56,7 @@ module.exports.onReply = async function ({ bot, msg, chatId, data }) {
     const years = Array.from({ length: 27 }, (_, i) => 2000 + i);
     const yearList = years.map((y, i) => `${i + 1}. 📅 *${y}*`).join("\n");
     const sent = await bot.sendMessage(chatId, `📆 *Select Exam Year:*\n\n${yearList}\n\n🔢 *Reply with number (e.g., 24 for 2023)*`, { parse_mode: "Markdown" });
-    global.ownersv2.onReply.set(sent.message_id, {
+    global.functions.onReply.set(sent.message_id, {
     commandName: this.config.name, step: 3, board, deleteMsgId: sent.message_id });
   }
 
@@ -66,7 +68,7 @@ module.exports.onReply = async function ({ bot, msg, chatId, data }) {
     }
     const year = years[index];
     const sent = await bot.sendMessage(chatId, "🔢 *Enter your Roll Number:*\n\n📌 *Only digits allowed*", { parse_mode: "Markdown" });
-    global.ownersv2.onReply.set(sent.message_id, {
+    global.functions.onReply.set(sent.message_id, {
       commandName: this.config.name,
       step: 4,
       board: data.board,
@@ -80,7 +82,7 @@ module.exports.onReply = async function ({ bot, msg, chatId, data }) {
       return bot.sendMessage(chatId, "🚫 *Invalid roll number.* Please enter digits only.", { parse_mode: "Markdown" });
     }
     const sent = await bot.sendMessage(chatId, "📝 *Enter your Registration Number:*\n\n📌 *Only digits allowed*", { parse_mode: "Markdown" });
-    global.ownersv2.onReply.set(sent.message_id, {
+    global.functions.onReply.set(sent.message_id, {
       commandName: this.config.name,
       step: 5,
       board: data.board,
