@@ -62,7 +62,8 @@ module.exports = {
         inline_keyboard: [
           [{ text: 'Love', callback_data: '/video/love' }, { text: 'CPL', callback_data: '/video/cpl' }],
           [{ text: 'Short', callback_data: '/video/short' }, { text: 'Sad', callback_data: '/video/sad' }],
-          [{ text: 'Status', callback_data: '/video/status' }, { text: 'Shairi', callback_data: '/video/shairi' }],
+          [{ text: 'Status', callback_data: '/video/status' }, { text: 'Status2', callback_data: '/video/status2' }],
+          [{ text: 'Status3', callback_data: '/video/status3' }, { text: 'Shairi', callback_data: '/video/shairi' }],
           [{ text: 'Baby', callback_data: '/video/baby' }, { text: 'Anime', callback_data: '/video/anime' }],
           [{ text: 'FF', callback_data: '/video/ff' }, { text: 'Lofi', callback_data: '/video/lofi' }],
           [{ text: 'Happy', callback_data: '/video/happy' }, { text: 'Football', callback_data: '/video/football' }],
@@ -90,7 +91,7 @@ module.exports = {
         const base = apis.data.api;
 
         const res = await axios.get(`${base}${categoryEndpoint}`);
-        const videoUrl = res.data.url || res.data.data;
+        const videoUrl = res.data.url || res.data.data || res.data.data.url;
         const caption = res.data.cp || res.data.shaon || "🎥 Here's your video:";
 
         if (!videoUrl) throw new Error("No video found");
