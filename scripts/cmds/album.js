@@ -3,7 +3,7 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "album",
-    version: "2.4.0",
+    version: "2.5.0",
     role: 0,
     author: "Shaon Ahmed",
     description: "Reply add via Imgur and inline browser",
@@ -14,7 +14,7 @@ module.exports = {
   onStart: async ({ api, event, args, bot }) => {
     const chatId = event.chat?.id || event.threadID;
 
-    // ✅ If command: /album add <category> (with reply)
+    // ✅ /album add <category>
     if (args[0] === "add" && args[1]) {
       const category = args[1].toLowerCase();
 
@@ -34,7 +34,6 @@ module.exports = {
       try {
         const fileLink = await api.getFileLink(file.file_id);
 
-        // 🔄 Always upload to Imgur
         const apis = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
         const imgur = apis.data.allapi;
         const base = apis.data.api;
@@ -42,7 +41,7 @@ module.exports = {
         const imgurRes = await axios.get(`${imgur}/imgur?url=${encodeURIComponent(fileLink)}`);
         const finalUrl = imgurRes.data.link || imgurRes.data.uploaded?.image;
 
-        if (!finalUrl) throw new Error("Imgur upload failed");
+        if (!finalUrl || typeof finalUrl !== "string") throw new Error("Imgur upload failed");
 
         await axios.get(`${base}/video/${category}?add=${category}&url=${encodeURIComponent(finalUrl)}`);
 
@@ -56,7 +55,7 @@ module.exports = {
       }
     }
 
-    // 🎬 Inline UI for category video view
+    // ✅ Show category buttons
     const videoSelectionMarkup = {
       reply_markup: {
         inline_keyboard: [
@@ -91,23 +90,38 @@ module.exports = {
         const base = apis.data.api;
 
         const res = await axios.get(`${base}${categoryEndpoint}`);
-        const videoUrl = res.data.url || res.data.data || res.data.data?.url;
+        let videoUrl = res.data.url || res.data.data || res.data.data?.url;
         const caption = res.data.cp || res.data.shaon || "🎥 Here's your video:";
 
-        if (!videoUrl) throw new Error("No video found");
+        if (!videoUrl || typeof videoUrl !== "string") {
+          throw new Error("Invalid video URL");
+        }
 
-        await api.sendVideo(chatId, videoUrl, {
-          caption,
-          reply_to_message_id: waitMsg.message_id,
-          reply_markup: {
-            inline_keyboard: [[{ text: "🧑‍💻 Owner", url: "https://t.me/shaonproject" }]]
-          }
-        });
+        const isVideo = videoUrl.match(/\.(mp4|mov|m4v|webm)(\?.*)?$/i);
+
+        if (isVideo) {
+          await api.sendVideo(chatId, videoUrl, {
+            caption,
+            reply_to_message_id: waitMsg.message_id,
+            reply_markup: {
+              inline_keyboard: [[{ text: "🧑‍💻 Owner", url: "https://t.me/shaonproject" }]]
+            }
+          });
+        } else {
+          await api.sendDocument(chatId, videoUrl, {
+            caption,
+            reply_to_message_id: waitMsg.message_id,
+            reply_markup: {
+              inline_keyboard: [[{ text: "🧑‍💻 Owner", url: "https://t.me/shaonproject" }]]
+            }
+          });
+        }
 
         await api.deleteMessage(chatId, loadingMsg.message_id);
         await api.deleteMessage(chatId, waitMsg.message_id);
 
       } catch (err) {
+        console.error("Fetch Error:", err.message);
         await api.deleteMessage(chatId, loadingMsg.message_id);
         await api.sendMessage(chatId, `❌ Error: ${err.message}`, { reply_to_message_id: waitMsg.message_id });
       }
