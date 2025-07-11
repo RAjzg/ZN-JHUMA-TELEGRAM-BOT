@@ -14,7 +14,7 @@ module.exports = {
   onStart: async ({ api, event, args, bot }) => {
     const chatId = event.chat?.id || event.threadID;
 
-    // ✅ If command: /album add <category> (with reply)
+    // ✅ Add media to album via reply
     if (args[0] === "add" && args[1]) {
       const category = args[1].toLowerCase();
 
@@ -34,7 +34,6 @@ module.exports = {
       try {
         const fileLink = await api.getFileLink(file.file_id);
 
-        // 🔄 Always upload to Imgur
         const apis = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
         const imgur = apis.data.allapi;
         const base = apis.data.api;
@@ -56,7 +55,7 @@ module.exports = {
       }
     }
 
-    // 🎬 Inline UI for category video view
+    // 🎬 Inline category buttons
     const videoSelectionMarkup = {
       reply_markup: {
         inline_keyboard: [
@@ -91,18 +90,31 @@ module.exports = {
         const base = apis.data.api;
 
         const res = await axios.get(`${base}${categoryEndpoint}`);
-        const videoUrl = res.data.url || res.data.data || res.data.data.url;
+        const videoUrl = res.data.url || res.data.data || res.data.data?.url;
         const caption = res.data.cp || res.data.shaon || "🎥 Here's your video:";
 
-        if (!videoUrl) throw new Error("No video found");
+        if (!videoUrl || !videoUrl.match(/\.(mp4|mov|m4v|webm)$/)) {
+          throw new Error("No valid video found (need direct .mp4 or similar)");
+        }
 
-        await api.sendVideo(chatId, videoUrl, {
-          caption,
-          reply_to_message_id: waitMsg.message_id,
-          reply_markup: {
-            inline_keyboard: [[{ text: "🧑‍💻 Owner", url: "https://t.me/shaonproject" }]]
-          }
-        });
+        try {
+          await api.sendVideo(chatId, videoUrl, {
+            caption,
+            reply_to_message_id: waitMsg.message_id,
+            reply_markup: {
+              inline_keyboard: [[{ text: "🧑‍💻 Owner", url: "https://t.me/shaonproject" }]]
+            }
+          });
+        } catch (e) {
+          // fallback to sendDocument
+          await api.sendDocument(chatId, videoUrl, {
+            caption,
+            reply_to_message_id: waitMsg.message_id,
+            reply_markup: {
+              inline_keyboard: [[{ text: "🧑‍💻 Owner", url: "https://t.me/shaonproject" }]]
+            }
+          });
+        }
 
         await api.deleteMessage(chatId, loadingMsg.message_id);
         await api.deleteMessage(chatId, waitMsg.message_id);
