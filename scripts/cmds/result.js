@@ -3,9 +3,9 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "result",
-    version: "1.1.0",
+    version: "1.2.0",
     author: "Shaon Ahmed",
-    description: "SSC Result Checker via Inline UI",
+    description: "SSC Result Checker via Inline UI with cleanup",
     category: "Education",
     role: 0,
     countDown: 5,
@@ -27,6 +27,7 @@ module.exports = {
 
       const exam = data[1];
       await api.answerCallbackQuery(query.id);
+      await api.deleteMessage(chatId, msg.message_id);
 
       // Step 2: Select Board
       const boards = [
@@ -42,6 +43,7 @@ module.exports = {
       bot.once("callback_query", async (query2) => {
         const [_, board, exam] = query2.data.split(":");
         await api.answerCallbackQuery(query2.id);
+        await api.deleteMessage(chatId, boardMsg.message_id);
 
         // Step 3: Select Year
         const years = Array.from({ length: 8 }, (_, i) => 2025 - i);
@@ -54,6 +56,7 @@ module.exports = {
         bot.once("callback_query", async (query3) => {
           const [__, year, board, exam] = query3.data.split(":");
           await api.answerCallbackQuery(query3.id);
+          await api.deleteMessage(chatId, yearMsg.message_id);
 
           // Step 4: Ask Roll
           const askRoll = await api.sendMessage(chatId, "🔢 Enter your Roll number:");
@@ -62,7 +65,8 @@ module.exports = {
             step: "roll",
             year,
             board,
-            exam
+            exam,
+            deleteMsgId: askRoll.message_id
           });
         });
       });
@@ -73,17 +77,25 @@ module.exports = {
     const chatId = event.chat?.id || event.threadID;
     const msg = event.text?.trim();
 
+    // Delete previous message
+    if (Reply.deleteMsgId) {
+      try {
+        await api.deleteMessage(chatId, Reply.deleteMsgId);
+      } catch {}
+    }
+
     if (Reply.step === "roll") {
       if (!/^\d+$/.test(msg)) return api.sendMessage(chatId, "❗ Roll number must be numeric.");
-      const askReg = await api.sendMessage(chatId, "🆔 Enter your Registration number:");
 
+      const askReg = await api.sendMessage(chatId, "🆔 Enter your Registration number:");
       global.functions.onReply.set(askReg.message_id, {
         commandName: "result",
         step: "reg",
         exam: Reply.exam,
         board: Reply.board,
         year: Reply.year,
-        roll: msg
+        roll: msg,
+        deleteMsgId: askReg.message_id
       });
     }
 
@@ -98,6 +110,7 @@ module.exports = {
       try {
         const res = await axios.get(`https://shaon-ssc-result.vercel.app/result?exam=${exam}&board=${board}&year=${year}&roll=${roll}&reg=${reg}`);
         if (res.data.status !== "success") {
+          await api.deleteMessage(chatId, loading.message_id);
           return api.sendMessage(chatId, "❌ Result not found. Please check your input.");
         }
 
@@ -123,9 +136,11 @@ module.exports = {
 ${grades}
         `.trim();
 
+        await api.deleteMessage(chatId, loading.message_id);
         return api.sendMessage(chatId, text, { parse_mode: "Markdown" });
 
       } catch (e) {
+        await api.deleteMessage(chatId, loading.message_id);
         return api.sendMessage(chatId, `❌ API Error: ${e.message}`);
       }
     }
