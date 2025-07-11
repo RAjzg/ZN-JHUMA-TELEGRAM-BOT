@@ -1,168 +1,150 @@
 const axios = require("axios");
 
-module.exports = {
-  config: {
-    name: "result",
-    version: "1.0.0",
-    author: "Shaon Ahmed",
-    role: 0,
-    description: "🔍 Check SSC Result via inline buttons",
-    commandCategory: "utility",
-    cooldowns: 5,
-  },
+module.exports.config = {
+  name: "result",
+  version: "1.0.3",
+  author: "Shaon Ahmed",
+  role: 0,
+  description: "Check SSC result with reply",
+  commandCategory: "utility",
+  usages: "/result",
+  cooldowns: 3,
+};
 
-  onStart: async function ({ bot, message }) {
-    const inlineExam = {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: "📘 SSC/Dakhil", callback_data: "exam_ssc" }],
-        ],
-      },
-    };
+const boards = [
+  { name: "Barisal", value: "barisal" },
+  { name: "Chittagong", value: "chittagong" },
+  { name: "Comilla", value: "comilla" },
+  { name: "Dhaka", value: "dhaka" },
+  { name: "Mymensingh", value: "mymensingh" },
+  { name: "Dinajpur", value: "dinajpur" },
+  { name: "Jessore", value: "jessore" },
+  { name: "Rajshahi", value: "rajshahi" },
+  { name: "Sylhet", value: "sylhet" },
+  { name: "Madrasah", value: "madrasah" },
+  { name: "Technical", value: "tec" },
+];
 
-    await bot.sendMessage(message.chat.id, "📘 Select Exam:", inlineExam);
-  },
+module.exports.run = async function ({ bot, message, chatId }) {
+  const list = `📘 *Select Exam Type:*\n\n1️⃣ 🧪 *SSC*`;
+  const sent = await bot.sendMessage(chatId, list, { parse_mode: "Markdown" });
+  global.ownersv2.replies.set(sent.message_id, { meta: { name: meta.name }, step: 1, deleteMsgId: sent.message_id });
+}
 
-  onReply: async function () {}, // Not used here since we use callback queries
+module.exports.onReply = async function ({ bot, msg, chatId, data }) {
+  const text = msg.text.trim();
+  const step = data.step || 1;
 
-  onCallback: async function ({ bot, callbackQuery }) {
-    const data = callbackQuery.data;
-    const userId = callbackQuery.from.id;
-    const chatId = callbackQuery.message.chat.id;
-    const messageId = callbackQuery.message.message_id;
+  if (data.deleteMsgId) {
+    try { await bot.deleteMessage(chatId, data.deleteMsgId); } catch {}
+  }
 
-    const boards = [
-      { name: "Barisal", value: "barisal" },
-      { name: "Chittagong", value: "chittagong" },
-      { name: "Comilla", value: "comilla" },
-      { name: "Dhaka", value: "dhaka" },
-      { name: "Mymensingh", value: "mymensingh" },
-      { name: "Dinajpur", value: "dinajpur" },
-      { name: "Jessore", value: "jessore" },
-      { name: "Rajshahi", value: "rajshahi" },
-      { name: "Sylhet", value: "sylhet" },
-      { name: "Madrasah", value: "madrasah" },
-      { name: "Technical", value: "tec" },
-    ];
+  if (step === 1) {
+    const boardList = boards.map((b, i) => `${i + 1}. 🏛️ *${b.name}*`).join("\n");
+    const sent = await bot.sendMessage(chatId, `🏛️ *Select Your Education Board:*\n\n${boardList}\n\n🔢 *Reply with number (e.g., 4 for Dhaka)*`, { parse_mode: "Markdown" });
+    global.ownersv2.replies.set(sent.message_id, { meta: { name: meta.name }, step: 2, deleteMsgId: sent.message_id });
+  }
 
-    if (data === "exam_ssc") {
-      const boardKeyboard = boards.map((b) => [
-        { text: b.name, callback_data: `board_${b.value}` },
-      ]);
-
-      await bot.editMessageText("🏛️ Select Education Board:", {
-        chat_id: chatId,
-        message_id: messageId,
-        reply_markup: {
-          inline_keyboard: boardKeyboard,
-        },
-      });
+  if (step === 2) {
+    const index = parseInt(text) - 1;
+    if (isNaN(index) || index < 0 || index >= boards.length) {
+      return bot.sendMessage(chatId, "🚫 *Invalid board selection.*", { parse_mode: "Markdown" });
     }
+    const board = boards[index].value;
+    const years = Array.from({ length: 27 }, (_, i) => 2000 + i);
+    const yearList = years.map((y, i) => `${i + 1}. 📅 *${y}*`).join("\n");
+    const sent = await bot.sendMessage(chatId, `📆 *Select Exam Year:*\n\n${yearList}\n\n🔢 *Reply with number (e.g., 24 for 2023)*`, { parse_mode: "Markdown" });
+    global.ownersv2.replies.set(sent.message_id, {
+    commandName: this.config.name, step: 3, board, deleteMsgId: sent.message_id });
+  }
 
-    if (data.startsWith("board_")) {
-      const board = data.split("_")[1];
-      const yearButtons = Array.from({ length: 10 }, (_, i) => {
-        const year = 2024 - i;
-        return [{ text: `${year}`, callback_data: `year_${board}_${year}` }];
-      });
-
-      await bot.editMessageText("📆 Select Exam Year:", {
-        chat_id: chatId,
-        message_id: messageId,
-        reply_markup: {
-          inline_keyboard: yearButtons,
-        },
-      });
+  if (step === 3) {
+    const years = Array.from({ length: 27 }, (_, i) => 2000 + i);
+    const index = parseInt(text) - 1;
+    if (isNaN(index) || index < 0 || index >= years.length) {
+      return bot.sendMessage(chatId, "🚫 *Invalid year selection.*", { parse_mode: "Markdown" });
     }
+    const year = years[index];
+    const sent = await bot.sendMessage(chatId, "🔢 *Enter your Roll Number:*\n\n📌 *Only digits allowed*", { parse_mode: "Markdown" });
+    global.ownersv2.replies.set(sent.message_id, {
+      commandName: this.config.name,
+      step: 4,
+      board: data.board,
+      year,
+      deleteMsgId: sent.message_id
+    });
+  }
 
-    if (data.startsWith("year_")) {
-      const [, board, year] = data.split("_");
-
-      // Store context to global/session so we can use reply step next
-      global.resultInput = { userId, board, year };
-
-      await bot.sendMessage(chatId, "📄 Please enter your *Roll Number*:", {
-        parse_mode: "Markdown",
-      });
-
-      // Set reply handler
-      global.functions.onReply.set(`${chatId}:${userId}:roll`, {
-        command: "result",
-        type: "roll",
-        board,
-        year,
-      });
+  if (step === 4) {
+    if (!/^\d+$/.test(text)) {
+      return bot.sendMessage(chatId, "🚫 *Invalid roll number.* Please enter digits only.", { parse_mode: "Markdown" });
     }
-  },
+    const sent = await bot.sendMessage(chatId, "📝 *Enter your Registration Number:*\n\n📌 *Only digits allowed*", { parse_mode: "Markdown" });
+    global.ownersv2.replies.set(sent.message_id, {
+      commandName: this.config.name,
+      step: 5,
+      board: data.board,
+      year: data.year,
+      roll: text,
+      deleteMsgId: sent.message_id
+    });
+  }
 
-  reply: async function ({ bot, message, data }) {
-    const { type, board, year } = data;
-    const chatId = message.chat.id;
-    const text = message.text.trim();
-
-    if (type === "roll") {
-      if (!/^\d+$/.test(text)) {
-        return bot.sendMessage(chatId, "❌ Invalid Roll. Only numbers allowed.");
+  if (step === 5) {
+    if (!/^\d+$/.test(text)) {
+      return bot.sendMessage(chatId, "🚫 *Invalid registration number.* Please enter digits only.", { parse_mode: "Markdown" });
+    }
+    const reg = text;
+    const { board, year, roll } = data;
+    const url = `https://shaon-ssc-result.vercel.app/result?exam=ssc&board=${board}&year=${year}&roll=${roll}&reg=${reg}`;
+    try {
+      const res = await axios.get(url);
+      if (res.data.status !== "success") {
+        return bot.sendMessage(chatId, "❌ *Result not found. Please check your info and try again.*", { parse_mode: "Markdown" });
       }
 
-      global.functions.onReply.set(`${chatId}:${message.from.id}:reg`, {
-        command: "result",
-        type: "reg",
-        board,
-        year,
-        roll: text,
-      });
+      const s = res.data.student;
+      const g = res.data.grades.filter(x => x.subject);
+      const grades = g.map(
+        sub => `📚 *${sub.subject}* ➝ 🎯 Grade: *${sub.grade}*`
+      ).join("\n\n");
 
-      return bot.sendMessage(chatId, "📄 Now enter your *Registration Number*:", {
-        parse_mode: "Markdown",
-      });
-    }
-
-    if (type === "reg") {
-      if (!/^\d+$/.test(text)) {
-        return bot.sendMessage(chatId, "❌ Invalid Registration number.");
-      }
-
-      const { roll } = data;
-      const reg = text;
-      const url = `https://shaon-ssc-result.vercel.app/result?exam=ssc&board=${board}&year=${year}&roll=${roll}&reg=${reg}`;
-
-      try {
-        const res = await axios.get(url);
-        if (res.data.status !== "success") {
-          return bot.sendMessage(chatId, "❌ Result not found. Please try again.");
-        }
-
-        const s = res.data.student;
-        const g = res.data.grades.filter((x) => x.subject);
-        const grades = g.map(
-          (sub) => `📘 *${sub.subject}* ➝ 🎯 Grade: *${sub.grade}*`
-        ).join("\n");
-
-        const result = `
+      const result = `
 🎓 *SSC Exam Result* 📊
-━━━━━━━━━━━━━━━━━━━━
-👤 Name: \`${s.Name}\`
-👨‍👩‍👧‍👦 Father's Name: \`${s["Fathers Name"]}\`
-👩 Mother's Name: \`${s["Mothers Name"]}\`
-🏫 Institute: \`${s.Institute}\`
-📚 Group: \`${s.Group}\`
-🏛️ Board: \`${s.Board}\`
-🆔 Roll: \`${s["Roll No"]}\`
-📅 DOB: \`${s["Date of Birth"]}\`
-📋 Type: \`${s.Type}\`
-🎯 Result: *${s.Result}*
+━━━━━━━━━━━━━━━━━━━━━━
+
+👤 *Student Name:* \`${s.Name}\`
+
+👨‍👩‍👧‍👦 *Father's Name:* \`${s["Fathers Name"]}\`
+
+👩 *Mother's Name:* \`${s["Mothers Name"]}\`
+
+🏫 *Institute:* \`${s.Institute}\`
+
+📚 *Group:* \`${s.Group}\`
+
+🏛️ *Board:* \`${s.Board}\`
+
+🆔 *Roll No:* \`${s["Roll No"]}\`
+
+📆 *Date of Birth:* \`${s["Date of Birth"]}\`
+
+📋 *Exam Type:* \`${s.Type}\`
+
+🎯 *Final Result:* *${s.Result}*
+
+━━━━━━━━━━━━━━━━━━━━━━
 
 📖 *Subject-wise Grades:*
+
 ${grades}
-━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━
 `;
 
-        await bot.sendMessage(chatId, result, { parse_mode: "Markdown" });
-      } catch (e) {
-        console.error("Result fetch failed:", e.message);
-        await bot.sendMessage(chatId, "❌ Could not fetch result. Try again later.");
-      }
+      await bot.sendMessage(chat, result, { parse_mode: "Markdown" });
+    } catch {
+      await bot.sendMessage(chatId, "Could not fetch result. Please try again later.*", { parse_mode: "Markdown" });
     }
-  },
-};
+  }
+}
