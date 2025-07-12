@@ -37,8 +37,8 @@ module.exports = {
     const loadingMessage = await message.reply("⏳ Uploading your file to Google Drive...");
 
     try {
-      const apiURL = `https://web-api-delta.vercel.app/drive?url=${encodeURIComponent(inputUrl)}`;
-
+      const noobx = "ArYAN";
+      const apiURL = `https://aryan-xyz-google-drive.vercel.app/drive?url=${encodeURIComponent(inputUrl)}&apikey=${noobx}`;
       const res = await axios.get(apiURL);
       const data = res.data || {};
 
