@@ -16,33 +16,26 @@ module.exports.config = {
 
 module.exports.run = async function ({ api, event, args }) {
   try {
-    // রিপ্লাই চেক
     if (!event.messageReply) {
       return api.sendMessage("❗ দয়া করে ফাইল সহ মেসেজে রিপ্লাই দিয়ে /catbox চালান।", event.threadID, event.messageID);
     }
 
     const reply = event.messageReply;
 
-    // ফাইল ধরার চেষ্টা (photo, video, gif, document)
-    const file =
-      (reply.attachments && reply.attachments.find(att => ["photo", "video", "animated_image", "file"].includes(att.type))) || null;
+    const file = (reply.attachments && reply.attachments.find(att =>
+      ["photo", "video", "animated_image", "file"].includes(att.type))) || null;
 
     if (!file) {
       return api.sendMessage("❗ রিপ্লাই করা মেসেজে ফাইল পাওয়া যায়নি।", event.threadID, event.messageID);
     }
 
-    // .bin ফাইল নিষিদ্ধ
     if (file.name && file.name.endsWith(".bin")) {
       return api.sendMessage("❌ .bin ফাইল আপলোড সমর্থিত নয়।", event.threadID, event.messageID);
     }
 
-    // ফাইল url পাওয়া (Messenger API থাকে reply.attachments[].url)
     const fileUrl = file.url;
-
-    // লোকালি ডাউনলোড পাথ
     const tempFilePath = path.join(__dirname, `temp_${Date.now()}`);
 
-    // ফাইল ডাউনলোড
     const response = await axios({
       url: fileUrl,
       method: "GET",
@@ -57,28 +50,26 @@ module.exports.run = async function ({ api, event, args }) {
       writer.on("error", reject);
     });
 
-    // Catbox API তে আপলোডের জন্য form-data তৈরি
     const form = new FormData();
     form.append("reqtype", "fileupload");
     form.append("fileToUpload", fs.createReadStream(tempFilePath));
 
-    // আপলোড
     const catboxRes = await axios.post("https://catbox.moe/user/api.php", form, {
       headers: form.getHeaders(),
       maxContentLength: Infinity,
       maxBodyLength: Infinity,
-      timeout: 15000, // 15 সেকেন্ড টাইমআউট (তুমি চাইলে বাড়াতে পারো)
+      timeout: 15000,
     });
 
-    // টেম্প ফাইল মুছে ফেলা
     fs.unlinkSync(tempFilePath);
 
-    const catboxLink = catboxRes.data;
+    const catboxLink = catboxRes.data?.trim();
+    console.log("Catbox response:", catboxLink); // Debug log
 
-    if (catboxLink.startsWith("https://")) {
+    if (catboxLink && catboxLink.startsWith("https://")) {
       return api.sendMessage(`✅ ফাইল আপলোড সম্পন্ন!\n🔗 লিঙ্ক: ${catboxLink}`, event.threadID, event.messageID);
     } else {
-      return api.sendMessage("❌ আপলোডের সময় সমস্যা হয়েছে। আবার চেষ্টা করুন।", event.threadID, event.messageID);
+      return api.sendMessage("❌ আপলোডের সময় সমস্যা হয়েছে। সার্ভার থেকে সঠিক লিঙ্ক পাওয়া যায়নি।", event.threadID, event.messageID);
     }
   } catch (err) {
     console.error(err);
