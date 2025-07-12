@@ -3,7 +3,7 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "album",
-    version: "2.5.0",
+    version: "2.5.1",
     role: 0,
     author: "Shaon Ahmed",
     description: "Reply add via Imgur and inline browser",
@@ -14,27 +14,20 @@ module.exports = {
   onStart: async ({ api, event, args, bot }) => {
     const chatId = event.chat?.id || event.threadID;
 
-    // ✅ /album add <category> (with media reply)
+    // ✅ Handle: /album add <category>
     if (args[0] === "add" && args[1]) {
       const category = args[1].toLowerCase();
-
       const file =
         event?.reply_to_message?.video ||
         event?.reply_to_message?.document ||
         event?.reply_to_message?.photo?.slice(-1)[0];
 
       if (!file) {
-        return api.sendMessage(
-          chatId,
-          "❗ দয়া করে একটি ভিডিও বা ছবিতে রিপ্লাই দিয়ে `/album add <category>` কমান্ড দিন।",
-          { parse_mode: "Markdown" }
-        );
+        return api.sendMessage(chatId, "❗ ভিডিও বা ছবিতে রিপ্লাই দিয়ে `/album add <category>` দিন।");
       }
 
       try {
         const fileLink = await api.getFileLink(file.file_id);
-
-        // 🔄 Imgur + API Config
         const apis = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
         const imgur = apis.data.allapi;
         const base = apis.data.api;
@@ -45,18 +38,14 @@ module.exports = {
         if (!finalUrl) throw new Error("Imgur upload failed");
 
         await axios.get(`${base}/video/${category}?add=${category}&url=${encodeURIComponent(finalUrl)}`);
-
-        return api.sendMessage(
-          chatId,
-          `✅ Added to '${category.toUpperCase()}'\n🔗 ${finalUrl}`
-        );
+        return api.sendMessage(chatId, `✅ Added to '${category.toUpperCase()}'\n🔗 ${finalUrl}`);
       } catch (e) {
         console.error("Add failed:", e.message);
         return api.sendMessage(chatId, "❌ Upload বা add করতে ব্যর্থ হয়েছে।");
       }
     }
 
-    // 🎬 Inline UI for viewing category videos
+    // 🎬 Show inline buttons
     const videoSelectionMarkup = {
       reply_markup: {
         inline_keyboard: [
@@ -76,76 +65,79 @@ module.exports = {
       }
     };
 
-    const waitMsg = await api.sendMessage(chatId, "🎬 Select a video category:", videoSelectionMarkup);
+    const categoryMessage = await api.sendMessage(chatId, "🎬 Select a video category:", videoSelectionMarkup);
 
-bot.once("callback_query", async (callbackQuery) => {
-  const categoryEndpoint = callbackQuery.data;
-  await api.answerCallbackQuery(callbackQuery.id);
-  const chatId = event.chat?.id || event.threadID;
+    // ⏳ Handle callback when a category is selected
+    bot.once("callback_query", async (callbackQuery) => {
+      const categoryEndpoint = callbackQuery.data;
+      await api.answerCallbackQuery(callbackQuery.id);
 
-  const loading = await api.sendMessage(chatId, "⏳ Fetching video...");
+      const loading = await api.sendMessage(chatId, "⏳ Fetching video...");
 
-  try {
-    const apis = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
-    const base = apis.data.api;
+      // ✅ Delete old buttons & loading message
+      try {
+        await api.deleteMessage(chatId, categoryMessage.message_id);
+      } catch (e) {}
 
-    const res = await axios.get(`${base}${categoryEndpoint}`);
-    const caption = res.data.shaon || res.data.cp || "🎬 Here's your video:";
-    
-    let videoUrl;
+      try {
+        const apis = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
+        const base = apis.data.api;
 
-    // 🧠 Handle different API structures
-    if (typeof res.data.data === "string") {
-      videoUrl = res.data.data;
-    } else if (Array.isArray(res.data.data)) {
-      const random = res.data.data[Math.floor(Math.random() * res.data.data.length)];
-      videoUrl = random?.url;
-    } else if (typeof res.data.data === "object" && res.data.data.url) {
-      videoUrl = res.data.data.url;
-    } else if (res.data.url) {
-      videoUrl = res.data.url;
-    } else {
-      throw new Error("❌ Invalid response format");
-    }
+        const res = await axios.get(`${base}${categoryEndpoint}`);
+        const caption = res.data.shaon || res.data.cp || "🎬 Here's your video:";
 
-    if (!videoUrl || typeof videoUrl !== "string") throw new Error("❌ Invalid video URL");
+        let videoUrl;
 
-    // 🧠 Detect file type
-    const isDrive = videoUrl.includes("drive.google.com");
-    const isImage = videoUrl.match(/\.(jpg|jpeg|png|gif)(\?.*)?$/i);
-    const isVideo = videoUrl.match(/\.(mp4|mov|m4v|webm)(\?.*)?$/i);
+        if (typeof res.data.data === "string") {
+          videoUrl = res.data.data;
+        } else if (Array.isArray(res.data.data)) {
+          const random = res.data.data[Math.floor(Math.random() * res.data.data.length)];
+          videoUrl = random?.url;
+        } else if (typeof res.data.data === "object" && res.data.data.url) {
+          videoUrl = res.data.data.url;
+        } else if (res.data.url) {
+          videoUrl = res.data.url;
+        } else {
+          throw new Error("❌ Invalid response format");
+        }
 
-    if (isVideo || isDrive) {
-      await api.sendVideo(chatId, videoUrl, {
-        caption,
-        reply_to_message_id: loading.message_id,
-        reply_markup: {
-          inline_keyboard: [[{ text: "🧑‍💻 Owner", url: "https://t.me/shaonproject" }]],
-        },
-      });
-    } else if (isImage) {
-      await api.sendPhoto(chatId, videoUrl, {
-        caption,
-        reply_to_message_id: loading.message_id,
-        reply_markup: {
-          inline_keyboard: [[{ text: "🧑‍💻 Owner", url: "https://t.me/shaonproject" }]],
-        },
-      });
-    } else {
-      await api.sendDocument(chatId, videoUrl, {
-        caption,
-        reply_to_message_id: loading.message_id,
-        reply_markup: {
-          inline_keyboard: [[{ text: "🧑‍💻 Owner", url: "https://t.me/shaonproject" }]],
-        },
-      });
-    }
+        if (!videoUrl || typeof videoUrl !== "string") throw new Error("❌ Invalid video URL");
 
-    await api.deleteMessage(chatId, loading.message_id);
-  } catch (err) {
-    console.error(err.message);
-    await api.editMessageText(chatId, loading.message_id, `❌ Error: ${err.message}`);
-  }
-});
+        const isDrive = videoUrl.includes("drive.google.com");
+        const isImage = videoUrl.match(/\.(jpg|jpeg|png|gif)(\?.*)?$/i);
+        const isVideo = videoUrl.match(/\.(mp4|mov|m4v|webm)(\?.*)?$/i);
+
+        if (isVideo || isDrive) {
+          await api.sendVideo(chatId, videoUrl, {
+            caption,
+            reply_to_message_id: loading.message_id,
+            reply_markup: {
+              inline_keyboard: [[{ text: "🧑‍💻 Owner", url: "https://t.me/shaonproject" }]],
+            },
+          });
+        } else if (isImage) {
+          await api.sendPhoto(chatId, videoUrl, {
+            caption,
+            reply_to_message_id: loading.message_id,
+            reply_markup: {
+              inline_keyboard: [[{ text: "🧑‍💻 Owner", url: "https://t.me/shaonproject" }]],
+            },
+          });
+        } else {
+          await api.sendDocument(chatId, videoUrl, {
+            caption,
+            reply_to_message_id: loading.message_id,
+            reply_markup: {
+              inline_keyboard: [[{ text: "🧑‍💻 Owner", url: "https://t.me/shaonproject" }]],
+            },
+          });
+        }
+
+        await api.deleteMessage(chatId, loading.message_id);
+      } catch (err) {
+        console.error(err.message);
+        await api.editMessageText(chatId, loading.message_id, `❌ Error: ${err.message}`);
+      }
+    });
   }
 };
