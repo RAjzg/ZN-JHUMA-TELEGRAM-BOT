@@ -38,7 +38,7 @@ module.exports = {
 
     try {
       const noobx = "ArYAN";
-      const apiURL = `https://aryan-xyz-google-drive.vercel.app/drive?url=${encodeURIComponent(inputUrl)}&apikey=${noobx}`;
+      const apiURL = `https://web-api-delta.vercel.app/drive?url=${encodeURIComponent(inputUrl)}`;
       const res = await axios.get(apiURL);
       const data = res.data || {};
 
