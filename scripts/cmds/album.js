@@ -32,8 +32,8 @@ module.exports = {
         const imgur = apis.data.allapi;
         const base = apis.data.api;
 
-        const imgurRes = await axios.get(`${imgur}/catbox?url=${encodeURIComponent(fileLink)}`);
-        const finalUrl = imgurRes.data.url || imgurRes.data.uploaded?.image;
+        const imgurRes = await axios.get(`${imgur}/imgur?url=${encodeURIComponent(fileLink)}`);
+        const finalUrl = imgurRes.data.link || imgurRes.data.uploaded?.image;
 
         if (!finalUrl) throw new Error("Imgur upload failed");
 
