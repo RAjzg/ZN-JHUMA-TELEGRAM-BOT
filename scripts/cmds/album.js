@@ -3,10 +3,10 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "album",
-    version: "2.5.1",
+    version: "2.6.0",
     role: 0,
     author: "Shaon Ahmed",
-    description: "Reply add via Imgur and inline browser",
+    description: "Reply add via Imgur/Catbox and inline browser",
     category: "Media",
     countDown: 5,
   },
@@ -22,7 +22,7 @@ module.exports = {
         event?.reply_to_message?.document ||
         event?.reply_to_message?.photo?.slice(-1)[0];
 
-      if (!file) {
+      if (!file || !file.file_id) {
         return api.sendMessage(chatId, "❗ ভিডিও বা ছবিতে রিপ্লাই দিয়ে `/album add <category>` দিন।");
       }
 
@@ -32,10 +32,21 @@ module.exports = {
         const imgur = apis.data.allapi;
         const base = apis.data.api;
 
-        const imgurRes = await axios.get(`${imgur}/imgur?url=${encodeURIComponent(fileLink)}`);
-        const finalUrl = imgurRes.data.link || imgurRes.data.uploaded?.image;
+        let finalUrl;
+        const isVideo = !!event?.reply_to_message?.video;
+        const duration = event?.reply_to_message?.video?.duration || 0;
 
-        if (!finalUrl) throw new Error("Imgur upload failed");
+        if (isVideo && duration > 60) {
+          // Catbox use for >1 min videos
+          const catboxUpload = await axios.get(`${imgur}/catbox?url=${encodeURIComponent(fileLink)}`);
+          finalUrl = catboxUpload.data.url || catboxUpload.data.link;
+        } else {
+          // Imgur use for images or <=1 min video
+          const imgurRes = await axios.get(`${imgur}/imgur?url=${encodeURIComponent(fileLink)}`);
+          finalUrl = imgurRes.data.link || imgurRes.data.uploaded?.image;
+        }
+
+        if (!finalUrl) throw new Error("❌ Upload failed");
 
         await axios.get(`${base}/video/${category}?add=${category}&url=${encodeURIComponent(finalUrl)}`);
         return api.sendMessage(chatId, `✅ Added to '${category.toUpperCase()}'\n🔗 ${finalUrl}`);
