@@ -36,8 +36,8 @@ module.exports = {
 
       try {
         const fileLink = await api.getFileLink(file.file_id);
-        const uploaded = await axios.get(`${imgur}/imgur?link=${encodeURIComponent(fileLink)}`);
-        const finalUrl = uploaded.data.link || uploaded.data.uploaded?.image;
+        const uploaded = await axios.get(`${imgur}/catbox?url=${encodeURIComponent(fileLink)}`);
+        const finalUrl = uploaded.data.url || uploaded.data.uploaded?.image;
 
         if (!finalUrl) throw new Error("Imgur upload failed");
 
