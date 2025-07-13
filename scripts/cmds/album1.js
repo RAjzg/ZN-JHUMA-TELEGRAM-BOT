@@ -19,7 +19,7 @@ module.exports = {
     const baseApi = apis.data.api;
     const imgur = apis.data.imgur;
 
-    // ✅ ADD by reply (same as before)
+    // ✅ ADD by reply
     if (args[0] === "add" && args[1]) {
       const category = args[1].toLowerCase();
 
@@ -36,10 +36,24 @@ module.exports = {
 
       try {
         const fileLink = await api.getFileLink(file.file_id);
-        const uploaded = await axios.get(`${imgur}/imgur?link=${encodeURIComponent(fileLink)}`);
-        const finalUrl = uploaded.data.link || uploaded.data.uploaded?.image;
 
-        if (!finalUrl) throw new Error("Imgur upload failed");
+        // ভিডিও হলে ডিউরেশন চেক
+        const isVideo = !!event?.reply_to_message?.video;
+        const duration = event?.reply_to_message?.video?.duration || 0;
+
+        let finalUrl = null;
+
+        if (isVideo && duration > 60) {
+          // ১ মিনিটের বেশি হলে Catbox
+          const catboxUpload = await axios.get(`${imgur}/catbox?url=${encodeURIComponent(fileLink)}`);
+          finalUrl = catboxUpload.data.url || catboxUpload.data.link;
+        } else {
+          // Imgur upload
+          const imgurUpload = await axios.get(`${imgur}/imgur?link=${encodeURIComponent(fileLink)}`);
+          finalUrl = imgurUpload.data.link || imgurUpload.data.uploaded?.image;
+        }
+
+        if (!finalUrl) throw new Error("Upload failed");
 
         await axios.get(`${baseApi}/album?add=${category}&url=${encodeURIComponent(finalUrl)}`);
         return api.sendMessage(chatId, `✅ Added to '${category.toUpperCase()}'\n🔗 ${finalUrl}`);
