@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 module.exports.config = {
-  name: "catbox",
+  name: "catbox1",
   version: "11.9.7",
   role: 0,
   credits: "Islamick Cyber Chat (Modified by Shaon Ahmed)",
