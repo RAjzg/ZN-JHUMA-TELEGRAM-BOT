@@ -56,8 +56,8 @@ module.exports.onStart = async ({ api, event, args, message }) => {
     const apis1 = await axios.get('https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json');
     const Shaon1 = apis1.data.allapi;
 
-    const imgurResponse = await axios.get(`${Shaon1}/imgur?url=${encodeURIComponent(imageUrl)}`);
-    const imgurLink = imgurResponse.data.link;
+    const imgurResponse = await axios.get(`${Shaon1}/catbox?url=${encodeURIComponent(imageUrl)}`);
+    const imgurLink = imgurResponse.data.url;
 
     const response = await axios.get(`${Shaon}/video/random?name=${encodeURIComponent(videoName)}&url=${encodeURIComponent(imgurLink)}`);
     
