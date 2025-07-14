@@ -2,7 +2,7 @@ module.exports = {
   config: {
     name: "age",
     version: "1.0.0",
-    role: 0, // 0 = সবার জন্য, 1 = গ্রুপ এডমিন, 2 = বট এডমিন
+    role: 0,
     credits: "Shaon Ahmed",
     description: "দিন, মাস, বছর থেকে বয়স বের করুন",
     category: "utility",
@@ -10,14 +10,14 @@ module.exports = {
     cooldowns: 3,
   },
 
-  run: async function ({ api, event, args }) {
-    const { threadID, messageID } = event;
+  run: async function ({ bot, msg }) {
+    const chatId = msg.chat.id;
+    const args = msg.text.split(" ").slice(1);
 
     if (args.length !== 3) {
-      return api.sendMessage(
-        "❌ ব্যবহার: /age দিন মাস বছর\nউদাহরণ: /age 14 07 2005",
-        threadID,
-        messageID
+      return bot.sendMessage(
+        chatId,
+        "❌ ব্যবহার: /age দিন মাস বছর\nউদাহরণ: /age 14 07 2005"
       );
     }
 
@@ -29,7 +29,7 @@ module.exports = {
       month < 1 || month > 12 ||
       year < 1900 || year > new Date().getFullYear()
     ) {
-      return api.sendMessage("❌ সঠিক দিন, মাস এবং বছর দিন।", threadID, messageID);
+      return bot.sendMessage(chatId, "❌ সঠিক দিন, মাস এবং বছর দিন।");
     }
 
     const birthDate = new Date(year, month - 1, day);
@@ -49,10 +49,8 @@ module.exports = {
       months += 12;
     }
 
-    return api.sendMessage(
-      `🗓 জন্ম তারিখ: ${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}\n📌 আপনার বয়স: ${years} বছর, ${months} মাস, ${days} দিন`,
-      threadID,
-      messageID
-    );
+    const text = `🗓 জন্ম তারিখ: ${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}\n📌 আপনার বয়স: ${years} বছর, ${months} মাস, ${days} দিন`;
+
+    return bot.sendMessage(chatId, text);
   }
 };
