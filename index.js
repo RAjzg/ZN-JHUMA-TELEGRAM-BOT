@@ -1,30 +1,18 @@
 const express = require('express');
 const { spawn } = require('child_process');
 const app = express();
-const colors = require('colors')
-const port = 200;
+const colors = require('colors');
+const path = require('path');
+
+const port = process.env.PORT || 3000;
 let botProcess;
+
 const config = require('./config.json');
 const User = require("./database/users");
 const Thread = require("./database/threads");
 
 let users = [];
 let threads = [];
-/*
-async function loadUsersAndThreads() {
-    try {
-       const users2 = await User.getAll();
-        const threads2 = await Thread.getAll();
-        users.push(...users2.map(i => i.userId))
-    threads.push(...threads2.map(i => i.threadId))
-        
-        console.log("Users and threads data loaded.".green);
-    } catch (error) {
-        console.error('Error loading users and threads:', error);
-    }
-}
-*/
-
 
 async function onBot() {
     botProcess = spawn('node', ['main.js'], {
@@ -46,23 +34,20 @@ async function onBot() {
 onBot();
 
 app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/public/index.html');
-   // loadUsersAndThreads();
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-
 
 app.get('/dashboard-data', async (req, res) => {
     try {
-    
         const uptime = process.uptime();
-        const dashboardData ={
+        const dashboardData = {
             botName: config.botName,
             prefix: config.prefix,
             adminName: config.adminName,
-            totalUsers: users,
-            totalThreads:threads,
+            totalUsers: users.length,
+            totalThreads: threads.length,
             uptime
-        }
+        };
         res.json(dashboardData);
     } catch (error) {
         console.error('Error fetching dashboard data:', error);
@@ -70,7 +55,6 @@ app.get('/dashboard-data', async (req, res) => {
     }
 });
 
-
 app.listen(port, () => {
-    console.log(`Server is running on port ${port}`.cyan);
+    console.log(`✅ Server is running on port ${port}`.cyan);
 });
