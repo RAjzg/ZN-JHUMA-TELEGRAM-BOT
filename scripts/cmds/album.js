@@ -71,7 +71,7 @@ module.exports = {
           [{ text: 'Capcut', callback_data: '/video/capcut' }, { text: 'Sex', callback_data: '/video/sex' }],
           [{ text: 'Sex2', callback_data: '/video/sex2' }, { text: 'Sex3', callback_data: '/video/sex3' }],
           [{ text: 'Horny', callback_data: '/video/horny' }, { text: 'Hot', callback_data: '/video/hot' }],
-          [{ text: 'Random', callback_data: '/video/random' }]
+          [{ text: 'Item', callback_data: '/video/item' }, { text: 'Random', callback_data: '/video/random' }]
         ]
       }
     };
