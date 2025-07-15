@@ -18,28 +18,25 @@ module.exports = {
     cooldowns: 5,
   },
 
-  run: async function({ bot, msg }) {
+  run: async function ({ bot, msg }) {
     const chatId = msg.chat.id;
 
-    // reply আছে কিনা এবং reply তে video আছে কিনা চেক করো
+    // ইউজার যদি কোনো ভিডিওতে reply না দেয়
     if (!msg.reply_to_message || !msg.reply_to_message.video) {
-      return bot.sendMessage(chatId, "⚠️ ভিডিওতে reply দিয়ে /mp3 কমান্ড দিন।");
+      return bot.sendMessage(chatId, "⚠️ কোনো ভিডিওতে reply করে /mp3 লিখুন।");
     }
 
     try {
       const fileId = msg.reply_to_message.video.file_id;
+      const fileLink = await bot.getFileLink(fileId); // এটি একটা string (URL)
 
-      // Telegram থেকে ভিডিওর download link নেয়া
-      const fileLink = await bot.getFileLink(fileId);
-
-      // ফাইলের জন্য ইউনিক নাম তৈরি
       const timestamp = Date.now();
       const inputPath = path.join(__dirname, `input_${timestamp}.mp4`);
       const outputPath = path.join(__dirname, `output_${timestamp}.mp3`);
 
-      // ভিডিও ডাউনলোড করা
+      // ভিডিও ডাউনলোড
       const response = await axios({
-        url: fileLink.href,
+        url: fileLink, // ✅ এখানে .href নয়
         method: "GET",
         responseType: "stream",
       });
@@ -47,35 +44,35 @@ module.exports = {
       const writer = fs.createWriteStream(inputPath);
       response.data.pipe(writer);
 
-      // ডাউনলোড শেষ হলে ffmpeg চালানো
       writer.on("finish", () => {
+        // ভিডিও → অডিও কনভার্ট
         ffmpeg(inputPath)
           .output(outputPath)
           .audioCodec("libmp3lame")
           .on("end", () => {
-            // mp3 পাঠানো
+            // mp3 পাঠাও
             bot.sendAudio(chatId, outputPath, {
-              caption: "✅ ভিডিও থেকে mp3 তৈরি হয়েছে।",
+              caption: "✅ ভিডিও থেকে mp3 তৈরি হয়েছে!",
               reply_to_message_id: msg.message_id,
             }).then(() => {
-              // কাজ শেষ, ফাইল মুছে ফেলা
+              // টেম্প ফাইল ডিলিট
               fs.unlinkSync(inputPath);
               fs.unlinkSync(outputPath);
             });
           })
           .on("error", (err) => {
-            console.error("FFmpeg error:", err);
+            console.error("FFmpeg Error:", err);
             bot.sendMessage(chatId, "❌ অডিও কনভার্ট করতে সমস্যা হয়েছে।");
           })
           .run();
       });
 
       writer.on("error", (err) => {
-        console.error("Download error:", err);
+        console.error("Download Error:", err);
         bot.sendMessage(chatId, "❌ ভিডিও ডাউনলোড করতে সমস্যা হয়েছে।");
       });
-    } catch (error) {
-      console.error("General error:", error);
+    } catch (err) {
+      console.error("General error:", err);
       bot.sendMessage(chatId, "❌ কিছু সমস্যা হয়েছে।");
     }
   },
