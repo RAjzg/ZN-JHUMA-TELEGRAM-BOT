@@ -32,7 +32,7 @@ module.exports = {
 
       const timestamp = Date.now();
       const inputPath = path.join(__dirname, `input_${timestamp}.mp4`);
-      const outputPath = path.join(__dirname, `output_${timestamp}.mp3`);
+      const outputPath = path.join(__dirname, `Shaon_${timestamp}.mp3`);
 
       // ভিডিও ডাউনলোড
       const response = await axios({
