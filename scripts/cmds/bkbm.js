@@ -6,6 +6,7 @@ module.exports = {
     name: "bkbm",
     version: "3.0",
     author: "Shaon Ahmed",
+    role: 1,
     description: "Bikash SMS Bomber (with args and button)",
     command: "/bkbm [number] [limit]",
     cooldown: 5
