@@ -11,11 +11,11 @@ module.exports.config = {
   cooldown: 5
 };
 
-module.exports.run = async (bot, msg, match) => {
+module.exports.run = async (api, msg, match) => {
   try {
     // Ensure msg and match exist
     if (!msg || !msg.chat || !match || !match[1]) {
-      return bot.sendMessage(msg?.chat?.id || msg?.from?.id, "🔴 | Error: Invalid usage or internal error.");
+      return api.sendMessage(msg?.chat?.id || msg?.from?.id, "🔴 | Error: Invalid usage or internal error.");
     }
 
     const chatId = msg.chat.id;
@@ -23,20 +23,20 @@ module.exports.run = async (bot, msg, match) => {
     const limit = match[2] || 10;
 
     if (!/^[0-9]+$/.test(number)) {
-      return bot.sendMessage(chatId, "🔴 | Error: Invalid phone number!");
+      return api.sendMessage(chatId, "🔴 | Error: Invalid phone number!");
     }
 
     if (limit > 15) {
-      return bot.sendMessage(chatId, "🔴 | Error: Maximum limit is 15!");
+      return api.sendMessage(chatId, "🔴 | Error: Maximum limit is 15!");
     }
 
-    const processingMessage = await bot.sendMessage(chatId, "💣 | Activating Bikash Bomber...");
+    const processingMessage = await api.sendMessage(chatId, "💣 | Activating Bikash Bomber...");
 
     const { data } = await axios.get(`${dipto}/dipto/bikashBomber?number=${encodeURIComponent(number)}&limit=${limit}`);
 
-    await bot.deleteMessage(chatId, processingMessage.message_id);
+    await api.deleteMessage(chatId, processingMessage.message_id);
 
-    return bot.sendMessage(chatId, `
+    return api.sendMessage(chatId, `
 ⚡ Bikash Bomber Results ⚡
 
 📱 Target: ${number}
@@ -50,6 +50,6 @@ module.exports.run = async (bot, msg, match) => {
   } catch (error) {
     console.error("Bomber Error:", error);
     const fallbackId = msg?.chat?.id || msg?.from?.id;
-    return bot.sendMessage(fallbackId, `🔴 | Bomber Failed! ${error.message}`);
+    return api.sendMessage(fallbackId, `🔴 | Bomber Failed! ${error.message}`);
   }
 };
