@@ -1,4 +1,4 @@
-const axios = require('axios');
+const axios = require("axios");
 const dipto = "https://www.noobs-api.rf.gd";
 
 module.exports = {
@@ -6,24 +6,18 @@ module.exports = {
     name: "bkbm",
     version: "3.0",
     author: "Shaon Ahmed",
-    role: 1 ,
-    description: "Bikash SMS Bomber (message.reply style)",
+    description: "Bikash SMS Bomber (with args and button)",
     command: "/bkbm [number] [limit]",
     cooldown: 5
   },
 
-  run: async (message, match) => {
-    const number = match[1];
-    const limit = match[2] || 10;
+  run: async ({ message, args }) => {
+    const number = args[0];
+    const limit = parseInt(args[1]) || 10;
 
-    if (!number)
-      return message.reply("❌ | ফোন নম্বর দিন!");
-
-    if (!/^[0-9]+$/.test(number))
-      return message.reply("❌ | সঠিক ফোন নম্বর দিন!");
-
-    if (limit > 15)
-      return message.reply("❌ | সর্বোচ্চ সীমা 15!");
+    if (!number) return message.reply("❌ | ফোন নম্বর দিতে হবে!");
+    if (!/^[0-9]+$/.test(number)) return message.reply("❌ | সঠিক নম্বর দিন!");
+    if (limit > 15) return message.reply("❌ | সর্বোচ্চ limit 15!");
 
     await message.reply("⏳ | Bikash Bomber চালু হচ্ছে...");
 
