@@ -3,12 +3,12 @@ const axios = require('axios');
 module.exports = {
   config: {
     name: "up",
-    version: "1.0.2",
+    version: "1.0.3",
     role: 0,
     credits: "Shaon Ahmed",
     description: "Uptime monitor (create, delete, status, list)",
     category: "system",
-    usages: "/up [name] [url] | /up delete [id/name] | /up status [id/name] | /up list",
+    usages: "/up [name] [url] | /up delete [id/name/index] | /up status [id/name] | /up list",
     cooldowns: 5,
   },
 
@@ -19,13 +19,14 @@ module.exports = {
       return message.reply(
         `📍 Usage:\n\n` +
         `✅ Create: /up [name] [url]\n` +
-        `🗑️ Delete: /up delete [id or name]\n` +
-        `📊 Status: /up status [id or name]\n` +
+        `🗑️ Delete: /up delete [id|name|number]\n` +
+        `📊 Status: /up status [id|name]\n` +
         `📜 List: /up list\n\n` +
         `Example:\n` +
         `/up Shaon https://example.com\n` +
         `/up delete 123456\n` +
         `/up delete Shaon\n` +
+        `/up delete 3\n` +
         `/up status Shaon\n` +
         `/up list`
       );
@@ -33,14 +34,28 @@ module.exports = {
 
     const command = args[0].toLowerCase();
 
-    // ✅ Delete Command (id or name)
+    // ✅ Delete Command (id, name, or list index)
     if (command === "delete") {
       const target = args[1];
       if (!target)
-        return message.reply("❌ Please provide monitor ID or name.\nUsage: /up delete <id|name>");
+        return message.reply("❌ Please provide monitor ID, name, or list number.\nUsage: /up delete <id|name|number>");
 
       try {
-        const res = await axios.get(`${apiLink}?delete=true&${isNaN(target) ? `name=${encodeURIComponent(target)}` : `id=${target}`}`);
+        let deleteIdOrName = target;
+
+        // If it's a number, treat as list index
+        if (!isNaN(target)) {
+          const listRes = await axios.get(`${apiLink}?list=true`);
+          const monitors = listRes.data.monitors;
+          const index = parseInt(target) - 1;
+
+          if (!monitors || !monitors[index])
+            return message.reply("❌ Invalid number. No monitor found at that position in list.");
+
+          deleteIdOrName = monitors[index].id;
+        }
+
+        const res = await axios.get(`${apiLink}?delete=true&${isNaN(deleteIdOrName) ? `name=${encodeURIComponent(deleteIdOrName)}` : `id=${deleteIdOrName}`}`);
         const result = res.data;
 
         return message.reply(result.success ? result.message : `❌ Error:\n${result.message}`);
