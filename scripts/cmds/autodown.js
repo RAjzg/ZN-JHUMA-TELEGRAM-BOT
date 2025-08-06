@@ -27,7 +27,7 @@ module.exports.onChat = async ({ event, bot, msg }) => {
 
   const mediaUrl = match[0];
   const supportedDomains = [
-    "facebook.com", "fb.watch", "instagram.com", "youtube.com",
+    "capcut", "facebook.com", "fb.watch", "instagram.com", "youtube.com",
     "youtu.be", "twitter.com", "x.com", "twitch.tv", "pin.it"
   ];
 
