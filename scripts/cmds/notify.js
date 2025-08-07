@@ -14,18 +14,18 @@ module.exports = {
   run: async function ({ api,message, args, threadsData }) {
     const notifyMessage = args.join(" ");
     if (!notifyMessage) {
-      return await message.reply("Please provide a message to notify all groups.");
+      return await api.sendMessage("Please provide a message to notify all groups.");
     }
 
     const allThreads = await threadsData.getAll();
     if (!allThreads || allThreads.length === 0) {
-      return await message.reply("No active threads to notify.");
+      return await api.sendMessage("No active threads to notify.");
     }
 
     for (const thread of allThreads) {
       await api.sendMessage(thread.threadID, notifyMessage);
     }
 
-    await message.reply("Notification sent to all groups.");
+    await api.sendMessage("Notification sent to all groups.");
   },
 };
