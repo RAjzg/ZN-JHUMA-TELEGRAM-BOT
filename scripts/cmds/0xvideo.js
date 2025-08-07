@@ -5,36 +5,32 @@ const path = require("path");
 module.exports = {
   config: {
     name: "xvideo",
-    aliases: ["randomxvideos"],
-    description: "Download and send random video from XVideos API",
-    usage: "/xvideo [page]",
+    aliases: ["sex3", "randomxvideos"],
+    description: "Download and send video from Noobs API (Drive link)",
+    usage: "/xvideo",
     cooldown: 5,
-    author: "Raj + Modified by ChatGPT",
-    role: 1, // Bot admins only
+    author: "Shaon Ahmed + ChatGPT",
+    role: 1, // Only bot admins
   },
 
-  onStart: async function ({ message, event, args }) {
+  onStart: async function ({ message }) {
     try {
-      const userId = event.from?.id;
-      const page = args[0] || 3000;
+      const response = await axios.get("https://noobs-api-sable.vercel.app/video/sex3");
+      const data = response.data;
 
-      const response = await axios.get(`https://betadash-api-swordslush-production.up.railway.app/xvideos?page=${page}`);
-      const data = response.data?.result;
-
-      if (!Array.isArray(data) || data.length === 0) {
-        return message.reply("❌ কোনো ভিডিও পাওয়া যায়নি।");
-      }
-
-      // 🎯 Random ভিডিও পছন্দ করা
-      const randomIndex = Math.floor(Math.random() * data.length);
-      const video = data[randomIndex];
-      const videoUrl = video.videoUrl;
-      const title = video.title || "XVideo";
+      const videoUrl = data.data;
+      const title = data.shaon || "Drive Video";
       const filePath = path.join(__dirname, "caches", `xvideo_${Date.now()}.mp4`);
 
-      // ভিডিও ডাউনলোড শুরু
+      if (!videoUrl.startsWith("https://drive.google.com")) {
+        return message.reply("❌ ভিডিও লিংক সঠিক নয়।");
+      }
+
+      // Google Drive থেকে সরাসরি ডাউনলোড লিংকে কনভার্ট
+      const directUrl = videoUrl.replace("https://drive.google.com/uc?id=", "https://drive.google.com/uc?export=download&id=");
+
       const videoStream = (await axios({
-        url: videoUrl,
+        url: directUrl,
         method: "GET",
         responseType: "stream",
         headers: { "User-Agent": "Mozilla/5.0" }
@@ -46,10 +42,9 @@ module.exports = {
       writer.on("finish", async () => {
         await message.stream({
           url: fs.createReadStream(filePath),
-          caption: `🔞 *${title}*\n\n📥 Downloaded from XVideos API`,
+          caption: `🔞 *${title}*\n\n📥 Source: Noobs API`,
         });
 
-        // 10 সেকেন্ড পর ফাইল মুছে ফেলো
         setTimeout(() => {
           if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
         }, 10000);
@@ -62,7 +57,7 @@ module.exports = {
 
     } catch (err) {
       console.error("❌ API error:", err.message);
-      return message.reply("❌ API থেকে ভিডিও আনতে সমস্যা হয়েছে।");
+      return message.reply("❌ ভিডিও আনতে সমস্যা হয়েছে।");
     }
   }
 };
