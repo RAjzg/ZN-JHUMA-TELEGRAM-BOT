@@ -3,10 +3,10 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "album1",
-    version: "5.0.0",
-    author: "Shaon Ahmed",
+    version: "5.0.1",
+    author: "Shaon Ahmed + Modified by ChatGPT",
     role: 0,
-    description: "Reply add with bot.once handler (like album)",
+    description: "Reply add with bot.on handler (like album) and auto delete list after selection",
     category: "media",
     countDown: 5
   },
@@ -37,18 +37,15 @@ module.exports = {
       try {
         const fileLink = await api.getFileLink(file.file_id);
 
-        // ভিডিও হলে ডিউরেশন চেক
         const isVideo = !!event?.reply_to_message?.video;
         const duration = event?.reply_to_message?.video?.duration || 0;
 
         let finalUrl = null;
 
         if (isVideo && duration > 60) {
-          // ১ মিনিটের বেশি হলে Catbox
           const catboxUpload = await axios.get(`${imgur}/catbox?url=${encodeURIComponent(fileLink)}`);
           finalUrl = catboxUpload.data.url || catboxUpload.data.link;
         } else {
-          // Imgur upload
           const imgurUpload = await axios.get(`${imgur}/imgur?link=${encodeURIComponent(fileLink)}`);
           finalUrl = imgurUpload.data.link || imgurUpload.data.uploaded?.image;
         }
@@ -82,27 +79,36 @@ module.exports = {
       msg += `\n📝 Reply this message with number (e.g., 1)`;
 
       const sent = await api.sendMessage(chatId, msg, { parse_mode: "Markdown" });
+      const listMessageId = sent.message_id;
 
-      // 🧠 Wait for reply using bot.once
-      bot.once("message", async (replyEvent) => {
-        const num = parseInt(replyEvent.text);
-        if (isNaN(num) || num < 1 || num > categories.length) {
-          return api.sendMessage(chatId, `⚠️ Valid number: 1 to ${categories.length}`);
-        }
+      // 🧠 Reply listener
+      bot.on("message", async (replyEvent) => {
+        if (
+          replyEvent.reply_to_message &&
+          replyEvent.reply_to_message.message_id === listMessageId
+        ) {
+          const num = parseInt(replyEvent.text);
+          if (isNaN(num) || num < 1 || num > categories.length) {
+            return api.sendMessage(chatId, `⚠️ Valid number: 1 to ${categories.length}`);
+          }
 
-        const category = categories[num - 1];
-        try {
-          const r = await axios.get(`${baseApi}/album?type=${encodeURIComponent(category)}`);
-          const { url, cp, count } = r.data;
+          const category = categories[num - 1];
+          try {
+            const r = await axios.get(`${baseApi}/album?type=${encodeURIComponent(category)}`);
+            const { url, cp, count } = r.data;
 
-          await api.sendVideo(chatId, url, {
-            caption: `🎞️ Category: ${category}\n📦 Total: ${count || 1}\n\n${cp || ""}`,
-            reply_markup: {
-              inline_keyboard: [[{ text: "Owner", url: "https://t.me/shaonproject" }]]
-            }
-          });
-        } catch (err) {
-          return api.sendMessage(chatId, "❌ ভিডিও লোড করা যায়নি।");
+            await api.sendVideo(chatId, url, {
+              caption: `🎞️ Category: ${category}\n📦 Total: ${count || 1}\n\n${cp || ""}`,
+              reply_markup: {
+                inline_keyboard: [[{ text: "Owner", url: "https://t.me/shaonproject" }]]
+              }
+            });
+
+            // 📌 লিস্ট মেসেজ ডিলিট করা
+            await api.deleteMessage(chatId, listMessageId);
+          } catch (err) {
+            return api.sendMessage(chatId, "❌ ভিডিও লোড করা যায়নি।");
+          }
         }
       });
 
