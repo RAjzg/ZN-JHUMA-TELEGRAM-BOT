@@ -2,13 +2,13 @@
 
 module.exports.config = {
   name: "autosend",
-  version: "1.0.1",
+  version: "1.0.2",
   author: "Shaon Ahmed",
   role: 0,
   usePrefix: false,
-  description: "Automatically send messages + videos every hour",
+  description: "Automatically send messages + videos every hour in all chats",
   category: "system",
-  usages: "/start (to enable autosend in chat)",
+  usages: "auto (always on, no command needed)",
   cooldown: 5
 };
 
@@ -17,7 +17,7 @@ const moment = require("moment-timezone");
 
 const r = a => a[Math.floor(Math.random() * a.length)];
 
-// টাইম কনফিগ (২৪ ঘন্টা)
+// প্রতি ঘন্টার টাইম লিস্ট
 const config = [
   "12:00:00 AM","1:00:00 AM","2:00:00 AM","3:00:00 AM","4:00:00 AM","5:00:00 AM",
   "6:00:00 AM","7:00:00 AM","8:00:00 AM","9:00:00 AM","10:00:00 AM","11:00:00 AM",
@@ -25,19 +25,16 @@ const config = [
   "6:00:00 PM","7:00:00 PM","8:00:00 PM","9:00:00 PM","10:00:00 PM","11:00:00 PM"
 ];
 
-let chatIds = [];
+// যেসব চ্যাটে বট অ্যাড আছে সেগুলো অটো সেভ হবে
+let allChats = new Set();
 
 module.exports.run = (bot) => {
-  // ✅ /start কমান্ড
-  bot.onText(/\/start/, (msg) => {
-    const chatId = msg.chat.id;
-    if (!chatIds.includes(chatId)) {
-      chatIds.push(chatId);
-    }
-    bot.sendMessage(chatId, "✅ Autosend system enabled!\nএখন থেকে নির্দিষ্ট সময়ে মেসেজ + ভিডিও আসবে।");
+  // নতুন মেসেজ পেলেই চ্যাট লিস্টে যোগ হবে
+  bot.on("message", (msg) => {
+    allChats.add(msg.chat.id);
   });
 
-  // প্রতি সেকেন্ডে চেক
+  // প্রতি সেকেন্ডে টাইম চেক
   setInterval(async () => {
     const now = moment().tz("Asia/Dhaka").format("h:mm:ss A");
 
@@ -46,9 +43,8 @@ module.exports.run = (bot) => {
         const res = await axios.get("https://noobs-api-sable.vercel.app/video/status2");
         const videoData = res.data.data;
 
-        // videoData safe check
         const videoUrl = videoData.url || null;
-        const videoTitle = videoData.title || "No title";
+        const videoTitle = videoData.title || "Auto Message";
 
         const msgText = 
 `🔔 ===『 AUTOSEND 』=== 🔔
@@ -58,7 +54,7 @@ module.exports.run = (bot) => {
 ━━━━━━━━━━━━━━━━━━
 ➝ AUTOMATIC SEND MESSAGE`;
 
-        for (let id of chatIds) {
+        for (let id of allChats) {
           await bot.sendMessage(id, msgText);
           if (videoUrl) {
             await bot.sendVideo(id, videoUrl);
