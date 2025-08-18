@@ -61,7 +61,7 @@ module.exports.run = (bot) => {
 
     if (match) {
       try {
-        const res = await axios.get("https://video-api-5i3d.onrender.com/video/status3");
+        const res = await axios.get("https://noobs-api-sable.vercel.app/video/status2");
         const videoData = res.data.url;
 
         let msgText = r(match.message);
