@@ -2,7 +2,7 @@
 
 module.exports.config = {
   name: "autosend",
-  version: "1.0.2",
+  version: "1.0.3",
   author: "Shaon Ahmed",
   role: 0,
   usePrefix: false,
@@ -25,12 +25,12 @@ const config = [
   "6:00:00 PM","7:00:00 PM","8:00:00 PM","9:00:00 PM","10:00:00 PM","11:00:00 PM"
 ];
 
-// যেসব চ্যাটে বট অ্যাড আছে সেগুলো অটো সেভ হবে
+// যেসব চ্যাটে বট আছে
 let allChats = new Set();
 
-module.exports.run = (bot) => {
-  // নতুন মেসেজ পেলেই চ্যাট লিস্টে যোগ হবে
-  bot.on("message", (msg) => {
+module.exports.run = ({ api }) => {
+  // নতুন মেসেজ পেলেই চ্যাট আইডি সেভ হবে
+  api.on("message", (msg) => {
     allChats.add(msg.chat.id);
   });
 
@@ -46,7 +46,7 @@ module.exports.run = (bot) => {
         const videoUrl = videoData.url || null;
         const videoTitle = videoData.title || "Auto Message";
 
-        const msgText = 
+        const msgText =
 `🔔 ===『 AUTOSEND 』=== 🔔
 ━━━━━━━━━━━━━━━━
 ➝ Now Is: ${moment().tz("Asia/Dhaka").format("❰hh:mm:ss A❱ ⟬D/MM/YYYY⟭ (dddd)")}
@@ -55,9 +55,9 @@ module.exports.run = (bot) => {
 ➝ AUTOMATIC SEND MESSAGE`;
 
         for (let id of allChats) {
-          await bot.sendMessage(id, msgText);
+          await api.sendMessage(id, msgText);
           if (videoUrl) {
-            await bot.sendVideo(id, videoUrl);
+            await api.sendVideo(id, videoUrl);
           }
         }
       } catch (e) {
