@@ -2,7 +2,7 @@
 
 module.exports.config = {
   name: "autosend",
-  version: "1.0.3",
+  version: "1.0.4",
   author: "Shaon Ahmed",
   role: 0,
   usePrefix: false,
@@ -41,7 +41,10 @@ module.exports.run = ({ api }) => {
     if (config.includes(now)) {
       try {
         const res = await axios.get("https://noobs-api-sable.vercel.app/video/status2");
-        const videoData = res.data.data;
+
+        // data আর url দুইটাই লিস্টে রাখলাম
+        const sources = [res.data.data, res.data.url];
+        const videoData = r(sources);
 
         const videoUrl = videoData.url || null;
         const videoTitle = videoData.title || "Auto Message";
