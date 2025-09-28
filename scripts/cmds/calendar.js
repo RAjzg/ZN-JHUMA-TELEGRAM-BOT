@@ -33,38 +33,33 @@ function formatBanglaTime(date) {
 
 // Gregorian থেকে approximate Bangla date
 function getBanglaDate(gDate) {
-  // বাংলা নতুন বছর শুরু: 14/15 April
   const newYear = moment(`${gDate.year()}-04-14`);
   let diffDays = gDate.diff(newYear, "days");
-
   if (diffDays < 0) {
-    // যদি তারিখ এপ্রিলের আগে হয়, আগের বছরের পঞ্জিকা
     const prevYearNew = moment(`${gDate.year() - 1}-04-14`);
     diffDays = gDate.diff(prevYearNew, "days");
   }
 
-  // বাংলা মাসের দৈর্ঘ্য (15 বা 30/31 দিন)
   const monthLengths = [31,31,31,31,31,30,30,30,30,30,30,30]; // approx
-
   let monthIndex = 0;
   while (diffDays >= monthLengths[monthIndex]) {
     diffDays -= monthLengths[monthIndex];
     monthIndex++;
-    if (monthIndex > 11) monthIndex = 11; // safeguard
+    if (monthIndex > 11) monthIndex = 11;
   }
 
   const banglaMonth = banglaMonths[monthIndex];
-  const banglaDay = diffDays + 1; // 1 থেকে শুরু
+  const banglaDay = diffDays + 1;
   return { banglaMonth, banglaDay };
 }
 
 module.exports.config = {
   name: "calendar",
-  version: "12.0.0",
+  version: "12.1.0",
   role: 0,
   credits: "Islamick Cyber Chat",
   usePrefix: true,
-  description: "Stylish calendar with correct Bengali date",
+  description: "Stylish calendar with Bengali and accurate Islamic date",
   category: "calendar",
   usages: "/calendar",
   cooldowns: 30,
@@ -83,10 +78,20 @@ module.exports.run = async function ({ bot, msg }) {
   const { banglaMonth, banglaDay } = getBanglaDate(gDate);
   const banglaDate = `${banglaMonth} ${toBanglaNumber(banglaDay)}`;
 
-  // Islamic date (static example, change with API if needed)
-  const islamicDate = "রবিউস সানি ৭";
+  // Hijri date from Aladhan API
+  let islamicDate = "নির্ধারিত নেই";
+  try {
+    const hijriResponse = await axios.get(`http://api.aladhan.com/v1/gToH?date=${gDate.format("DD-MM-YYYY")}`);
+    if (hijriResponse.data && hijriResponse.data.data && hijriResponse.data.data.hijri) {
+      const hDay = toBanglaNumber(hijriResponse.data.data.hijri.day);
+      const hMonth = hijriResponse.data.data.hijri.month.en; // English name, চাইলে map করে Bengali নামও করা যাবে
+      islamicDate = `${hMonth} ${hDay}`;
+    }
+  } catch (err) {
+    console.error("Hijri API failed:", err);
+    islamicDate = "API ব্যর্থ, নির্ধারিত নেই";
+  }
 
-  // Time
   const time = formatBanglaTime(gDate);
 
   const captionMsg = `
@@ -102,12 +107,12 @@ ${engDate}
 
 ${banglaDate}
 
-${islamicDate}
+হিজরি: ${islamicDate}
 
 - সময়: ${time}
   `;
 
-  // Try sending calendar image
+  // Try calendar image
   try {
     const url = `https://calendar-eta-green.vercel.app/calendar?month=${gDate.format("M")}&year=${gDate.format("YYYY")}`;
     const response = await axios.get(url, { responseType: "arraybuffer" });
@@ -124,8 +129,7 @@ ${islamicDate}
 
   } catch (err) {
     console.error("Calendar Image API failed:", err);
-
-    // Fallback: Send only caption
+    // Fallback: send caption only
     await bot.sendMessage(chatId, captionMsg);
   }
 };
