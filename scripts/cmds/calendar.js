@@ -2,6 +2,7 @@ const puppeteer = require("puppeteer");
 const moment = require("moment-timezone");
 const fs = require("fs");
 const path = require("path");
+const HijriDate = require("hijri-date"); // API ছাড়া সঠিক হিজরি
 
 // বাংলা মাস ও দিন
 const banglaMonths = [
@@ -11,7 +12,7 @@ const banglaMonths = [
 ];
 const banglaDays = ["রবিবার","সোমবার","মঙ্গলবার","বুধবার","বৃহস্পতিবার","শুক্রবার","শনিবার"];
 
-// Hijri months approximation
+// Hijri months in Bengali
 const hijriMonthsBN = [
   "মুহররম","সফর","রাবিউল আউয়াল","রাবিউস সানি",
   "জুমাদাল আউয়াল","জুমাদাল সানি","রাজব","শা'বান",
@@ -43,23 +44,21 @@ function getBanglaDate(gDate){
   return { banglaMonth: banglaMonths[monthIndex], banglaDay: diffDays+1 };
 }
 
-// Gregorian → approximate Hijri date (API ছাড়া)
-function getApproxHijri(gDate){
-  const knownHijriStart = moment("2025-07-17"); // example known Hijri start date
-  let diffDays = gDate.diff(knownHijriStart,"days");
-  if(diffDays<0) diffDays=0;
-  const hMonthIndex = Math.floor(diffDays/30)%12;
-  const hDay = (diffDays%30)+1;
-  return { month: hijriMonthsBN[hMonthIndex], day: hDay };
+// Gregorian → Hijri using hijri-date lib
+function getHijriDate(gDate){
+  const hDate = new HijriDate(gDate.year(), gDate.month(), gDate.date());
+  const hDay = hDate.getDate();
+  const hMonth = hDate.getMonth(); // 0-11
+  return { day: hDay, month: hijriMonthsBN[hMonth] };
 }
 
 module.exports.config = {
   name:"calendar",
-  version:"15.0.0",
+  version:"16.0.0",
   role:0,
   credits:"Shaon Ahmed",
   usePrefix:true,
-  description:"Stylish Calendar with Bengali & Hijri (approx, API free)",
+  description:"Stylish Calendar with Bengali & accurate Hijri (API free)",
   category:"calendar",
   usages:"/calendar",
   cooldowns:10
@@ -77,8 +76,8 @@ module.exports.run = async function({ bot, msg }){
   const { banglaMonth, banglaDay } = getBanglaDate(gDate);
   const banglaDate = `${banglaMonth} ${toBanglaNumber(banglaDay)}`;
 
-  // Hijri date approx
-  const hijri = getApproxHijri(gDate);
+  // Hijri date accurate
+  const hijri = getHijriDate(gDate);
   const islamicDate = `${hijri.month} ${toBanglaNumber(hijri.day)}`;
 
   // Time
