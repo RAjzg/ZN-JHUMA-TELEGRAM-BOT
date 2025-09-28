@@ -15,7 +15,9 @@ module.exports.config = {
   cooldowns: 30,
 };
 
-module.exports.run = async function ({ api, event }) {
+module.exports.run = async function ({ bot, msg }) {
+  const chatId = msg.chat.id;
+
   const sendCalendar = async () => {
     try {
       const date = moment().tz("Asia/Dhaka");
@@ -45,24 +47,20 @@ module.exports.run = async function ({ api, event }) {
       const filePath = path.join(cacheDir, `calendar_${Date.now()}.png`);
       fs.writeFileSync(filePath, response.data);
 
-      // Telegram inline keyboard button
-      const buttons = [
-        [{ text: "🔄 Refresh", callback_data: "calendar_refresh" }]
-      ];
+      const inlineKeyboard = {
+        inline_keyboard: [[{ text: "🔄 Refresh", callback_data: "calendar_refresh" }]]
+      };
 
-      await api.sendMessage(
-        event.chatID,
-        {
-          photo: fs.createReadStream(filePath),
-          caption: captionMsg,
-          reply_markup: { inline_keyboard: buttons }
-        }
-      );
+      await bot.sendPhoto(chatId, fs.createReadStream(filePath), {
+        caption: captionMsg,
+        reply_markup: inlineKeyboard,
+      });
 
       fs.unlinkSync(filePath);
     } catch (err) {
-      console.error(err);
-      await api.sendMessage(event.chatID, "❌ Calendar দেখাতে সমস্যা হয়েছে!");
+      console.error("Calendar Error:", err);
+      const errorMsg = `❌ Calendar দেখাতে সমস্যা হয়েছে!\n\nError: ${err.message || err}`;
+      await bot.sendMessage(chatId, errorMsg);
     }
   };
 
@@ -70,8 +68,9 @@ module.exports.run = async function ({ api, event }) {
 };
 
 // ✅ Callback query handle করা (Telegram)
-module.exports.handleCallback = async function ({ api, event }) {
+module.exports.handleCallback = async function ({ bot, event }) {
   if (event.data === "calendar_refresh") {
-    await module.exports.run({ api, event });
+    const chatId = event.message.chat.id;
+    await module.exports.run({ bot, msg: { chat: { id: chatId }, text: "/calendar" } });
   }
 };
