@@ -16,7 +16,23 @@ const banglaDays = [
   "বৃহস্পতিবার", "শুক্রবার", "শনিবার"
 ];
 
-// ইংরেজি সংখ্যা কে বাংলা সংখ্যায় রূপান্তর
+// Hijri month English → Bengali mapping
+const hijriMonthsBN = {
+  "Muharram": "মুহররম",
+  "Safar": "সফর",
+  "Rabi al-awwal": "রাবিউল আউয়াল",
+  "Rabi al-thani": "রাবিউস সানি",
+  "Jumada al-awwal": "জুমাদাল আউয়াল",
+  "Jumada al-thani": "জুমাদাল সানি",
+  "Rajab": "রাজব",
+  "Sha'ban": "শা'বান",
+  "Ramadan": "রমজান",
+  "Shawwal": "শাওয়াল",
+  "Dhu al-Qi'dah": "জিলক্বদ",
+  "Dhu al-Hijjah": "জিলহজ"
+};
+
+// ইংরেজি সংখ্যা → বাংলা সংখ্যা
 function toBanglaNumber(num) {
   return num.toString().replace(/\d/g, d => "০১২৩৪৫৬৭৮৯"[d]);
 }
@@ -31,7 +47,7 @@ function formatBanglaTime(date) {
   return `${toBanglaNumber(h)}:${toBanglaNumber(minute)} ${ampm}`;
 }
 
-// Gregorian থেকে approximate Bangla date
+// Gregorian → approximate Bengali date
 function getBanglaDate(gDate) {
   const newYear = moment(`${gDate.year()}-04-14`);
   let diffDays = gDate.diff(newYear, "days");
@@ -55,11 +71,11 @@ function getBanglaDate(gDate) {
 
 module.exports.config = {
   name: "calendar",
-  version: "12.1.0",
+  version: "12.2.0",
   role: 0,
   credits: "Islamick Cyber Chat",
   usePrefix: true,
-  description: "Stylish calendar with Bengali and accurate Islamic date",
+  description: "Stylish calendar with Bengali and Hijri date",
   category: "calendar",
   usages: "/calendar",
   cooldowns: 30,
@@ -78,14 +94,15 @@ module.exports.run = async function ({ bot, msg }) {
   const { banglaMonth, banglaDay } = getBanglaDate(gDate);
   const banglaDate = `${banglaMonth} ${toBanglaNumber(banglaDay)}`;
 
-  // Hijri date from Aladhan API
+  // Hijri date from API
   let islamicDate = "নির্ধারিত নেই";
   try {
     const hijriResponse = await axios.get(`http://api.aladhan.com/v1/gToH?date=${gDate.format("DD-MM-YYYY")}`);
-    if (hijriResponse.data && hijriResponse.data.data && hijriResponse.data.data.hijri) {
+    if (hijriResponse.data?.data?.hijri) {
       const hDay = toBanglaNumber(hijriResponse.data.data.hijri.day);
-      const hMonth = hijriResponse.data.data.hijri.month.en; // English name, চাইলে map করে Bengali নামও করা যাবে
-      islamicDate = `${hMonth} ${hDay}`;
+      const hMonthEng = hijriResponse.data.data.hijri.month.en;
+      const hMonthBN = hijriMonthsBN[hMonthEng] || hMonthEng;
+      islamicDate = `${hMonthBN} ${hDay}`;
     }
   } catch (err) {
     console.error("Hijri API failed:", err);
