@@ -1,9 +1,10 @@
-const axios = require("axios");
+const puppeteer = require("puppeteer");
 const moment = require("moment-timezone");
 const fs = require("fs");
 const path = require("path");
+const axios = require("axios");
 
-// বাংলা মাসের নাম (বাংলাদেশী পঞ্জিকা অনুযায়ী)
+// বাংলা মাসের নাম
 const banglaMonths = [
   "বৈশাখ", "জ্যৈষ্ঠ", "আষাঢ়", "শ্রাবণ",
   "ভাদ্র", "আশ্বিন", "কার্তিক",
@@ -71,19 +72,21 @@ function getBanglaDate(gDate) {
 
 module.exports.config = {
   name: "calendar",
-  version: "12.2.0",
+  version: "13.0.0",
   role: 0,
   credits: "Islamick Cyber Chat",
   usePrefix: true,
-  description: "Stylish calendar with Bengali and Hijri date",
+  description: "Stylish calendar with Bengali and Hijri date (HTML screenshot)",
   category: "calendar",
   usages: "/calendar",
   cooldowns: 30,
 };
 
-module.exports.run = async function ({ bot, msg }) {
+module.exports.run = async function({ bot, msg }) {
   const chatId = msg.chat.id;
   const gDate = moment().tz("Asia/Dhaka");
+  const month = gDate.month() + 1;
+  const year = gDate.year();
 
   // English date
   const engDate = gDate.format("MMMM DD");
@@ -94,13 +97,13 @@ module.exports.run = async function ({ bot, msg }) {
   const { banglaMonth, banglaDay } = getBanglaDate(gDate);
   const banglaDate = `${banglaMonth} ${toBanglaNumber(banglaDay)}`;
 
-  // Hijri date from API
+  // Hijri date
   let islamicDate = "নির্ধারিত নেই";
   try {
-    const hijriResponse = await axios.get(`http://api.aladhan.com/v1/gToH?date=${gDate.format("DD-MM-YYYY")}`);
-    if (hijriResponse.data?.data?.hijri) {
-      const hDay = toBanglaNumber(hijriResponse.data.data.hijri.day);
-      const hMonthEng = hijriResponse.data.data.hijri.month.en;
+    const hijriRes = await axios.get(`http://api.aladhan.com/v1/gToH?date=${gDate.format("DD-MM-YYYY")}`);
+    if (hijriRes.data?.data?.hijri) {
+      const hDay = toBanglaNumber(hijriRes.data.data.hijri.day);
+      const hMonthEng = hijriRes.data.data.hijri.month.en;
       const hMonthBN = hijriMonthsBN[hMonthEng] || hMonthEng;
       islamicDate = `${hMonthBN} ${hDay}`;
     }
@@ -109,8 +112,10 @@ module.exports.run = async function ({ bot, msg }) {
     islamicDate = "API ব্যর্থ, নির্ধারিত নেই";
   }
 
+  // Time
   const time = formatBanglaTime(gDate);
 
+  // Caption
   const captionMsg = `
 「 Stylish Calendar 」
 
@@ -129,24 +134,26 @@ ${banglaDate}
 - সময়: ${time}
   `;
 
-  // Try calendar image
+  // Puppeteer screenshot
   try {
-    const url = `https://calendar-eta-green.vercel.app/calendar?month=${gDate.format("M")}&year=${gDate.format("YYYY")}`;
-    const response = await axios.get(url, { responseType: "arraybuffer" });
+    const url = `https://calendar-eta-green.vercel.app/`;
+    const browser = await puppeteer.launch({
+      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    });
+    const page = await browser.newPage();
+    await page.setViewport({ width: 800, height: 1000 });
+    await page.goto(url, { waitUntil: "networkidle2" });
 
-    const cacheDir = path.join(__dirname, "caches");
-    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
-
-    const filePath = path.join(cacheDir, `calendar_${Date.now()}.png`);
-    fs.writeFileSync(filePath, response.data);
+    const filePath = path.join(__dirname, `calendar_${Date.now()}.png`);
+    await page.screenshot({ path: filePath, fullPage: true });
+    await browser.close();
 
     await bot.sendPhoto(chatId, fs.createReadStream(filePath), { caption: captionMsg });
-
     fs.unlinkSync(filePath);
 
   } catch (err) {
-    console.error("Calendar Image API failed:", err);
-    // Fallback: send caption only
+    console.error("Screenshot error:", err);
+    // Puppeteer fail হলে fallback: caption only
     await bot.sendMessage(chatId, captionMsg);
   }
 };
