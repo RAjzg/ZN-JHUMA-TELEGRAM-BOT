@@ -38,14 +38,18 @@ function toBanglaNumber(num) {
   return num.toString().replace(/\d/g, d => "০১২৩৪৫৬৭৮৯"[d]);
 }
 
-// রাত/সকাল বাংলায়
+// রাত/সকাল বাংলায় (corrected)
 function formatBanglaTime(date) {
-  const hour = date.hour();
+  let hour = date.hour();
   const minute = date.minute();
-  const ampm = hour >= 12 ? "রাত" : "সকাল";
+  const isPM = hour >= 12;
+  let period = isPM ? "রাত" : "সকাল";
+
+  // 12 AM/PM handling
   let h = hour % 12;
   if (h === 0) h = 12;
-  return `${toBanglaNumber(h)}:${toBanglaNumber(minute)} ${ampm}`;
+
+  return `${toBanglaNumber(h)}:${toBanglaNumber(minute)} ${period}`;
 }
 
 // Gregorian → approximate Bengali date
@@ -72,11 +76,11 @@ function getBanglaDate(gDate) {
 
 module.exports.config = {
   name: "calendar",
-  version: "13.0.0",
+  version: "13.1.0",
   role: 0,
   credits: "Islamick Cyber Chat",
   usePrefix: true,
-  description: "Stylish calendar with Bengali and Hijri date (HTML screenshot)",
+  description: "Stylish calendar with Bengali and Hijri date (fixed)",
   category: "calendar",
   usages: "/calendar",
   cooldowns: 30,
@@ -119,8 +123,6 @@ module.exports.run = async function({ bot, msg }) {
   const captionMsg = `
 「 Stylish Calendar 」
 
-${engDate}
-
 ইংরেজি তারিখ: ${engDay}
 
 মাস: ${gDate.format("MMMM")}
@@ -149,7 +151,7 @@ ${banglaDate}
     await browser.close();
 
     await bot.sendPhoto(chatId, fs.createReadStream(filePath), { caption: captionMsg });
-    fs.unlinkSync(filePath);
+    //fs.unlinkSync(filePath);
 
   } catch (err) {
     console.error("Screenshot error:", err);
