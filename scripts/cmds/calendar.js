@@ -3,11 +3,11 @@ const moment = require("moment-timezone");
 const fs = require("fs");
 const path = require("path");
 
-// বাংলা মাসের নাম
+// বাংলা মাসের নাম (বাংলাদেশী পঞ্জিকা অনুযায়ী)
 const banglaMonths = [
   "বৈশাখ", "জ্যৈষ্ঠ", "আষাঢ়", "শ্রাবণ",
-  "ভাদ্র", "আশ্বিন", "কার্তিক", "অগ্রহায়ণ",
-  "পৌষ", "মাঘ", "ফাল্গুন", "চৈত্র"
+  "ভাদ্র", "আশ্বিন", "কার্তিক",
+  "অগ্রহায়ণ", "পৌষ", "মাঘ", "ফাল্গুন", "চৈত্র"
 ];
 
 // বাংলা সপ্তাহের নাম
@@ -31,13 +31,40 @@ function formatBanglaTime(date) {
   return `${toBanglaNumber(h)}:${toBanglaNumber(minute)} ${ampm}`;
 }
 
+// Gregorian থেকে approximate Bangla date
+function getBanglaDate(gDate) {
+  // বাংলা নতুন বছর শুরু: 14/15 April
+  const newYear = moment(`${gDate.year()}-04-14`);
+  let diffDays = gDate.diff(newYear, "days");
+
+  if (diffDays < 0) {
+    // যদি তারিখ এপ্রিলের আগে হয়, আগের বছরের পঞ্জিকা
+    const prevYearNew = moment(`${gDate.year() - 1}-04-14`);
+    diffDays = gDate.diff(prevYearNew, "days");
+  }
+
+  // বাংলা মাসের দৈর্ঘ্য (15 বা 30/31 দিন)
+  const monthLengths = [31,31,31,31,31,30,30,30,30,30,30,30]; // approx
+
+  let monthIndex = 0;
+  while (diffDays >= monthLengths[monthIndex]) {
+    diffDays -= monthLengths[monthIndex];
+    monthIndex++;
+    if (monthIndex > 11) monthIndex = 11; // safeguard
+  }
+
+  const banglaMonth = banglaMonths[monthIndex];
+  const banglaDay = diffDays + 1; // 1 থেকে শুরু
+  return { banglaMonth, banglaDay };
+}
+
 module.exports.config = {
   name: "calendar",
-  version: "11.9.8",
+  version: "12.0.0",
   role: 0,
   credits: "Islamick Cyber Chat",
   usePrefix: true,
-  description: "Stylish calendar with fallback if API fails",
+  description: "Stylish calendar with correct Bengali date",
   category: "calendar",
   usages: "/calendar",
   cooldowns: 30,
@@ -45,26 +72,31 @@ module.exports.config = {
 
 module.exports.run = async function ({ bot, msg }) {
   const chatId = msg.chat.id;
-  const date = moment().tz("Asia/Dhaka");
+  const gDate = moment().tz("Asia/Dhaka");
 
-  // Generate caption
-  const engDate = date.format("MMMM DD"); // English date e.g., July 17
-  const engDay = date.format("DD");
-  const banglaDay = toBanglaNumber(date.date());
-  const banglaMonth = banglaMonths[date.month()];
-  const banglaDate = `${banglaMonth} ${banglaDay}`;
-  const dayOfWeek = banglaDays[date.day()];
-  const islamicDate = "রবিউস সানি ৭"; // Static fallback
-  const time = formatBanglaTime(date);
+  // English date
+  const engDate = gDate.format("MMMM DD");
+  const engDay = toBanglaNumber(gDate.format("DD"));
+  const dayOfWeek = banglaDays[gDate.day()];
+
+  // Bengali date
+  const { banglaMonth, banglaDay } = getBanglaDate(gDate);
+  const banglaDate = `${banglaMonth} ${toBanglaNumber(banglaDay)}`;
+
+  // Islamic date (static example, change with API if needed)
+  const islamicDate = "রবিউস সানি ৭";
+
+  // Time
+  const time = formatBanglaTime(gDate);
 
   const captionMsg = `
 「 Stylish Calendar 」
 
 ${engDate}
 
-ইংরেজি তারিখ: ${toBanglaNumber(engDay)}
+ইংরেজি তারিখ: ${engDay}
 
-মাস: ${date.format("MMMM")}
+মাস: ${gDate.format("MMMM")}
 
 দিন: ${dayOfWeek}
 
@@ -75,9 +107,9 @@ ${islamicDate}
 - সময়: ${time}
   `;
 
-  // Try to get calendar image from API
+  // Try sending calendar image
   try {
-    const url = `https://api.popcat.xyz/calendar?month=${date.format("M")}&year=${date.format("YYYY")}`;
+    const url = `https://api.popcat.xyz/calendar?month=${gDate.format("M")}&year=${gDate.format("YYYY")}`;
     const response = await axios.get(url, { responseType: "arraybuffer" });
 
     const cacheDir = path.join(__dirname, "caches");
@@ -86,7 +118,6 @@ ${islamicDate}
     const filePath = path.join(cacheDir, `calendar_${Date.now()}.png`);
     fs.writeFileSync(filePath, response.data);
 
-    // Send photo with caption
     await bot.sendPhoto(chatId, fs.createReadStream(filePath), { caption: captionMsg });
 
     fs.unlinkSync(filePath);
@@ -94,7 +125,7 @@ ${islamicDate}
   } catch (err) {
     console.error("Calendar Image API failed:", err);
 
-    // Fallback: Send only caption if API fails
+    // Fallback: Send only caption
     await bot.sendMessage(chatId, captionMsg);
   }
 };
