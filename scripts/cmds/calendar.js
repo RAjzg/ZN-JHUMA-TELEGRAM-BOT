@@ -109,7 +109,7 @@ ${islamicDate}
 
   // Try sending calendar image
   try {
-    const url = `https://api.popcat.xyz/calendar?month=${gDate.format("M")}&year=${gDate.format("YYYY")}`;
+    const url = `https://calendar-eta-green.vercel.app/calendar?month=${gDate.format("M")}&year=${gDate.format("YYYY")}`;
     const response = await axios.get(url, { responseType: "arraybuffer" });
 
     const cacheDir = path.join(__dirname, "caches");
