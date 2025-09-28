@@ -3,13 +3,41 @@ const moment = require("moment-timezone");
 const fs = require("fs");
 const path = require("path");
 
+// বাংলা মাসের নাম
+const banglaMonths = [
+  "বৈশাখ", "জ্যৈষ্ঠ", "আষাঢ়", "শ্রাবণ",
+  "ভাদ্র", "আশ্বিন", "কার্তিক", "অগ্রহায়ণ",
+  "পৌষ", "মাঘ", "ফাল্গুন", "চৈত্র"
+];
+
+// বাংলা সপ্তাহের নাম
+const banglaDays = [
+  "রবিবার", "সোমবার", "মঙ্গলবার", "বুধবার",
+  "বৃহস্পতিবার", "শুক্রবার", "শনিবার"
+];
+
+// ইংরেজি সংখ্যা কে বাংলা সংখ্যায় রূপান্তর
+function toBanglaNumber(num) {
+  return num.toString().replace(/\d/g, d => "০১২৩৪৫৬৭৮৯"[d]);
+}
+
+// রাত/সকাল বাংলায়
+function formatBanglaTime(date) {
+  const hour = date.hour();
+  const minute = date.minute();
+  const ampm = hour >= 12 ? "রাত" : "সকাল";
+  let h = hour % 12;
+  if (h === 0) h = 12;
+  return `${toBanglaNumber(h)}:${toBanglaNumber(minute)} ${ampm}`;
+}
+
 module.exports.config = {
   name: "calendar",
   version: "11.9.8",
   role: 0,
   credits: "Islamick Cyber Chat",
   usePrefix: true,
-  description: "Show stylish calendar with image and inline refresh button",
+  description: "Stylish calendar with fallback if API fails",
   category: "calendar",
   usages: "/calendar",
   cooldowns: 30,
@@ -17,60 +45,56 @@ module.exports.config = {
 
 module.exports.run = async function ({ bot, msg }) {
   const chatId = msg.chat.id;
+  const date = moment().tz("Asia/Dhaka");
 
-  const sendCalendar = async () => {
-    try {
-      const date = moment().tz("Asia/Dhaka");
-      const day = date.format("dddd");
-      const month = date.format("MMMM");
-      const year = date.format("YYYY");
-      const numDate = date.format("DD");
-      const time = date.format("h:mm A");
+  // Generate caption
+  const engDate = date.format("MMMM DD"); // English date e.g., July 17
+  const engDay = date.format("DD");
+  const banglaDay = toBanglaNumber(date.date());
+  const banglaMonth = banglaMonths[date.month()];
+  const banglaDate = `${banglaMonth} ${banglaDay}`;
+  const dayOfWeek = banglaDays[date.day()];
+  const islamicDate = "রবিউস সানি ৭"; // Static fallback
+  const time = formatBanglaTime(date);
 
-      const captionMsg = `
+  const captionMsg = `
 「 Stylish Calendar 」
-📅 ইংরেজি তারিখ: ${numDate}
-📆 মাস: ${month}
-📌 দিন: ${day}
-🗓️ সাল: ${year}
-⏰ সময়: ${time}
 
-─── SHAON AHMED ───
-      `;
+${engDate}
 
-      const url = `https://api.popcat.xyz/calendar?month=${date.format("M")}&year=${year}`;
-      const response = await axios.get(url, { responseType: "arraybuffer" });
+ইংরেজি তারিখ: ${toBanglaNumber(engDay)}
 
-      const cacheDir = path.join(__dirname, "caches");
-      if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
+মাস: ${date.format("MMMM")}
 
-      const filePath = path.join(cacheDir, `calendar_${Date.now()}.png`);
-      fs.writeFileSync(filePath, response.data);
+দিন: ${dayOfWeek}
 
-      const inlineKeyboard = {
-        inline_keyboard: [[{ text: "🔄 Refresh", callback_data: "calendar_refresh" }]]
-      };
+${banglaDate}
 
-      await bot.sendPhoto(chatId, fs.createReadStream(filePath), {
-        caption: captionMsg,
-        reply_markup: inlineKeyboard,
-      });
+${islamicDate}
 
-      fs.unlinkSync(filePath);
-    } catch (err) {
-      console.error("Calendar Error:", err);
-      const errorMsg = `❌ Calendar দেখাতে সমস্যা হয়েছে!\n\nError: ${err.message || err}`;
-      await bot.sendMessage(chatId, errorMsg);
-    }
-  };
+- সময়: ${time}
+  `;
 
-  await sendCalendar();
-};
+  // Try to get calendar image from API
+  try {
+    const url = `https://api.popcat.xyz/calendar?month=${date.format("M")}&year=${date.format("YYYY")}`;
+    const response = await axios.get(url, { responseType: "arraybuffer" });
 
-// ✅ Callback query handle করা (Telegram)
-module.exports.handleCallback = async function ({ bot, event }) {
-  if (event.data === "calendar_refresh") {
-    const chatId = event.message.chat.id;
-    await module.exports.run({ bot, msg: { chat: { id: chatId }, text: "/calendar" } });
+    const cacheDir = path.join(__dirname, "caches");
+    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
+
+    const filePath = path.join(cacheDir, `calendar_${Date.now()}.png`);
+    fs.writeFileSync(filePath, response.data);
+
+    // Send photo with caption
+    await bot.sendPhoto(chatId, fs.createReadStream(filePath), { caption: captionMsg });
+
+    fs.unlinkSync(filePath);
+
+  } catch (err) {
+    console.error("Calendar Image API failed:", err);
+
+    // Fallback: Send only caption if API fails
+    await bot.sendMessage(chatId, captionMsg);
   }
 };
