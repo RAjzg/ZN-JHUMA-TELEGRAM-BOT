@@ -1,5 +1,6 @@
 const puppeteer = require("puppeteer");
 const moment = require("moment-timezone");
+require("moment/locale/bn");
 const fs = require("fs");
 const path = require("path");
 
