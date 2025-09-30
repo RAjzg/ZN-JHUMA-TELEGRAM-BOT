@@ -89,14 +89,12 @@ module.exports.run = async function({ bot, msg }){
   const captionMsg = `
 「 Stylish Calendar 」
 
-ইংরেজি তারিখ: ${engDay}
-মাস: ${gDate.format("MMMM")}
-দিন: ${dayOfWeek}
-
-${banglaDate}
-হিজরি: ${islamicDate}
-
-- সময়: ${time}
+📅 ইংরেজি তার: ${engDay}
+🗒️ মাস: ${gDate.format("MMMM")}
+📛 দিন: ${dayOfWeek}
+🗓️ ${banglaDate}
+🕌 হিজরি: ${islamicDate}
+🕒 সময়: ${time}
   `;
 
   // Puppeteer screenshot (optional)
