@@ -12,7 +12,7 @@ const banglaMonths = [
 ];
 const banglaDays = ["রবিবার","সোমবার","মঙ্গলবার","বুধবার","বৃহস্পতিবার","শুক্রবার","শনিবার"];
 
-// Hijri months approximation
+// Hijri months
 const hijriMonthsBN = [
   "মুহররম","সফর","রাবিউল আউয়াল","রাবিউস সানি",
   "জুমাদাল আউয়াল","জুমাদাল সানি","রাজব","শা'বান",
@@ -20,7 +20,9 @@ const hijriMonthsBN = [
 ];
 
 // ইংরেজি সংখ্যা → বাংলা সংখ্যা
-function toBanglaNumber(num){ return num.toString().replace(/\d/g,d=>"০১২৩৪৫৬৭৮৯"[d]); }
+function toBanglaNumber(num){ 
+  return num.toString().replace(/\d/g,d=>"০১২৩৪৫৬৭৮৯"[d]); 
+}
 
 // সময় AM/PM সহ
 function formatBanglaTime(date){
@@ -44,19 +46,30 @@ function getBanglaDate(gDate){
   return { banglaMonth: banglaMonths[monthIndex], banglaDay: diffDays+1 };
 }
 
-// Gregorian → approximate Hijri date (API ছাড়া)
+// Gregorian → approximate Hijri date (better approximation)
 function getApproxHijri(gDate){
-  const knownHijriStart = moment("2025-07-17"); // example known Hijri start date
-  let diffDays = gDate.diff(knownHijriStart,"days");
-  if(diffDays<0) diffDays=0;
-  const hMonthIndex = Math.floor(diffDays/30)%12;
-  const hDay = (diffDays%30)+1;
-  return { month: hijriMonthsBN[hMonthIndex], day: hDay };
+  // Known Hijri reference: 1 Muharram 1447 = 31 July 2025 (example)
+  const knownHijriStart = moment("2025-07-31");
+  let diffDays = gDate.startOf('day').diff(knownHijriStart, "days");
+
+  if(diffDays < 0) diffDays = 0;
+
+  // Hijri months pattern: alternating 30/29 days
+  const hijriMonthLengths = [30,29,30,29,30,29,30,29,30,29,30,29]; 
+  let hMonthIndex = 0;
+  while(diffDays >= hijriMonthLengths[hMonthIndex]){
+    diffDays -= hijriMonthLengths[hMonthIndex];
+    hMonthIndex = (hMonthIndex + 1) % 12;
+  }
+
+  const hDay = diffDays + 1;
+  const month = hijriMonthsBN[hMonthIndex];
+  return { month, day: hDay };
 }
 
 module.exports.config = {
   name:"calendar",
-  version:"15.0.0",
+  version:"15.1.0",
   role:0,
   credits:"Shaon Ahmed",
   usePrefix:true,
