@@ -5,7 +5,7 @@ require("moment/locale/bn");
 // ==== config ====
 module.exports.config = {
   name: "calendar",
-  version: "15.0.0",
+  version: "15.0.1",
   role: 0,
   credits: "Shaon Ahmed",
   usePrefix: true,
@@ -84,8 +84,7 @@ function getBanglaDate(gDate) {
 }
 
 // ===== Command Handler =====
-module.exports.run = async ({ bot, msg }) => {
-  const chatId = msg.chat.id;
+module.exports.run = async ({ message }) => {
   try {
     // Remote API থেকে calendar image আনবে
     const configUrl = "https://raw.githubusercontent.com/MR-IMRAN-60/ImranBypass/refs/heads/main/imran.json";
@@ -132,10 +131,10 @@ module.exports.run = async ({ bot, msg }) => {
 ━━━━━━━━━━━━━━━`;
 
     // Direct stream দিয়ে পাঠানো
-    await bot.sendPhoto(chatId, response.data, { caption });
+    await message.reply({ caption, stream: response.data });
 
   } catch (err) {
     console.error(err);
-    await bot.sendMessage(chatId, "⚠️ কিছু ভুল হয়েছে!");
+    await message.reply("⚠️ কিছু ভুল হয়েছে!");
   }
 };
