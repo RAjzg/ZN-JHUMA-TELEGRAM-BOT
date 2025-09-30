@@ -1,11 +1,13 @@
 const axios = require("axios");
 const moment = require("moment-timezone");
+const fs = require("fs");
+const path = require("path");
 require("moment/locale/bn");
 
 // ==== config ====
 module.exports.config = {
   name: "calendar",
-  version: "15.0.1",
+  version: "15.0.6",
   role: 0,
   credits: "Shaon Ahmed",
   usePrefix: true,
@@ -130,11 +132,30 @@ module.exports.run = async ({ message }) => {
 🕒 সময়: ${time}
 ━━━━━━━━━━━━━━━`;
 
-    // Direct stream দিয়ে পাঠানো
-    await message.reply({ caption, stream: response.data });
+    // === Local cache for message.stream ===
+    const filePath = path.join(__dirname, "caches", `calendar_${Date.now()}.jpg`);
+    const writer = fs.createWriteStream(filePath);
+    response.data.pipe(writer);
+
+    writer.on("finish", async () => {
+      await message.stream({
+        url: fs.createReadStream(filePath),
+        caption: caption
+      });
+
+      // Cache clean up after 10s
+      setTimeout(() => {
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      }, 10000);
+    });
+
+    writer.on("error", (err) => {
+      console.error("❌ Image save failed:", err);
+      await message.reply("⚠️ কিছু ভুল হয়েছে!");
+    });
 
   } catch (err) {
-    console.error(err);
+    console.error("❌ API error:", err);
     await message.reply("⚠️ কিছু ভুল হয়েছে!");
   }
 };
