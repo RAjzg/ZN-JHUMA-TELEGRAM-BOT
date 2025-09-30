@@ -89,13 +89,19 @@ function getBanglaDate(gDate) {
 module.exports.run = async ({ bot, msg }) => {
   const chatId = msg.chat.id;
   try {
-    // Remote API থেকে calendar image আনবে
+    // === Remote API থেকে calendar image আনবে ===
     const configUrl = "https://raw.githubusercontent.com/MR-IMRAN-60/ImranBypass/refs/heads/main/imran.json";
     const config = await axios.get(configUrl);
     const apiUrl = `${config.data.api}/cal`;
 
-    const cachePath = path.join(__dirname, "caches", `cal_${Date.now()}.png`);
+    // === caches ফোল্ডার তৈরি ===
+    const cacheDir = path.join(__dirname, "caches");
+    if (!fs.existsSync(cacheDir)) {
+      fs.mkdirSync(cacheDir);
+    }
+    const cachePath = path.join(cacheDir, `cal_${Date.now()}.png`);
 
+    // === ইমেজ ডাউনলোড ===
     const response = await axios.get(apiUrl, { responseType: "stream" });
     const writer = fs.createWriteStream(cachePath);
     response.data.pipe(writer);
@@ -127,6 +133,7 @@ module.exports.run = async ({ bot, msg }) => {
       const timeRaw = dhaka.format("h:mmA");
       const time = convertToBangla(timeRaw);
 
+      // === Caption তৈরি ===
       const caption = `「 Stylish Calendar 」
 📅 ইংরেজি তারিখ: ${englishDateDay}
 🗒️ মাস: ${now.toLocaleString("en-US", { month: "long" })}
