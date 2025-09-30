@@ -1,6 +1,4 @@
 const axios = require("axios");
-const fs = require("fs");
-const path = require("path");
 const moment = require("moment-timezone");
 require("moment/locale/bn");
 
@@ -89,52 +87,42 @@ function getBanglaDate(gDate) {
 module.exports.run = async ({ bot, msg }) => {
   const chatId = msg.chat.id;
   try {
-    // === Remote API থেকে calendar image আনবে ===
+    // Remote API থেকে calendar image আনবে
     const configUrl = "https://raw.githubusercontent.com/MR-IMRAN-60/ImranBypass/refs/heads/main/imran.json";
     const config = await axios.get(configUrl);
     const apiUrl = `${config.data.api}/cal`;
 
-    // === caches ফোল্ডার তৈরি ===
-    const cacheDir = path.join(__dirname, "caches");
-    if (!fs.existsSync(cacheDir)) {
-      fs.mkdirSync(cacheDir);
-    }
-    const cachePath = path.join(cacheDir, `cal_${Date.now()}.png`);
-
-    // === ইমেজ ডাউনলোড ===
+    // === Stream fetch ===
     const response = await axios.get(apiUrl, { responseType: "stream" });
-    const writer = fs.createWriteStream(cachePath);
-    response.data.pipe(writer);
 
-    writer.on("finish", async () => {
-      const now = new Date();
+    const now = new Date();
 
-      // ইংরেজি তারিখ
-      const englishDateDay = convertToBangla(now.getDate());
+    // ইংরেজি তারিখ
+    const englishDateDay = convertToBangla(now.getDate());
 
-      // বাংলা তারিখ
-      const banglaDate = getBanglaDate(now);
+    // বাংলা তারিখ
+    const banglaDate = getBanglaDate(now);
 
-      // হিজরি তারিখ
-      const hijriFormatter = new Intl.DateTimeFormat("en-TN-u-ca-islamic", {
-        day: "numeric",
-        month: "long",
-        year: "numeric"
-      });
-      const hijriParts = hijriFormatter.formatToParts(now);
-      const hijriDate = {
-        day: convertToBangla(hijriParts.find(p => p.type === "day").value),
-        month: hijriMonthsBn[hijriParts.find(p => p.type === "month").value] || hijriParts.find(p => p.type === "month").value,
-        year: convertToBangla(hijriParts.find(p => p.type === "year").value)
-      };
+    // হিজরি তারিখ
+    const hijriFormatter = new Intl.DateTimeFormat("en-TN-u-ca-islamic", {
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    });
+    const hijriParts = hijriFormatter.formatToParts(now);
+    const hijriDate = {
+      day: convertToBangla(hijriParts.find(p => p.type === "day").value),
+      month: hijriMonthsBn[hijriParts.find(p => p.type === "month").value] || hijriParts.find(p => p.type === "month").value,
+      year: convertToBangla(hijriParts.find(p => p.type === "year").value)
+    };
 
-      // সময় (ঢাকা টাইম)
-      const dhaka = moment.tz(now, "Asia/Dhaka");
-      const timeRaw = dhaka.format("h:mmA");
-      const time = convertToBangla(timeRaw);
+    // সময় (ঢাকা টাইম)
+    const dhaka = moment.tz(now, "Asia/Dhaka");
+    const timeRaw = dhaka.format("h:mmA");
+    const time = convertToBangla(timeRaw);
 
-      // === Caption তৈরি ===
-      const caption = `「 Stylish Calendar 」
+    // === Caption ===
+    const caption = `「 Stylish Calendar 」
 📅 ইংরেজি তারিখ: ${englishDateDay}
 🗒️ মাস: ${now.toLocaleString("en-US", { month: "long" })}
 📛 দিন: ${now.toLocaleString("bn-BD", { weekday: "long" })}
@@ -143,14 +131,8 @@ module.exports.run = async ({ bot, msg }) => {
 🕒 সময়: ${time}
 ━━━━━━━━━━━━━━━`;
 
-      await bot.sendPhoto(chatId, cachePath, { caption });
-      fs.unlinkSync(cachePath);
-    });
-
-    writer.on("error", async (err) => {
-      console.error(err);
-      await bot.sendMessage(chatId, "❌ ক্যালেন্ডার লোডে সমস্যা হয়েছে!");
-    });
+    // Direct stream দিয়ে পাঠানো
+    await bot.sendPhoto(chatId, response.data, { caption });
 
   } catch (err) {
     console.error(err);
