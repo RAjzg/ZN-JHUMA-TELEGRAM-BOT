@@ -7,10 +7,10 @@ let searchResults = {};
 module.exports = {
   config: {
     name: "tik",
-    version: "2.0.4",
+    version: "2.0.5",
     role: 0,
     credits: "Shaon Ahmed + ChatGPT",
-    description: "Search TikTok and download video (Telegram) [res.data.data.videos.play]",
+    description: "Search TikTok and download video (Telegram)",
     cooldown: 5,
   },
 
@@ -22,14 +22,14 @@ module.exports = {
     const cacheDir = path.join(__dirname, "caches");
     if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
 
-    // 🔁 ইউজার রিপ্লাই দিলে
+    // 🔁 ইউজার রিপ্লাই দিলে ভিডিও পাঠানো
     if (/^\d+$/.test(body) && searchResults[userId]) {
       const index = parseInt(body) - 1;
       const video = searchResults[userId][index];
 
       if (!video) return message.reply("❌ ভুল নাম্বার দিয়েছেন।");
 
-      const videoUrl = video.play; // এখানে নতুন path
+      const videoUrl = video.play;
       if (!videoUrl) return message.reply("❌ ভিডিও URL পাওয়া যায়নি।");
 
       const filePath = path.join(cacheDir, `tiktok_${Date.now()}.mp4`);
@@ -59,11 +59,13 @@ module.exports = {
           caption: caption
         });
 
+        // ফাইল ডিলিট 15 সেকেন্ড পরে
         setTimeout(() => {
           if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
         }, 15000);
+
       } catch (e) {
-        console.error("🎥 ডাউনলোড সমস্যা:", e.message);
+        console.error("🎥 ভিডিও ডাউনলোড সমস্যা:", e);
         return message.reply("❌ ভিডিও আনতে সমস্যা হয়েছে। পরে চেষ্টা করুন।");
       }
       return;
@@ -100,8 +102,9 @@ module.exports = {
       return message.reply(
         `🔍 "${query}" এর জন্য ভিডিও:\n\n${list}\n\n➡️ রিপ্লাই দিয়ে নাম্বার দিন যেকোনো ভিডিও আনতে।`
       );
+
     } catch (e) {
-      console.error("❌ সার্চ API সমস্যা:", e.message);
+      console.error("❌ সার্চ API সমস্যা:", e);
       return message.reply("❌ TikTok সার্ভার থেকে ডেটা আনতে সমস্যা হয়েছে।");
     }
   }
