@@ -111,8 +111,8 @@ module.exports = {
         } else if (res.data.url) {
           // ✅ random API fix
           videoUrl = res.data.url;
-        } else if (typeof res.data === "string") {
-          videoUrl = res.data;
+        } else if (typeof res.data.url === "string") {
+          videoUrl = res.data.url;
         } else {
           throw new Error("❌ Invalid response format");
         }
