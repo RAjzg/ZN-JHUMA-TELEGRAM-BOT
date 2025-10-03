@@ -5,7 +5,7 @@ const path = require("path");
 module.exports = {
   config: {
     name: "album",
-    version: "2.6.0",
+    version: "2.6.1",
     role: 0,
     author: "Shaon Ahmed",
     description: "Reply add via Imgur/Catbox and inline browser",
@@ -105,11 +105,14 @@ module.exports = {
           videoUrl = res.data.data;
         } else if (Array.isArray(res.data.data)) {
           const random = res.data.data[Math.floor(Math.random() * res.data.data.length)];
-          videoUrl = random?.url;
+          videoUrl = random?.url || random;
         } else if (typeof res.data.data === "object" && res.data.data.url) {
           videoUrl = res.data.data.url;
         } else if (res.data.url) {
+          // ✅ random API fix
           videoUrl = res.data.url;
+        } else if (typeof res.data === "string") {
+          videoUrl = res.data;
         } else {
           throw new Error("❌ Invalid response format");
         }
