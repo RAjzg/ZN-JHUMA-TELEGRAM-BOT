@@ -1,19 +1,17 @@
 const axios = require("axios");
-const fs = require("fs");
-const path = require("path");
 
 module.exports = {
   config: {
     name: "album1",
-    version: "5.2.0",
+    version: "5.0.1",
     author: "Shaon Ahmed + Modified by ChatGPT",
     role: 0,
-    description: "Album system with cache video streaming (message.stream)",
+    description: "Reply add with bot.on handler (like album) and auto delete list after selection",
     category: "media",
     countDown: 5
   },
 
-  onStart: async ({ api, event, args, bot, message }) => {
+  onStart: async ({ api, event, args, bot }) => {
     const chatId = event.chat?.id || event.threadID;
     const input = args.join(" ").trim();
 
@@ -99,17 +97,15 @@ module.exports = {
             const r = await axios.get(`${baseApi}/album?type=${encodeURIComponent(category)}`);
             const { url, cp, count } = r.data;
 
-            const filePath = path.join(__dirname, "caches", "video.mp4");
-            const vid = await axios.get(url, { responseType: "arraybuffer" });
-            fs.writeFileSync(filePath, Buffer.from(vid.data, "utf-8"));
-
-            await message.stream({
-              url: fs.createReadStream(filePath),
-              caption: `🎞️ Category: ${category}\n📦 Total: ${count || 1}\n\n${cp || ""}`
+            await api.sendVideo(chatId, url, {
+              caption: `🎞️ Category: ${category}\n📦 Total: ${count || 1}\n\n${cp || ""}`,
+              reply_markup: {
+                inline_keyboard: [[{ text: "Owner", url: "https://t.me/shaonproject" }]]
+              }
             });
 
+            // 📌 লিস্ট মেসেজ ডিলিট করা
             await api.deleteMessage(chatId, listMessageId);
-            //fs.unlinkSync(filePath);
           } catch (err) {
             return api.sendMessage(chatId, "❌ ভিডিও লোড করা যায়নি।");
           }
@@ -139,18 +135,14 @@ module.exports = {
         const res = await axios.get(`${baseApi}/album?type=${encodeURIComponent(input)}`);
         const { url, cp, category, count } = res.data;
 
-        const filePath = path.join(__dirname, "caches", "video.mp4");
-        const vid = await axios.get(url, { responseType: "arraybuffer" });
-        fs.writeFileSync(filePath, Buffer.from(vid.data, "utf-8"));
-
-        await message.stream({
-          url: fs.createReadStream(filePath),
-          caption: `🎞️ Category: ${category}\n📦 Total: ${count || 1}\n\n${cp || ""}`
+        await api.sendVideo(chatId, url, {
+          caption: `🎞️ Category: ${category}\n📦 Total: ${count || 1}\n\n${cp || ""}`,
+          reply_markup: {
+            inline_keyboard: [[{ text: "Owner", url: "https://t.me/shaonproject" }]]
+          }
         });
-
-        //fs.unlinkSync(filePath);
       } catch (e) {
-        message.reply("❌ ভিডিও লোড করা যায়নি।");
+        api.sendMessage(chatId, "❌ ভিডিও লোড করা যায়নি।");
       }
     }
   }
