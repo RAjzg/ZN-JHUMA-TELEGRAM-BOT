@@ -109,7 +109,7 @@ module.exports = {
             });
 
             await api.deleteMessage(chatId, listMessageId);
-            fs.unlinkSync(filePath);
+            //fs.unlinkSync(filePath);
           } catch (err) {
             return api.sendMessage(chatId, "❌ ভিডিও লোড করা যায়নি।");
           }
