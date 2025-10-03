@@ -95,7 +95,7 @@ module.exports = {
       const res = await axios.get(
         `${api}/tiktok/search?keywords=${encodeURIComponent(query)}`
       );
-      const videos = res.data?.data?.videos;
+      const videos = res.data?.data?.videos.play;
 
       if (!Array.isArray(videos) || videos.length === 0) {
         return message.reply("❌ কোনো TikTok ভিডিও পাওয়া যায়নি।");
