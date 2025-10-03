@@ -148,7 +148,7 @@ module.exports = {
           caption: `🎞️ Category: ${category}\n📦 Total: ${count || 1}\n\n${cp || ""}`
         });
 
-        fs.unlinkSync(filePath);
+        //fs.unlinkSync(filePath);
       } catch (e) {
         api.sendMessage(chatId, "❌ ভিডিও লোড করা যায়নি।");
       }
