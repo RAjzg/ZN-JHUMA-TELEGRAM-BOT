@@ -29,7 +29,7 @@ module.exports = {
 
       if (!video) return message.reply("❌ ভুল নাম্বার দিয়েছেন।");
 
-      const videoUrl = video.play;
+      const videoUrl = video.data.data.videos.play;
       if (!videoUrl) return message.reply("❌ ভিডিও URL পাওয়া যায়নি।");
 
       const filePath = path.join(cacheDir, `tiktok_${Date.now()}.mp4`);
