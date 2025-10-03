@@ -5,7 +5,7 @@ const path = require("path");
 module.exports = {
   config: {
     name: "album",
-    version: "2.6.1",
+    version: "2.6.2",
     role: 0,
     author: "Shaon Ahmed",
     description: "Reply add via Imgur/Catbox and inline browser",
@@ -97,24 +97,30 @@ module.exports = {
         const base = apis.data.api;
 
         const res = await axios.get(`${base}${categoryEndpoint}`);
-        const caption = res.data.shaon || res.data.cp || "🎬 Here's your video:";
+        let caption = res.data.shaon || res.data.cp || "🎬 Here's your video:";
 
         let videoUrl;
 
-        if (typeof res.data.data === "string") {
-          videoUrl = res.data.data;
-        } else if (Array.isArray(res.data.data)) {
-          const random = res.data.data[Math.floor(Math.random() * res.data.data.length)];
-          videoUrl = random?.url || random;
-        } else if (typeof res.data.data === "object" && res.data.data.url) {
-          videoUrl = res.data.data.url;
-        } else if (res.data.url) {
-          // ✅ random API fix
+        // ✅ RANDOM SPECIAL CASE
+        if (categoryEndpoint === "/video/random") {
           videoUrl = res.data.url;
-        } else if (typeof res.data.url === "string") {
-          videoUrl = res.data.url;
+          caption = res.data.cp || "🎬 RANDOM VIDEO";
         } else {
-          throw new Error("❌ Invalid response format");
+          // normal API handling
+          if (typeof res.data.data === "string") {
+            videoUrl = res.data.data;
+          } else if (Array.isArray(res.data.data)) {
+            const random = res.data.data[Math.floor(Math.random() * res.data.data.length)];
+            videoUrl = random?.url || random;
+          } else if (typeof res.data.data === "object" && res.data.data.url) {
+            videoUrl = res.data.data.url;
+          } else if (res.data.url) {
+            videoUrl = res.data.url;
+          } else if (typeof res.data === "string") {
+            videoUrl = res.data;
+          } else {
+            throw new Error("❌ Invalid response format");
+          }
         }
 
         if (!videoUrl || typeof videoUrl !== "string") throw new Error("❌ Invalid video URL");
