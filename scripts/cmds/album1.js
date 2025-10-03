@@ -1,4 +1,6 @@
 const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
 
 module.exports = {
   config: {
@@ -14,6 +16,10 @@ module.exports = {
   onStart: async ({ api, event, args, bot }) => {
     const chatId = event.chat?.id || event.threadID;
     const input = args.join(" ").trim();
+
+    // === cache path set ===
+    const cachePath = path.join(__dirname, "caches");
+    if (!fs.existsSync(cachePath)) fs.mkdirSync(cachePath, { recursive: true });
 
     const apis = await axios.get("https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json");
     const baseApi = apis.data.api;
@@ -97,12 +103,22 @@ module.exports = {
             const r = await axios.get(`${baseApi}/album?type=${encodeURIComponent(category)}`);
             const { url, cp, count } = r.data;
 
-            await api.sendVideo(chatId, url, {
+            // === cache file download ===
+            const filePath = path.join(cachePath, `${Date.now()}.mp4`);
+            const writer = fs.createWriteStream(filePath);
+            const response = await axios.get(url, { responseType: "stream" });
+            response.data.pipe(writer);
+            await new Promise((resolve) => writer.on("finish", resolve));
+
+            await api.sendVideo(chatId, fs.createReadStream(filePath), {
               caption: `🎞️ Category: ${category}\n📦 Total: ${count || 1}\n\n${cp || ""}`,
               reply_markup: {
                 inline_keyboard: [[{ text: "Owner", url: "https://t.me/shaonproject" }]]
               }
             });
+
+            // ক্যাশে ডিলিট
+            fs.unlinkSync(filePath);
 
             // 📌 লিস্ট মেসেজ ডিলিট করা
             await api.deleteMessage(chatId, listMessageId);
@@ -135,12 +151,22 @@ module.exports = {
         const res = await axios.get(`${baseApi}/album?type=${encodeURIComponent(input)}`);
         const { url, cp, category, count } = res.data;
 
-        await api.sendVideo(chatId, url, {
+        // === cache file download ===
+        const filePath = path.join(cachePath, `${Date.now()}.mp4`);
+        const writer = fs.createWriteStream(filePath);
+        const response = await axios.get(url, { responseType: "stream" });
+        response.data.pipe(writer);
+        await new Promise((resolve) => writer.on("finish", resolve));
+
+        await api.sendVideo(chatId, fs.createReadStream(filePath), {
           caption: `🎞️ Category: ${category}\n📦 Total: ${count || 1}\n\n${cp || ""}`,
           reply_markup: {
             inline_keyboard: [[{ text: "Owner", url: "https://t.me/shaonproject" }]]
           }
         });
+
+        // ক্যাশে ডিলিট
+        fs.unlinkSync(filePath);
       } catch (e) {
         api.sendMessage(chatId, "❌ ভিডিও লোড করা যায়নি।");
       }
