@@ -5,7 +5,7 @@ const path = require("path");
 module.exports = {
   config: {
     name: "album",
-    version: "2.6.2",
+    version: "2.6.3",
     role: 0,
     author: "Shaon Ahmed",
     description: "Reply add via Imgur/Catbox and inline browser",
@@ -98,10 +98,9 @@ module.exports = {
 
         const res = await axios.get(`${base}${categoryEndpoint}`);
         let caption = res.data.shaon || res.data.cp || "🎬 Here's your video:";
-
         let videoUrl;
 
-        // ✅ RANDOM SPECIAL CASE
+        // ✅ RANDOM SPECIAL CASE + cache save
         if (categoryEndpoint === "/video/random") {
           videoUrl = res.data.url;
           caption = res.data.cp || "🎬 RANDOM VIDEO";
@@ -130,7 +129,7 @@ module.exports = {
         const isVideo = videoUrl.match(/\.(mp4|mov|m4v|webm)(\?.*)?$/i);
 
         if (isVideo || isDrive) {
-          // ✅ CACHE MP4 SAVE
+          // ✅ CACHE SAVE (random সহ)
           const cacheDir = path.join(__dirname, "caches");
           if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir);
 
@@ -152,7 +151,6 @@ module.exports = {
             },
           });
 
-          // Optional: remove cached file after sending
           fs.unlinkSync(filePath);
         } else if (isImage) {
           await api.sendPhoto(chatId, videoUrl, {
