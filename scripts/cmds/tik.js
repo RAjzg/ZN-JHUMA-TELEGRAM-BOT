@@ -7,10 +7,10 @@ let searchResults = {};
 module.exports = {
   config: {
     name: "tik",
-    version: "2.0.3",
+    version: "2.0.4",
     role: 0,
     credits: "Shaon Ahmed + ChatGPT",
-    description: "Search TikTok and download video (Telegram)",
+    description: "Search TikTok and download video (Telegram) [res.data.data.videos.play]",
     cooldown: 5,
   },
 
@@ -22,30 +22,19 @@ module.exports = {
     const cacheDir = path.join(__dirname, "caches");
     if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
 
-    // 🔁 যদি ইউজার রিপ্লাই করে নাম্বার
+    // 🔁 ইউজার রিপ্লাই দিলে
     if (/^\d+$/.test(body) && searchResults[userId]) {
       const index = parseInt(body) - 1;
       const video = searchResults[userId][index];
 
-      if (!video) {
-        return message.reply("❌ ভুল নাম্বার দিয়েছেন।");
-      }
+      if (!video) return message.reply("❌ ভুল নাম্বার দিয়েছেন।");
 
-      const tiktokUrl =
-        video.share_url ||
-        `https://www.tiktok.com/@${video.author?.unique_id}/video/${video.video_id}`;
-      const apiUrl = `https://noobs-api-sable.vercel.app/tikdown?url=${encodeURIComponent(
-        tiktokUrl
-      )}`;
+      const videoUrl = video.play; // এখানে নতুন path
+      if (!videoUrl) return message.reply("❌ ভিডিও URL পাওয়া যায়নি।");
+
+      const filePath = path.join(cacheDir, `tiktok_${Date.now()}.mp4`);
 
       try {
-        const res = await axios.get(apiUrl);
-        if (!res.data?.video) return message.reply("❌ ভিডিও লিংক পাওয়া যায়নি।");
-
-        const videoUrl = res.data.video;
-        const filePath = path.join(cacheDir, `tiktok_${Date.now()}.mp4`);
-
-        // ⬇️ download to file
         const writer = fs.createWriteStream(filePath);
         const response = await axios({
           url: videoUrl,
@@ -62,15 +51,14 @@ module.exports = {
 
         const caption =
           `🎵 TikTok ভিডিও\n` +
-          `👤 Author: ${res.data.author || "Unknown"}\n` +
-          `🎬 Title: ${res.data.title?.slice(0, 100) || "No Title"}`;
+          `👤 Author: ${video.author?.unique_id || "Unknown"}\n` +
+          `🎬 Title: ${video.title?.slice(0, 100) || "No Title"}`;
 
         await message.stream({
           url: fs.createReadStream(filePath),
           caption: caption
         });
 
-        // cleanup after 15s
         setTimeout(() => {
           if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
         }, 15000);
@@ -78,7 +66,6 @@ module.exports = {
         console.error("🎥 ডাউনলোড সমস্যা:", e.message);
         return message.reply("❌ ভিডিও আনতে সমস্যা হয়েছে। পরে চেষ্টা করুন।");
       }
-
       return;
     }
 
@@ -92,19 +79,21 @@ module.exports = {
       );
       const api = apis.data.alldl;
 
-      const res = await axios.get(
-        `${api}/tiktok/search?keywords=${encodeURIComponent(query)}`
-      );
-      const videos = res.data?.data?.videos.play;
+      const res = await axios.get(`${api}/tiktok/search?keywords=${encodeURIComponent(query)}`);
+      const videos = res.data?.data?.videos;
 
       if (!Array.isArray(videos) || videos.length === 0) {
         return message.reply("❌ কোনো TikTok ভিডিও পাওয়া যায়নি।");
       }
 
-      searchResults[userId] = videos.slice(0, 10);
+      // ✅ শুধুমাত্র play URL ধরে রাখছি
+      searchResults[userId] = videos.slice(0, 10).map(v => ({
+        play: v.play,
+        title: v.title,
+        author: v.author
+      }));
 
-      const list = videos
-        .slice(0, 10)
+      const list = searchResults[userId]
         .map((v, i) => `${i + 1}. ${v.title?.slice(0, 80) || "No Title"}`)
         .join("\n\n");
 
