@@ -5,7 +5,7 @@ module.exports.config = {
   name: "rndm",
   version: "11.9.7",
   role: 0,
-  credits: "Islamick Cyber Chat (Modified by Shaon)",
+  credits: "Shaon Ahmed (Modified by Shaon Ahmed)",
   description: "নামের ভিত্তিতে র‍্যান্ডম লাভ স্টোরি ভিডিও পাঠায়",
   commandCategory: "video",
   usages: "rndm [name]\nউদাহরণ: rndm Shaon",
