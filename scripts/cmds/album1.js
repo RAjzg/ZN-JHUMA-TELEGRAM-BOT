@@ -5,15 +5,15 @@ const path = require("path");
 module.exports = {
   config: {
     name: "album1",
-    version: "5.1.0",
+    version: "5.2.0",
     author: "Shaon Ahmed + Modified by ChatGPT",
     role: 0,
-    description: "Album system with cache video streaming",
+    description: "Album system with cache video streaming (message.stream)",
     category: "media",
     countDown: 5
   },
 
-  onStart: async ({ api, event, args, bot }) => {
+  onStart: async ({ api, event, args, bot, message }) => {
     const chatId = event.chat?.id || event.threadID;
     const input = args.join(" ").trim();
 
@@ -99,12 +99,12 @@ module.exports = {
             const r = await axios.get(`${baseApi}/album?type=${encodeURIComponent(category)}`);
             const { url, cp, count } = r.data;
 
-            // 🔥 cache করে পাঠানো
             const filePath = path.join(__dirname, "caches", "video.mp4");
             const vid = await axios.get(url, { responseType: "arraybuffer" });
             fs.writeFileSync(filePath, Buffer.from(vid.data, "utf-8"));
 
-            await api.sendVideo(chatId, fs.createReadStream(filePath), {
+            await message.stream({
+              url: fs.createReadStream(filePath),
               caption: `🎞️ Category: ${category}\n📦 Total: ${count || 1}\n\n${cp || ""}`
             });
 
@@ -139,18 +139,18 @@ module.exports = {
         const res = await axios.get(`${baseApi}/album?type=${encodeURIComponent(input)}`);
         const { url, cp, category, count } = res.data;
 
-        // 🔥 cache করে পাঠানো
         const filePath = path.join(__dirname, "caches", "video.mp4");
         const vid = await axios.get(url, { responseType: "arraybuffer" });
         fs.writeFileSync(filePath, Buffer.from(vid.data, "utf-8"));
 
-        await api.sendVideo(chatId, fs.createReadStream(filePath), {
+        await message.stream({
+          url: fs.createReadStream(filePath),
           caption: `🎞️ Category: ${category}\n📦 Total: ${count || 1}\n\n${cp || ""}`
         });
 
         //fs.unlinkSync(filePath);
       } catch (e) {
-        api.sendMessage(chatId, "❌ ভিডিও লোড করা যায়নি।");
+        message.reply("❌ ভিডিও লোড করা যায়নি।");
       }
     }
   }
