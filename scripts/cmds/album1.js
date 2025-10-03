@@ -5,8 +5,8 @@ const path = require("path");
 module.exports = {
   config: {
     name: "album1",
-    version: "5.0.1",
-    author: "Shaon Ahmed + Modified by ChatGPT",
+    version: "5.0.3",
+    author: "Shaon Ahmed + Fixed by ChatGPT",
     role: 0,
     description: "Reply add with bot.on handler (like album) and auto delete list after selection",
     category: "media",
@@ -17,7 +17,7 @@ module.exports = {
     const chatId = event.chat?.id || event.threadID;
     const input = args.join(" ").trim();
 
-    // === cache path set ===
+    // === cache path ===
     const cachePath = path.join(__dirname, "caches");
     if (!fs.existsSync(cachePath)) fs.mkdirSync(cachePath, { recursive: true });
 
@@ -103,22 +103,25 @@ module.exports = {
             const r = await axios.get(`${baseApi}/album?type=${encodeURIComponent(category)}`);
             const { url, cp, count } = r.data;
 
-            // === cache file download ===
-            const filePath = path.join(cachePath, `${Date.now()}.mp4`);
-            const writer = fs.createWriteStream(filePath);
-            const response = await axios.get(url, { responseType: "stream" });
-            response.data.pipe(writer);
-            await new Promise((resolve) => writer.on("finish", resolve));
+            // === direct try
+            try {
+              await api.sendVideo(chatId, url, {
+                caption: `🎞️ Category: ${category}\n📦 Total: ${count || 1}\n\n${cp || ""}`
+              });
+            } catch {
+              // === fallback cache
+              const filePath = path.join(cachePath, `${Date.now()}.mp4`);
+              const writer = fs.createWriteStream(filePath);
+              const response = await axios.get(url, { responseType: "stream" });
+              response.data.pipe(writer);
+              await new Promise((resolve) => writer.on("finish", resolve));
 
-            await api.sendVideo(chatId, fs.createReadStream(filePath), {
-              caption: `🎞️ Category: ${category}\n📦 Total: ${count || 1}\n\n${cp || ""}`,
-              reply_markup: {
-                inline_keyboard: [[{ text: "Owner", url: "https://t.me/shaonproject" }]]
-              }
-            });
+              await api.sendVideo(chatId, fs.createReadStream(filePath), {
+                caption: `🎞️ Category: ${category}\n📦 Total: ${count || 1}\n\n${cp || ""}`
+              });
 
-            // ক্যাশে ডিলিট
-            fs.unlinkSync(filePath);
+              fs.unlinkSync(filePath);
+            }
 
             // 📌 লিস্ট মেসেজ ডিলিট করা
             await api.deleteMessage(chatId, listMessageId);
@@ -151,22 +154,25 @@ module.exports = {
         const res = await axios.get(`${baseApi}/album?type=${encodeURIComponent(input)}`);
         const { url, cp, category, count } = res.data;
 
-        // === cache file download ===
-        const filePath = path.join(cachePath, `${Date.now()}.mp4`);
-        const writer = fs.createWriteStream(filePath);
-        const response = await axios.get(url, { responseType: "stream" });
-        response.data.pipe(writer);
-        await new Promise((resolve) => writer.on("finish", resolve));
+        // === direct try
+        try {
+          await api.sendVideo(chatId, url, {
+            caption: `🎞️ Category: ${category}\n📦 Total: ${count || 1}\n\n${cp || ""}`
+          });
+        } catch {
+          // === fallback cache
+          const filePath = path.join(cachePath, `${Date.now()}.mp4`);
+          const writer = fs.createWriteStream(filePath);
+          const response = await axios.get(url, { responseType: "stream" });
+          response.data.pipe(writer);
+          await new Promise((resolve) => writer.on("finish", resolve));
 
-        await api.sendVideo(chatId, fs.createReadStream(filePath), {
-          caption: `🎞️ Category: ${category}\n📦 Total: ${count || 1}\n\n${cp || ""}`,
-          reply_markup: {
-            inline_keyboard: [[{ text: "Owner", url: "https://t.me/shaonproject" }]]
-          }
-        });
+          await api.sendVideo(chatId, fs.createReadStream(filePath), {
+            caption: `🎞️ Category: ${category}\n📦 Total: ${count || 1}\n\n${cp || ""}`
+          });
 
-        // ক্যাশে ডিলিট
-        fs.unlinkSync(filePath);
+          fs.unlinkSync(filePath);
+        }
       } catch (e) {
         api.sendMessage(chatId, "❌ ভিডিও লোড করা যায়নি।");
       }
