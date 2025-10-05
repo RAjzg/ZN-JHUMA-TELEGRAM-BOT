@@ -1,3 +1,5 @@
+const axios = require('axios');
+
 module.exports = {
   config: {
     name: "ffinfo",
@@ -10,17 +12,18 @@ module.exports = {
     guide: "/ff <UID>",
   },
 
-  run: async function ({ message, event, args, axios }) {
+  run: async function ({ message, event, args }) {
     const uid = args[0];
 
     if (!uid || !/^\d{8,10}$/.test(uid)) {
-      return await message.reply("❌ দয়া করে সঠিকভাবে লিখো:\n/ff <UID>\nউদাহরণ: /ff 7196688868");
+      return await message.reply("❌ দয়া করে সঠিকভাবে লিখো:\n/ffinfo <UID>\nউদাহরণ: /ffinfo 7196688868");
     }
 
     const apiUrl = `https://noobs-api-sable.vercel.app/ffinfo?uid=${uid}`;
 
     try {
-      const res = await axios.get(apiUrl);
+      // API call with 15s timeout
+      const res = await axios.get(apiUrl, { timeout: 15000 });
       const data = res.data;
 
       if (!data || data.error) {
@@ -30,6 +33,10 @@ module.exports = {
       const basic = data.basicInfo;
       const clan = data.clanBasicInfo || {};
       const social = data.socialInfo || {};
+
+      const createdAt = basic.createAt
+        ? new Date(basic.createAt * 1000).toLocaleString('en-GB')
+        : "N/A";
 
       const info = `
 ┏━━[ 𝐅𝐅 𝐔𝐒𝐄𝐑 𝐈𝐍𝐅𝐎 ]━━┓
@@ -52,7 +59,7 @@ module.exports = {
 ┃ 𝐌𝐄𝐌𝐁𝐄𝐑𝐒 ⤷ ${clan.memberNum || 'N/A'}/${clan.capacity || 'N/A'}
 ┃
 ┃ ✦ 𝐓𝐈𝐌𝐄𝐋𝐈𝐍𝐄
-┃ 𝐀𝐂𝐂 𝐂𝐑𝐄𝐀𝐓𝐄𝐃 ⤷ ${new Date(basic.createAt * 1000).toLocaleString('en-GB')}
+┃ 𝐀𝐂𝐂 𝐂𝐑𝐄𝐀𝐓𝐄𝐃 ⤷ ${createdAt}
 ┃
 ┗━━━━━━━━━━━━━━━━━━━━┛
       `;
@@ -60,7 +67,7 @@ module.exports = {
       await message.reply(info);
 
     } catch (err) {
-      console.error(err);
+      console.error(err.response?.data || err.message);
       await message.reply("❌ তথ্য নিয়ে আসতে সমস্যা হয়েছে। আবার চেষ্টা করো।");
     }
   },
