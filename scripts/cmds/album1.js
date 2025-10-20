@@ -5,10 +5,10 @@ const path = require("path");
 module.exports = {
   config: {
     name: "album1",
-    version: "6.0.0",
-    author: "Shaon Ahmed + GPT Fixed (Button Edition)",
+    version: "5.2.1",
+    author: "Shaon Ahmed + Fixed by ChatGPT",
     role: 0,
-    description: "Album system with inline buttons & cache streaming",
+    description: "Album system with reliable cache streaming (message.stream)",
     category: "media",
     countDown: 5
   },
@@ -28,21 +28,28 @@ module.exports = {
     // helper: download stream -> file
     async function downloadToFile(url, destPath) {
       const res = await axios.get(url, { responseType: "stream", headers: { "User-Agent": "Mozilla/5.0" } });
-      return new Promise((resolve, reject) => {
+      return await new Promise((resolve, reject) => {
         const writer = fs.createWriteStream(destPath);
         res.data.pipe(writer);
-        res.data.on("error", reject);
-        writer.on("finish", resolve);
-        writer.on("error", reject);
+        res.data.on("error", (err) => {
+          writer.close();
+          reject(err);
+        });
+        writer.on("error", (err) => {
+          writer.close();
+          reject(err);
+        });
+        writer.on("finish", () => resolve());
       });
     }
 
-    // helper: send via message.stream or fallback
+    // helper: send via message.stream if available, else api.sendVideo fallback
     async function streamFileToChat(filePath, caption) {
       try {
         if (message && typeof message.stream === "function") {
           await message.stream({ url: fs.createReadStream(filePath), caption });
         } else {
+          // fallback: api.sendVideo with stream
           await api.sendVideo(chatId, fs.createReadStream(filePath), { caption });
         }
       } catch (err) {
@@ -50,7 +57,7 @@ module.exports = {
       }
     }
 
-    // ADD mode
+    // ADD by reply (same as before)
     if (args[0] === "add" && args[1]) {
       const category = args[1].toLowerCase();
       const file =
@@ -58,8 +65,9 @@ module.exports = {
         event?.reply_to_message?.document ||
         (event?.reply_to_message?.photo?.length > 0 && event.reply_to_message.photo.slice(-1)[0]);
 
-      if (!file || !file.file_id)
+      if (!file || !file.file_id) {
         return api.sendMessage(chatId, "❗ ভিডিও বা ছবিতে reply করে `/album1 add <category>` দিন।");
+      }
 
       try {
         const fileLink = await api.getFileLink(file.file_id);
@@ -84,7 +92,7 @@ module.exports = {
       }
     }
 
-    // LIST with buttons
+    // LIST
     if (input === "list" || input === "") {
       try {
         const res = await axios.get(`${baseApi}/album?list=true`);
@@ -97,40 +105,73 @@ module.exports = {
           if (match) {
             const cat = match[2];
             categories.push(cat);
-            msg += `${i + 1}. ${cat}\n`;
+            msg += `${i + 1}. ${cat} Video\n`;
           }
         }
+        msg += `\n📝 Reply this message with number (e.g., 1)`;
 
-        await api.sendMessage(chatId, msg, {
-          parse_mode: "Markdown",
-          reply_markup: {
-            inline_keyboard: categories.map((cat) => [
-              { text: `🎞️ ${cat}`, callback_data: `album_${cat}` }
-            ])
+        const sent = await api.sendMessage(chatId, msg, { parse_mode: "Markdown" });
+        const listMessageId = sent.message_id;
+
+        // use once to avoid duplicate listeners
+        bot.once("message", async (replyEvent) => {
+          try {
+            if (!replyEvent.reply_to_message || replyEvent.reply_to_message.message_id !== listMessageId) return;
+            const num = parseInt(replyEvent.text);
+            if (isNaN(num) || num < 1 || num > categories.length) {
+              return api.sendMessage(chatId, `⚠️ Valid number: 1 to ${categories.length}`);
+            }
+
+            const category = categories[num - 1];
+            const r = await axios.get(`${baseApi}/album?type=${encodeURIComponent(category)}`);
+            const { url, cp, count } = r.data;
+
+            const uniqueName = `video_${Date.now()}_${Math.random().toString(36).slice(2,8)}.mp4`;
+            const filePath = path.join(cacheDir, uniqueName);
+
+            // download and stream
+            await api.sendMessage(chatId, "⏬ ডাউনলোড শুরু করছি..."); // optional progress msg
+            await downloadToFile(url, filePath);
+
+            await streamFileToChat(filePath, `🎞️ Category: ${category}\n📦 Total: ${count || 1}\n\n${cp || ""}`);
+
+            // cleanup
+            try { fs.unlinkSync(filePath); } catch (e) { /* ignore */ }
+            // delete list message
+            await api.deleteMessage(chatId, listMessageId);
+          } catch (err) {
+            console.error("List selection error:", err);
+            api.sendMessage(chatId, "❌ ভিডিও লোড করা যায়নি।");
           }
         });
+
+        return;
       } catch (err) {
         console.error("List error:", err);
         return api.sendMessage(chatId, "❌ লিস্ট আনা যায়নি।");
       }
-      return;
     }
 
-    // CREATE
+    // create / delete (same)
     if (input.startsWith("create ")) {
       const name = input.slice(7).trim();
       const res = await axios.get(`${baseApi}/album?create=${encodeURIComponent(name)}`);
       return api.sendMessage(chatId, `✅ ${res.data.message}`);
     }
+    if (input.startsWith("delete ")) {
+      const name = input.slice(7).trim();
+      const res = await axios.get(`${baseApi}/album?delete=${encodeURIComponent(name)}`);
+      return api.sendMessage(chatId, `🗑️ ${res.data.message}`);
+    }
 
-    // RANDOM / CATEGORY PLAY
+    // RANDOM / direct category play
     if (input) {
       let filePath = null;
       try {
         const res = await axios.get(`${baseApi}/album?type=${encodeURIComponent(input)}`);
         const { url, cp, category, count } = res.data;
 
-        const uniqueName = `video_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.mp4`;
+        const uniqueName = `video_${Date.now()}_${Math.random().toString(36).slice(2,8)}.mp4`;
         filePath = path.join(cacheDir, uniqueName);
 
         await api.sendMessage(chatId, "⏬ ডাউনলোড শুরু করছি...");
@@ -142,36 +183,9 @@ module.exports = {
         try { if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch (e) {}
         return api.sendMessage(chatId, "❌ ভিডিও লোড করা যায়নি।");
       } finally {
+        // ensure cleanup (redundant safe)
         try { if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch (e) {}
       }
     }
-
-    // CALLBACK: Button press
-    bot.on("callback_query", async (query) => {
-      const data = query.data;
-      if (!data.startsWith("album_")) return;
-
-      const category = data.replace("album_", "");
-      await api.answerCallbackQuery(query.id, { text: `🎬 Loading ${category}...` });
-
-      let filePath = null;
-      try {
-        const r = await axios.get(`${baseApi}/album?type=${encodeURIComponent(category)}`);
-        const { url, cp, count } = r.data;
-
-        const uniqueName = `video_${Date.now()}_${Math.random().toString(36).slice(2,8)}.mp4`;
-        filePath = path.join(cacheDir, uniqueName);
-
-        await api.sendMessage(query.message.chat.id, "⏬ ডাউনলোড শুরু করছি...");
-        await downloadToFile(url, filePath);
-
-        await streamFileToChat(filePath, `🎞️ Category: ${category}\n📦 Total: ${count || 1}\n\n${cp || ""}`);
-      } catch (err) {
-        console.error("Button play error:", err);
-        api.sendMessage(query.message.chat.id, "❌ ভিডিও লোড করা যায়নি।");
-      } finally {
-        try { if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch (e) {}
-      }
-    });
   }
 };
