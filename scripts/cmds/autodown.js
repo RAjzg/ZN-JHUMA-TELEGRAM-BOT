@@ -11,7 +11,7 @@ const baseApiUrl = async () => {
 module.exports.config = {
   name: "autodown",
   version: "1.0.2",
-  author: "Shaon Ahmed",
+  author: "MD NURNOBI HAQUE",
   role: 0,
   usePrefix: false,
   description: "Automatically download videos from links"
