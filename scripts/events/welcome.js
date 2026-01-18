@@ -20,9 +20,7 @@ module.exports = {
 
       // GIF লিস্ট থেকে র্যান্ডম একটা নির্বাচন
       const gifs = [
-        'https://i.postimg.cc/wxDBKRHG/welcome4.gif',
-        'https://i.postimg.cc/xTY19j1T/welcome2.gif',
-        'https://i.postimg.cc/Gtnh8dPK/welcome3.gif'
+    "https://i.imgur.com/P8WzLoH.mp4",
       ];
       const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
 
