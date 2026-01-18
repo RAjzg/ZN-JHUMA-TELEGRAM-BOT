@@ -147,7 +147,7 @@ module.exports = {
             caption,
             reply_to_message_id: loading.message_id,
             reply_markup: {
-              inline_keyboard: [[{ text: "🧑‍💻 Owner", url: "https://t.me/shaonproject" }]],
+              inline_keyboard: [[{ text: "🧑‍💻 Owner", url: "https://t.me/nurnobimim79" }]],
             },
           });
 
@@ -157,7 +157,7 @@ module.exports = {
             caption,
             reply_to_message_id: loading.message_id,
             reply_markup: {
-              inline_keyboard: [[{ text: "🧑‍💻 Owner", url: "https://t.me/shaonproject" }]],
+              inline_keyboard: [[{ text: "🧑‍💻 Owner", url: "https://t.me/nurnobimim79" }]],
             },
           });
         } else {
@@ -165,7 +165,7 @@ module.exports = {
             caption,
             reply_to_message_id: loading.message_id,
             reply_markup: {
-              inline_keyboard: [[{ text: "🧑‍💻 Owner", url: "https://t.me/shaonproject" }]],
+              inline_keyboard: [[{ text: "🧑‍💻 Owner", url: "https://t.me/nurnobimim79" }]],
             },
           });
         }
