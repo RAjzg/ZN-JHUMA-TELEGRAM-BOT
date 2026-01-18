@@ -5,7 +5,7 @@ const path = require("path");
 module.exports.config = {
   name: "tikdown",
   version: "1.0.5",
-  author: "Shaon Ahmed",
+  author: "MD NURNOBI HAQUE",
   role: 0,
   description: {
     en: "Download TikTok video or photo posts from noobs-api-sable",
