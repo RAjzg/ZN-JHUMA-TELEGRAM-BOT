@@ -20,7 +20,7 @@ module.exports = {
 
       // GIF লিস্ট থেকে র্যান্ডম একটা নির্বাচন
       const gifs = [
-    "https://files.catbox.moe/4brdtj.mp4",
+    'https://files.catbox.moe/4brdtj.mp4',
       ];
       const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
 
