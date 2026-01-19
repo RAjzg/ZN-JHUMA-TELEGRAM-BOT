@@ -644,10 +644,10 @@ If you encounter any issues, please report them at [Issues](https://github.com/D
 
 ## ✍️ Author
 
-- **SHAON AHMED**
+- **𝐌𝐃 𝐍𝐔𝐑𝐍𝐎𝐁𝐈 𝐇𝐀𝐐𝐔𝐄**
 
-![Shaon Ahmed's Profile](https://telegra.ph/file/4b46589e723817e575717.jpg)
-[Facebook ID](https://www.facebook.com/Hey.Its.Me.Shaon.Ahmed)
+![Md Nurnobi Haque's Profile](https://telegra.ph/file/4b46589e723817e575717.jpg)
+[Facebook ID](https://m.me/RAJA.ViP.5X.01715559179)
 
 ---
 ## 🌐 Support Group
