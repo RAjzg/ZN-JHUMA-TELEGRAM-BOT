@@ -2,7 +2,7 @@ module.exports.config = {
     name: "users",
     aliases: ["user"],
     version: "1.0",
-    credits: "D𝐌𝐃 𝐍𝐔𝐑𝐍𝐎𝐁𝐈 𝐇𝐀𝐐𝐔𝐄",
+    credits: "𝐌𝐃 𝐍𝐔𝐑𝐍𝐎𝐁𝐈 𝐇𝐀𝐐𝐔𝐄",
     role: 3, // Only admin
     usePrefix: true,
     description: "Manage users in the bot",
