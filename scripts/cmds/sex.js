@@ -38,7 +38,7 @@ try{
   fs.writeFileSync(filep, Buffer.from(vid.data,"utf-8"));
   message.stream({
     url: fs.createReadStream(filep),
-    caption: `🥵𝐒𝐄𝐗 𝐕𝐈𝐃𝐄𝐎🤭\n𝚃𝙾𝚃𝙰𝙻 𝚅𝙸𝙳𝙴𝙾:${res.data.count}...🎬\n\n｢𝐒𝐇𝐀𝐎𝐍 𝐏𝐑𝐎𝐉𝐄𝐂𝐓｣`
+    caption: `🥵𝐒𝐄𝐗 𝐕𝐈𝐃𝐄𝐎🤭\n𝚃𝙾𝚃𝙰𝙻 𝚅𝙸𝙳𝙴𝙾:${res.data.count}...🎬\n\n｢𝐌𝐃 𝐍𝐔𝐑𝐍𝐎𝐁𝐈 𝐇𝐀𝐐𝐔𝐄｣`
 ,
   });
   //fs.unlinkSync(filep);
