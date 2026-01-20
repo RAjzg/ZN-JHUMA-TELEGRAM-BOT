@@ -644,7 +644,7 @@ If you encounter any issues, please report them at [Issues](https://github.com/D
 
 ## ✍️ Author
 
-- **SHAON AHMED**
+- **MD NURNOBI HAQUE**
 
 ![Md Nurnobi Haque's Profile](https://telegra.ph/file/4b46589e723817e575717.jpg)
 [Facebook ID](https://m.me/RAJA.ViP.5X.01715559179)
