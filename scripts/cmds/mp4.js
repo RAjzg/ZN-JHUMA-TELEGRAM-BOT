@@ -6,16 +6,16 @@ const ffmpegPath = require("ffmpeg-static");
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
-// 🖼️ তোমার Imgur image
+// 🔗 Imgur Image URL
 const IMAGE_URL = "https://i.imgur.com/dr1xRsK.jpeg";
 
 module.exports = {
   config: {
     name: "mp4",
-    version: "2.0.0",
+    version: "3.0.0",
     role: 0,
     credits: "Shaon Ahmed",
-    description: "Audio/mp3 → mp4 (Imgur image + audio)",
+    description: "Audio → mp4 (Imgur image + audio)",
     category: "media",
     usages: "/mp4 (reply audio)",
     cooldowns: 5,
@@ -34,16 +34,19 @@ module.exports = {
     try {
       const timestamp = Date.now();
 
-      // ✅ EXTENSION FIX
-      const audioPath = path.join(__dirname, `audio_${timestamp}.mp3`);
+      // 📝 অডিও original extension ধরুন
+      const ext = path.extname(msg.reply_to_message.audio.file_name || ".mp3");
+      const audioPath = path.join(__dirname, `audio_${timestamp}${ext}`);
       const imagePath = path.join(__dirname, `image_${timestamp}.jpg`);
       const outputPath = path.join(__dirname, `NURNOBI_${timestamp}.mp4`);
 
-      // ⬇️ Download image
+      console.log("Downloading image from imgur...");
+      // ⬇️ Download image from imgur
       const imgRes = await axios({
         url: IMAGE_URL,
         method: "GET",
         responseType: "stream",
+        timeout: 20000, // 20 sec
       });
 
       await new Promise((resolve, reject) => {
@@ -52,8 +55,10 @@ module.exports = {
         w.on("finish", resolve);
         w.on("error", reject);
       });
+      console.log("Image downloaded!");
 
-      // ⬇️ Download audio
+      console.log("Downloading audio from Telegram...");
+      // ⬇️ Download audio from Telegram
       const fileId = msg.reply_to_message.audio.file_id;
       const fileLink = await bot.getFileLink(fileId);
 
@@ -61,6 +66,7 @@ module.exports = {
         url: fileLink,
         method: "GET",
         responseType: "stream",
+        timeout: 40000, // 40 sec
       });
 
       await new Promise((resolve, reject) => {
@@ -69,8 +75,10 @@ module.exports = {
         w.on("finish", resolve);
         w.on("error", reject);
       });
+      console.log("Audio downloaded!");
 
-      // 🎬 image + audio → mp4
+      // 🎬 ffmpeg: image + audio → mp4
+      console.log("Starting ffmpeg...");
       ffmpeg()
         .input(imagePath)
         .inputOptions(["-loop 1"])
@@ -78,18 +86,22 @@ module.exports = {
         .outputOptions([
           "-c:v libx264",
           "-c:a aac",
+          "-b:a 192k",
           "-shortest",
           "-pix_fmt yuv420p",
         ])
         .save(outputPath)
         .on("end", () => {
+          console.log("ffmpeg done! Sending video...");
           bot.sendVideo(chatId, outputPath, {
             caption: "✅ MP3 ➜ MP4 SUCCESS\n👑 MD NURNOBI HAQUE",
             reply_to_message_id: msg.message_id,
           }).then(() => {
+            // clean up
             fs.unlinkSync(imagePath);
             fs.unlinkSync(audioPath);
             fs.unlinkSync(outputPath);
+            console.log("Temp files deleted.");
           });
         })
         .on("error", (err) => {
