@@ -6,13 +6,13 @@ const ffmpegPath = require("ffmpeg-static");
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
-// 🔗 এখানে তোমার imgur image direct link বসাও
+// 🖼️ তোমার Imgur image
 const IMAGE_URL = "https://i.imgur.com/dr1xRsK.jpeg";
 
 module.exports = {
   config: {
     name: "mp4",
-    version: "1.2.0",
+    version: "2.0.0",
     role: 0,
     credits: "Shaon Ahmed",
     description: "Audio/mp3 → mp4 (Imgur image + audio)",
@@ -33,11 +33,13 @@ module.exports = {
 
     try {
       const timestamp = Date.now();
-      const audioPath = path.join(__dirname, `audio_${timestamp}`);
+
+      // ✅ EXTENSION FIX
+      const audioPath = path.join(__dirname, `audio_${timestamp}.mp3`);
       const imagePath = path.join(__dirname, `image_${timestamp}.jpg`);
       const outputPath = path.join(__dirname, `NURNOBI_${timestamp}.mp4`);
 
-      // ⬇️ download image
+      // ⬇️ Download image
       const imgRes = await axios({
         url: IMAGE_URL,
         method: "GET",
@@ -45,13 +47,13 @@ module.exports = {
       });
 
       await new Promise((resolve, reject) => {
-        const imgWriter = fs.createWriteStream(imagePath);
-        imgRes.data.pipe(imgWriter);
-        imgWriter.on("finish", resolve);
-        imgWriter.on("error", reject);
+        const w = fs.createWriteStream(imagePath);
+        imgRes.data.pipe(w);
+        w.on("finish", resolve);
+        w.on("error", reject);
       });
 
-      // ⬇️ download audio from telegram
+      // ⬇️ Download audio
       const fileId = msg.reply_to_message.audio.file_id;
       const fileLink = await bot.getFileLink(fileId);
 
@@ -62,10 +64,10 @@ module.exports = {
       });
 
       await new Promise((resolve, reject) => {
-        const audioWriter = fs.createWriteStream(audioPath);
-        audioRes.data.pipe(audioWriter);
-        audioWriter.on("finish", resolve);
-        audioWriter.on("error", reject);
+        const w = fs.createWriteStream(audioPath);
+        audioRes.data.pipe(w);
+        w.on("finish", resolve);
+        w.on("error", reject);
       });
 
       // 🎬 image + audio → mp4
@@ -91,13 +93,13 @@ module.exports = {
           });
         })
         .on("error", (err) => {
-          console.error("FFmpeg Error:", err);
+          console.error("FFmpeg ERROR FULL LOG:", err);
           bot.sendMessage(chatId, "❌ mp4 তৈরি করতে সমস্যা হয়েছে।");
         });
 
     } catch (err) {
-      console.error("General Error:", err);
-      bot.sendMessage(chatId, "❌ কিছু সমস্যা হয়েছে।");
+      console.error("GENERAL ERROR:", err);
+      bot.sendMessage(chatId, "❌ কিছু সমস্যা হয়েছে!");
     }
   },
 };
