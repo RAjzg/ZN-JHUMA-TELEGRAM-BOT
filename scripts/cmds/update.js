@@ -2,10 +2,10 @@ const fs = require('fs');
 const { execSync } = require('child_process');
 
 module.exports.config = {
-  name: "Zuma",
+  name: "update",
   version: "1.0.0",
   role: 3,
-  author: "𝐌𝐅 𝐍𝐔𝐑𝐍𝐎𝐁𝐈 𝐇𝐀𝐐𝐔𝐄",
+  author: "dipto",
   description: "Check for updates and apply them.",
   usePrefix: true,
   guide: "[confirm]",
