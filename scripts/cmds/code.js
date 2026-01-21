@@ -11,7 +11,7 @@ module.exports.config = {
   name: "code",
   version: "6.9.0",
   role: 2,
-  author: "𝐌𝐃 𝐍𝐔𝐑𝐍𝐎𝐁𝐈 𝐇𝐀𝐐𝐈𝐄",
+  author: "dipto",
   usePrefix: true,
   description: "Convert code into link",
   category: "goatbot",
