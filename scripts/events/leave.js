@@ -6,7 +6,7 @@ module.exports = {
       const leaveMessage = `${leftMember} has left ${chatName}.`;
 
       // GIF লিঙ্ক
-      const gifUrl = 'https://files.catbox.moe/4brdtj.mp4';
+      const gifUrl = 'https://i.postimg.cc/vBqkkzTV/goodbye.gif';
 
       try {
         // GIF সহ মেসেজ পাঠাও
