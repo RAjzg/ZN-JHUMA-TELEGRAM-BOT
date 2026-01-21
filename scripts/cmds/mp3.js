@@ -52,7 +52,7 @@ module.exports = {
           .on("end", () => {
             // mp3 পাঠাও
             bot.sendAudio(chatId, outputPath, {
-              caption: "✅𝐙𝐍 𝐉𝐇𝐔𝐌𝐀                 😒𝐑𝐎𝐁𝐎𝐓 𝐎𝐖𝐍𝐄𝐑:-𝐌𝐃:𝐍𝐔𝐑𝐍𝐎𝐁𝐈 𝐇𝐀𝐐𝐔𝐄                       🙃 𝐒𝐔𝐂𝐂𝐄𝐒𝐒𝐅𝐔𝐋𝐋 𝐘𝐎𝐔𝐑 𝐌𝐏4 𝐓𝐎 𝐌𝐏3  𝐌𝐔𝐒𝐈𝐂",
+              caption: "✅𝐙𝐍 𝐉𝐇𝐔𝐌𝐀  😒𝐑𝐎𝐁𝐎𝐓 𝐎𝐖𝐍𝐄𝐑:-𝐌𝐃:𝐍𝐔𝐑𝐍𝐎𝐁𝐈 𝐇𝐀𝐐𝐔𝐄  🙃 𝐒𝐔𝐂𝐂𝐄𝐒𝐒𝐅𝐔𝐋𝐋 𝐘𝐎𝐔𝐑 𝐌𝐏4 𝐓𝐎 𝐌𝐏3  𝐌𝐔𝐒𝐈𝐂",
               reply_to_message_id: msg.message_id,
             }).then(() => {
               // টেম্প ফাইল ডিলিট
