@@ -37,8 +37,7 @@ module.exports.onChat = async ({ event, bot, msg }) => {
   const chatId = msg.chat.id;
   const messageId = msg.message_id;
 
-  const loadingMsg = await bot.sendMessage(chatId, "✅ 𝒁𝑵 𝑱𝑯𝑼𝑴𝑨 𝑽𝑰𝑫𝑬𝑶 𝑫𝑨𝑾𝑵𝑳𝑶𝑨𝑫 𝑺𝑼𝑪𝑪𝑬𝑺𝑺𝑭𝑼𝑳𝑳 [■■■■■■■] 99%
-...", {
+  const loadingMsg = await bot.sendMessage(chatId, "✅Processing TikTok link...", {
     reply_to_message_id: messageId,
   });
   const loadingMsgId = loadingMsg.message_id;
@@ -114,7 +113,7 @@ module.exports.onChat = async ({ event, bot, msg }) => {
     await bot.sendMessage(chatId, "❌ No video or photos found in this TikTok post.");
   } catch (err) {
     await bot.deleteMessage(chatId, loadingMsgId);
-    console.error("❎ 𝑻𝑰𝑲𝑻𝑶𝑲 𝑫𝑨𝑾𝑵𝑳𝑶𝑨𝑫 𝑬𝑹𝑹𝑶𝑹:", err);
-    await bot.sendMessage(chatId, `❎ 𝑬𝑹𝑹𝑶𝑹: ${err.message}`);
+    console.error("❎ TikTok Download Error:", err);
+    await bot.sendMessage(chatId, `❎ Error: ${err.message}`);
   }
 };
