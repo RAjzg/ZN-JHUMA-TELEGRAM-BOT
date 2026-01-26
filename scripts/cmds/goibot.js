@@ -11,7 +11,7 @@ module.exports.config = {
 
 module.exports.onChat = async ({ message, event }) => {
   const hh = event.text?.toLowerCase() || "";
-  if (hh.startsWith("bot") || hh.startsWith("bby")) {
+  if (hh.startsWith("Zuma") || hh.startsWith("Jhuma")) {
     try {
       const ar = [
         "°অনুভূতি প্রকাশ করতে নেই মানুষ নাটক মনে করে মজা নেয়°..! ",
