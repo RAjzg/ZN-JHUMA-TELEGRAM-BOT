@@ -5,7 +5,7 @@ const path = require("path");
 module.exports.config = {
   name: "tikdown",
   version: "1.0.5",
-  author: "MD NURNOBI HAQUE",
+  author: "Shaon Ahmed",
   role: 0,
   description: {
     en: "Download TikTok video or photo posts from noobs-api-sable",
@@ -22,7 +22,7 @@ module.exports.run = async ({ event, bot, msg }) => {
 };
 
 module.exports.onChat = async ({ event, bot, msg }) => {
-  const messageText = msg.link_preview_options?.url || msg.text || "";
+  const messageText = msg.link_preview_options?.url  msg.text  "";
 
   if (
     !messageText.startsWith("https://vt.tiktok.com") &&
@@ -32,19 +32,19 @@ module.exports.onChat = async ({ event, bot, msg }) => {
     return;
 
   const apis = await axios.get('https://raw.githubusercontent.com/shaonproject/Shaon/main/api.json')
-  const Shaon = apis.data.noobs
+  const Shaon = apis.data.allapi
 
   const chatId = msg.chat.id;
   const messageId = msg.message_id;
 
-  const loadingMsg = await bot.sendMessage(chatId, "✅Processing TikTok link...", {
+  const loadingMsg = await bot.sendMessage(chatId, "⏳ Processing TikTok link...", {
     reply_to_message_id: messageId,
   });
   const loadingMsgId = loadingMsg.message_id;
 
   try {
     const { data } = await axios.get(
-      `${Shaon}/tikdown?url=${encodeURIComponent(messageText)}`
+      ${Shaon}/tikdown?url=${encodeURIComponent(messageText)}
     );
 
     if (!data) {
@@ -57,7 +57,7 @@ module.exports.onChat = async ({ event, bot, msg }) => {
 
     if (data.video) {
       const videoUrl = data.video;
-      const videoPath = path.join(__dirname, "caches", `tikvideo_${Date.now()}.mp4`);
+      const videoPath = path.join(__dirname, "caches", tikvideo_${Date.now()}.mp4);
 
       const videoResp = await axios.get(videoUrl, { responseType: "stream" });
       const writer = fs.createWriteStream(videoPath);
@@ -68,7 +68,7 @@ module.exports.onChat = async ({ event, bot, msg }) => {
         writer.on("error", reject);
       });
 
-      const caption = `👤 Author: ${authorName}\n📝 Title: ${title}\n🎥 Type: Video`;
+      const caption = 👤 Author: ${authorName}\n📝 Title: ${title}\n🎥 Type: Video;
 
       await bot.sendVideo(chatId, videoPath, {
         caption,
@@ -84,7 +84,7 @@ module.exports.onChat = async ({ event, bot, msg }) => {
       const images = data.images;
       const total_photos = data.total_photos || images.length;
 
-      const captionText = `👤 Author: ${authorName}\n📝 Title: ${title}\n🖼️ Total Photos: ${total_photos}`;
+      const captionText = 👤 Author: ${authorName}\n📝 Title: ${title}\n🖼️ Total Photos: ${total_photos};
 
       const CHUNK_SIZE = 10;
       const delay = ms => new Promise(res => setTimeout(res, ms));
@@ -113,7 +113,7 @@ module.exports.onChat = async ({ event, bot, msg }) => {
     await bot.sendMessage(chatId, "❌ No video or photos found in this TikTok post.");
   } catch (err) {
     await bot.deleteMessage(chatId, loadingMsgId);
-    console.error("❎ TikTok Download Error:", err);
-    await bot.sendMessage(chatId, `❎ Error: ${err.message}`);
+    console.error("❎ TikTok Downloader Error:", err);
+    await bot.sendMessage(chatId, ❎ Error: ${err.message});
   }
 };
